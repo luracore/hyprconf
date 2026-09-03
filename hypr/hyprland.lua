@@ -178,6 +178,9 @@ hl.config({
   -- Menus & utilities
   -- ============================================================
 
+  -- Bluetooth
+  hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("blueman-manager"))
+
   -- App launcher
   hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 
