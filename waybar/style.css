@@ -1,0 +1,185 @@
+@import "mocha.css";
+
+* {
+    font-family: "MesloLGS Nerd Font Mono Bold";
+    font-size: 15px;
+    min-height: 0;
+    font-weight: bold;
+}
+
+/* ─────────────────────────────────────────────
+   Waybar
+   ───────────────────────────────────────────── */
+
+window#waybar {
+    background: @crust;
+    color: @text;
+    border: none;
+}
+
+/* ─────────────────────────────────────────────
+   Window title
+   ───────────────────────────────────────────── */
+
+#window {
+    margin: 6px 0;
+    padding: 0 12px;
+
+    color: @subtext0;
+}
+
+/* ─────────────────────────────────────────────
+   Workspaces
+   ───────────────────────────────────────────── */
+
+#workspaces {
+    margin: 5px 0 5px 8px;
+    padding: 2px;
+
+    background: @surface0;
+    border-radius: 10px;
+}
+
+#workspaces button {
+    padding: 0 10px;
+    margin: 0 2px;
+
+    color: @overlay1;
+    background: transparent;
+
+    border: none;
+    border-radius: 8px;
+
+    box-shadow: none;
+}
+
+#workspaces button:hover {
+    color: @text;
+    background: @surface1;
+}
+
+#workspaces button.active {
+    color: @crust;
+    background: @mauve;
+}
+
+#workspaces button.focused {
+    color: @crust;
+    background: @mauve;
+}
+
+#workspaces button.urgent {
+    color: @crust;
+    background: @red;
+}
+
+/* ─────────────────────────────────────────────
+   Right-side modules
+   ───────────────────────────────────────────── */
+
+#tray,
+#network,
+#pulseaudio,
+#battery,
+#clock {
+    margin: 5px 3px;
+    padding: 0 11px;
+
+    background: @surface0;
+    border-radius: 10px;
+}
+
+/* ─────────────────────────────────────────────
+   Tray
+   ───────────────────────────────────────────── */
+
+#tray {
+    padding: 0 8px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+}
+
+/* ─────────────────────────────────────────────
+   Network
+   ───────────────────────────────────────────── */
+
+#network {
+    color: @yellow;
+}
+
+#network.disconnected {
+    color: @red;
+}
+
+/* ─────────────────────────────────────────────
+   Audio
+   ───────────────────────────────────────────── */
+
+#pulseaudio {
+    color: @blue;
+}
+
+#pulseaudio.muted {
+    color: @overlay1;
+}
+
+/* ─────────────────────────────────────────────
+   Battery
+   ───────────────────────────────────────────── */
+
+#battery {
+    color: @green;
+}
+
+#battery.warning {
+    color: @yellow;
+}
+
+#battery.critical {
+    color: @red;
+}
+
+#battery.charging,
+#battery.plugged {
+    color: @teal;
+}
+
+/* ─────────────────────────────────────────────
+   Clock
+   ───────────────────────────────────────────── */
+
+#clock {
+    color: #b4befe;
+    padding-left: 13px;
+    padding-right: 13px;
+}
+
+/* ─────────────────────────────────────────────
+   Generic hover
+   ───────────────────────────────────────────── */
+
+#tray:hover,
+#network:hover,
+#pulseaudio:hover,
+#battery:hover,
+#clock:hover {
+    background: @surface1;
+}
+
+/* ─────────────────────────────────────────────
+   Layout cleanup
+   ───────────────────────────────────────────── */
+
+.modules-left > widget:first-child > #workspaces {
+    margin-left: 8px;
+}
+
+.modules-right > widget:last-child > #clock {
+    margin-right: 8px;
+}

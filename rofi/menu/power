@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+chosen=$(printf '%s\n' \
+  "Lock" \
+  "Suspend" \
+  "Reboot" \
+  "Shutdown" \
+  "Log Out" |
+  rofi -dmenu -i -p "")
+
+case "$chosen" in
+  "Lock")
+    hyprlock
+    ;;
+  "Suspend")
+    systemctl suspend
+    ;;
+  "Reboot")
+    systemctl reboot
+    ;;
+  "Shutdown")
+    systemctl poweroff
+    ;;
+  "Log Out")
+    hyprctl dispatch 'hl.dsp.exit()'
+    ;;
+  *)
+    exit 1
+    ;;
+esac

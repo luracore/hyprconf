@@ -1,0 +1,14 @@
+configuration{
+    modi: "drun,run,window,combi,emoji";
+    icon-theme: "Oranchelo";
+    show-icons: true;
+    terminal: "kitty";
+
+    drun-display-format: "{icon} {name}";
+
+    location: 0;
+    disable-history: false;
+    hide-scrollbar: true;
+}
+
+@theme "style"
