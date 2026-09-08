@@ -49,3 +49,8 @@ Ativar o NetworkManager e o Bluetooth:
 sudo systemctl enable --now NetworkManager
 sudo systemctl enable --now bluetooth
 ```
+
+## .bashrc
+```bash
+echo 'eval "$(starship init bash)"' >> ~/.bashrc
+```
