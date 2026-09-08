@@ -1,28 +1,27 @@
 #!/usr/bin/env bash
 
 chosen=$(printf '%s\n' \
-  "Lock" \
-  "Suspend" \
-  "Reboot" \
-  "Shutdown" \
-  "Log Out" |
-  rofi -dmenu -i -p "")
+  "󰍃 Sair" \
+  "󰤄 Suspender" \
+  " Desligar" \
+  "󰜉 Reiniciar" |
+  rofi -dmenu -i \
+  -theme ~/.config/rofi/menu/power.rasi \
+  -p ">"
+)
 
 case "$chosen" in
-  "Lock")
-    hyprlock
+  *"Sair")
+    hyprctl dispatch 'hl.dsp.exit()'
     ;;
-  "Suspend")
+  *"Suspender")
     systemctl suspend
     ;;
-  "Reboot")
+  *"Reiniciar")
     systemctl reboot
     ;;
-  "Shutdown")
+  *"Desligar")
     systemctl poweroff
-    ;;
-  "Log Out")
-    hyprctl dispatch 'hl.dsp.exit()'
     ;;
   *)
     exit 1
