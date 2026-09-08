@@ -8,11 +8,11 @@ Configurações pessoais do meu ambiente Arch Linux + Hyprland.
 sudo pacman -S kitty hyprland \
     ttf-jetbrains-mono-nerd \
     hyprlock hypridle hyprshot wtype \
-    rofi waybar swaync starship \
+    rofi rofi-emoji waybar swaync starship \
     thunar gvfs thunar-volman tumbler \
     lightdm lightdm-gtk-greeter \
     networkmanager network-manager-applet \
-    bluez bluez-utils blueman \
+    bluez bluez-utils blueman
 ```
 
 ## Clonar repositório
