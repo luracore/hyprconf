@@ -5,9 +5,13 @@ Configurações pessoais do meu ambiente Arch Linux + Hyprland.
 ## Dependências
 
 ```bash
-sudo pacman -S kitty hyprland rofi waybar \
-    hyprlock hypridle hyprshot wtype starship \
-    networkmanager networkmanager-dmenu \
+sudo pacman -S kitty hyprland \
+    ttf-jetbrains-mono-nerd \
+    hyprlock hypridle hyprshot wtype \
+    rofi waybar swaync starship \
+    thunar gvfs thunar-volman tumbler \
+    lightdm lightdm-gtk-greeter \
+    networkmanager network-manager-applet \
     bluez bluez-utils blueman \
 ```
 
