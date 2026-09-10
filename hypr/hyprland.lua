@@ -16,7 +16,7 @@ local menu        = "hyprlauncher"
 -- Monitor
 
 hl.monitor({
-  output   = "eDP-1",
+  output   = "HDMI-A-1",
   mode     = "preferred",
   position = "auto",
   scale    = "1",
