@@ -31,7 +31,7 @@ mkdir -p ~/.config
 
 ln -s ~/hyprconf/hypr ~/.config/hypr
 ln -s ~/hyprconf/kitty ~/.config/kitty
-ln -s ~/hyprconf/rofi ~/.config/rofi
+mv ~/.config/wayle ~/.config/wayle.default
 ln -s ~/hyprconf/wayle ~/.config/wayle
 ln -s ~/hyprconf/starship.toml ~/.config/starship.toml
 ```
