@@ -2,16 +2,14 @@
 
 Configurações pessoais do meu ambiente Arch Linux + Hyprland.
 
-## Dependências
+## Dependências*
 
 ```bash
 sudo pacman -S kitty hyprland \
-    ttf-jetbrains-mono-nerd starship \
     hyprlock hypridle hyprlauncher hyprshot wtype \
-    rofi rofi-emoji waybar swaync \
+    wayle ttf-jetbrains-mono-nerd starship \
     thunar gvfs thunar-volman tumbler \
-    networkmanager network-manager-applet \
-    bluez bluez-utils blueman
+    networkmanager bluez bluez-utils
 ```
 
 ## Clonar repositório
@@ -34,8 +32,8 @@ mkdir -p ~/.config
 ln -s ~/hyprconf/hypr ~/.config/hypr
 ln -s ~/hyprconf/kitty ~/.config/kitty
 ln -s ~/hyprconf/rofi ~/.config/rofi
+ln -s ~/hyprconf/wayle ~/.config/wayle
 ln -s ~/hyprconf/starship.toml ~/.config/starship.toml
-ln -s ~/hyprconf/waybar ~/.config/waybar
 ```
 
 Após isso, as configurações ficam versionadas em `~/hyprconf`, enquanto os programas continuam acessando os arquivos através de `~/.config`.

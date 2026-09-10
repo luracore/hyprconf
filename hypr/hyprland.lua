@@ -1,14 +1,10 @@
 -- Iniciar
 
 hl.on("hyprland.start", function ()
-  hl.exec_cmd("waybar")
+  hl.exec_cmd("wayle panel start")
   hl.exec_cmd("hyprpaper")
-  hl.exec_cmd("swaync")
   hl.exec_cmd("hypridle")
-  hl.exec_cmd("nm-applet --indicator")
-  hl.exec_cmd("hyprpaper")
 end)
-
 
 -- Variáveis
 
@@ -16,8 +12,6 @@ local mainMod     = "SUPER"
 local terminal    = "kitty"
 local fileManager = "thunar"
 local menu        = "hyprlauncher"
-local extra       = os.getenv("HOME") .. "/.config/rofi/menu"
-
 
 -- Monitor
 
@@ -27,7 +21,6 @@ hl.monitor({
   position = "auto",
   scale    = "1",
 })
-
 
 -- Aparência
 
@@ -78,8 +71,8 @@ hl.config({
   },
 
   misc = {
-    force_default_wallpaper = -1,
-    disable_hyprland_logo = false,
+    force_default_wallpaper = 0,
+    disable_hyprland_logo = true,
   },
 })
 
@@ -197,15 +190,11 @@ hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("blueman-manager"))
-hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("nm-connection-editor"))
-hl.bind(mainMod .. " + period", hl.dsp.exec_cmd("rofi -show emoji"))
-hl.bind(mainMod .. " + P", hl.dsp.exec_cmd(extra .. "/power"))
+hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'"))
 hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprlock"))
 
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("hyprshot -m window"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region"))
-
 
 -- Janelas
 
@@ -228,7 +217,6 @@ hl.bind(
     action = "toggle",
   })
 )
-
 
 -- Navegação
 
@@ -264,7 +252,6 @@ hl.bind(
   hl.dsp.focus({ workspace = "e-1" })
 )
 
-
 -- Workspaces
 
 for i = 1, 10 do
@@ -280,7 +267,6 @@ for i = 1, 10 do
     hl.dsp.window.move({ workspace = i })
   )
 end
-
 
 -- Multimídia
 
@@ -343,7 +329,6 @@ hl.bind(
   hl.dsp.exec_cmd("playerctl previous"),
   { locked = true }
 )
-
 
 -- Regras de janela
 

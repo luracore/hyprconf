@@ -1,0 +1,24 @@
+[bar]
+background-opacity = 0
+
+[[bar.layout]]
+monitor = "*"
+show = true
+left = [
+    "power",
+    "notifications",
+    "hyprland-workspaces",
+]
+center = ["clock"]
+right = [
+    "network",
+    "bluetooth",
+    "volume",
+    "battery",
+]
+
+[modules.clock]
+format = "%a %d %H:%M"
+
+[modules.power]
+left-click = "systemctl poweroff"
