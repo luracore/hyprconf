@@ -7,7 +7,7 @@ Configurações pessoais do meu ambiente Arch Linux + Hyprland.
 ```bash
 sudo pacman -S kitty hyprland \
     hyprlock hypridle hyprlauncher hyprshot wtype \
-    wayle ttf-jetbrains-mono-nerd starship \
+    wayle power-profiles-daemon ttf-jetbrains-mono-nerd starship \
     thunar gvfs thunar-volman tumbler \
     networkmanager bluez bluez-utils
 ```
@@ -40,11 +40,12 @@ Após isso, as configurações ficam versionadas em `~/hyprconf`, enquanto os pr
 
 ## Serviços
 
-Ativar o NetworkManager e o Bluetooth:
+Ativar serviços:
 
 ```bash
 sudo systemctl enable --now NetworkManager
 sudo systemctl enable --now bluetooth
+sudo systemctl enable --now power-profiles-daemon.service
 ```
 
 ## .bashrc
