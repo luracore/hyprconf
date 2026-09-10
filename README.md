@@ -10,7 +10,6 @@ sudo pacman -S kitty hyprland \
     hyprlock hypridle hyprshot wtype \
     rofi rofi-emoji waybar swaync starship \
     thunar gvfs thunar-volman tumbler \
-    lightdm lightdm-gtk-greeter \
     networkmanager network-manager-applet \
     bluez bluez-utils blueman
 ```
