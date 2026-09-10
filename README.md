@@ -6,9 +6,9 @@ Configurações pessoais do meu ambiente Arch Linux + Hyprland.
 
 ```bash
 sudo pacman -S kitty hyprland \
-    ttf-jetbrains-mono-nerd \
-    hyprlock hypridle hyprshot wtype \
-    rofi rofi-emoji waybar swaync starship \
+    ttf-jetbrains-mono-nerd starship \
+    hyprlock hypridle hyprlauncher hyprshot wtype \
+    rofi rofi-emoji waybar swaync \
     thunar gvfs thunar-volman tumbler \
     networkmanager network-manager-applet \
     bluez bluez-utils blueman

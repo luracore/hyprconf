@@ -15,7 +15,7 @@ end)
 local mainMod     = "SUPER"
 local terminal    = "kitty"
 local fileManager = "thunar"
-local menu        = "rofi -show drun"
+local menu        = "hyprlauncher"
 local extra       = os.getenv("HOME") .. "/.config/rofi/menu"
 
 
