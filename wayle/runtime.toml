@@ -6,19 +6,25 @@ monitor = "*"
 show = true
 left = [
     "power",
-    "notifications",
+    "separator",
     "hyprland-workspaces",
+    "separator",
+    "cava",
 ]
 center = ["clock"]
 right = [
+    "battery",
     "network",
     "bluetooth",
     "volume",
-    "battery",
+    "notifications",
 ]
 
 [modules.clock]
 format = "%a %d %H:%M"
+
+[modules.notifications]
+label-show = false
 
 [modules.power]
 left-click = "systemctl poweroff"
