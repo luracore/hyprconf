@@ -6,9 +6,10 @@ Configurações pessoais do meu ambiente Arch Linux + Hyprland.
 
 ```bash
 sudo pacman -S kitty hyprland \
-    hyprlock hypridle hyprlauncher hyprshot wtype \
-    wayle power-profiles-daemon ttf-jetbrains-mono-nerd starship \
-    thunar gvfs thunar-volman tumbler \
+    hyprpolkitagent hyprlock hypridle hyprlauncher hyprshot \
+    wayle power-profiles-daemon \
+    wl-clipboard ttf-jetbrains-mono-nerd starship \
+    dolphin kio-admin ark \
     networkmanager bluez bluez-utils
 ```
 
@@ -51,4 +52,9 @@ sudo systemctl enable --now power-profiles-daemon.service
 ## .bashrc
 ```bash
 echo 'eval "$(starship init bash)"' >> ~/.bashrc
+```
+
+## Impedir troca automática de perfil bluetooth
+```bash
+wpctl settings --save bluetooth.autoswitch-to-headset-profile false
 ```

@@ -1,8 +1,9 @@
 -- Iniciar
 
 hl.on("hyprland.start", function ()
-  hl.exec_cmd("wayle panel start")
+  hl.exec_cmd("systemctl --user start hyprpolkitagent")
   hl.exec_cmd("hyprpaper")
+  hl.exec_cmd("wayle panel start")
   hl.exec_cmd("hypridle")
 end)
 
@@ -10,7 +11,7 @@ end)
 
 local mainMod     = "SUPER"
 local terminal    = "kitty"
-local fileManager = "thunar"
+local fileManager = "dolphin"
 local menu        = "hyprlauncher"
 
 -- Monitor

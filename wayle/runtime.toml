@@ -32,16 +32,13 @@ yellow = "#dca561"
 green = "#33d17a"
 blue = "#3584e4"
 
-[modules.battery]
-icon-show = false
-label-show = false
-
 [modules.clock]
 format = "%a %d %H:%M"
 
 [modules.dashboard]
 border-color = "blue"
 icon-bg-color = "blue"
+dropdown-logout-command = "hyprctl dispatch 'hl.dsp.exit()'"
 
 [modules.hyprland-workspaces]
 show-special = false
