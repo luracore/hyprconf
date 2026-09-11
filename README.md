@@ -2,15 +2,19 @@
 
 Configurações pessoais do meu ambiente Arch Linux + Hyprland.
 
-## Dependências*
+## Dependências
 
 ```bash
 sudo pacman -S kitty hyprland \
     hyprpolkitagent hyprlock hypridle hyprlauncher hyprshot \
-    wayle power-profiles-daemon \
-    wl-clipboard ttf-jetbrains-mono-nerd starship \
+    wl-clipboard power-profiles-daemon \
+    ttf-jetbrains-mono-nerd starship \
     dolphin kio-admin ark \
     networkmanager bluez bluez-utils
+```
+
+```bash
+yay -S wayle-bin
 ```
 
 ## Clonar repositório
@@ -54,7 +58,7 @@ sudo systemctl enable --now power-profiles-daemon.service
 echo 'eval "$(starship init bash)"' >> ~/.bashrc
 ```
 
-## Impedir troca automática de perfil bluetooth
+## Impedir troca automática de perfil de som bluetooth
 ```bash
 wpctl settings --save bluetooth.autoswitch-to-headset-profile false
 ```
