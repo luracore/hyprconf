@@ -5,7 +5,7 @@ background-opacity = 0
 monitor = "*"
 show = true
 left = [
-    "power",
+    "dashboard",
     "separator",
     "hyprland-workspaces",
     "separator",
@@ -14,14 +14,37 @@ left = [
 center = ["clock"]
 right = [
     "battery",
-    "network",
     "bluetooth",
+    "network",
     "volume",
     "notifications",
 ]
 
+[styling.palette]
+bg = "#1a1a22"
+surface = "#1f1f28"
+elevated = "#2a2a37"
+fg = "#dcd7ba"
+fg-muted = "#727169"
+primary = "#ff7800"
+red = "#e01b24"
+yellow = "#dca561"
+green = "#33d17a"
+blue = "#3584e4"
+
+[modules.battery]
+icon-show = false
+label-show = false
+
 [modules.clock]
 format = "%a %d %H:%M"
+
+[modules.dashboard]
+border-color = "blue"
+icon-bg-color = "blue"
+
+[modules.hyprland-workspaces]
+show-special = false
 
 [modules.notifications]
 label-show = false
