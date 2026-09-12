@@ -39,6 +39,12 @@ blue = "#3584e4"
 [modules.bluetooth]
 label-show = false
 
+[modules.cava]
+bars = 30
+color = "green"
+border-show = true
+border-color = "green"
+
 [modules.clock]
 format = "%a %d %H:%M"
 
@@ -70,3 +76,4 @@ color = "accent-hover"
 
 [modules.systray]
 border-show = true
+border-color = "blue"
