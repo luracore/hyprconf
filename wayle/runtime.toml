@@ -9,14 +9,18 @@ left = [
     "separator",
     "hyprland-workspaces",
     "separator",
+    "media",
     "cava",
 ]
 center = ["clock"]
 right = [
-    "battery",
+    "systray",
+    "volume",
+    "separator",
     "bluetooth",
     "network",
-    "volume",
+    "separator",
+    "battery",
     "notifications",
 ]
 
@@ -32,6 +36,9 @@ yellow = "#dca561"
 green = "#33d17a"
 blue = "#3584e4"
 
+[modules.bluetooth]
+label-show = false
+
 [modules.clock]
 format = "%a %d %H:%M"
 
@@ -43,8 +50,23 @@ dropdown-logout-command = "hyprctl dispatch 'hl.dsp.exit()'"
 [modules.hyprland-workspaces]
 show-special = false
 
+[modules.media]
+border-color = "green"
+icon-bg-color = "green"
+label-show = false
+label-color = "green"
+
+[modules.network]
+label-show = false
+
 [modules.notifications]
 label-show = false
 
 [modules.power]
 left-click = "systemctl poweroff"
+
+[modules.separator]
+color = "accent-hover"
+
+[modules.systray]
+border-show = true
