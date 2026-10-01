@@ -36,6 +36,10 @@ yellow = "#dca561"
 green = "#33d17a"
 blue = "#3584e4"
 
+[modules.battery]
+icon-show = false
+label-show = false
+
 [modules.bluetooth]
 label-show = false
 
