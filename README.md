@@ -10,8 +10,8 @@ sudo pacman -S kitty hyprland \
     wl-clipboard power-profiles-daemon \
     ttf-jetbrains-mono-nerd starship \
     dolphin kio-admin ark \
+    rofi awww imagemagick \
     networkmanager bluez bluez-utils blueman
-
 ```
 
 ```bash
@@ -55,6 +55,7 @@ Após isso, as configurações ficam versionadas em `~/hyprconf`, enquanto os pr
 | `SUPER + W` | Abrir terminal |
 | `SUPER + E` | Abrir gerenciador de arquivos |
 | `SUPER + SPACE` | Abrir launcher |
+| `SUPER + M` | Abrir seletor de wallpapers |
 | `SUPER + P` | Bloquear tela |
 | `SUPER + SHIFT + P` | Sair do Hyprland |
 | `SUPER + S` | Screenshot da janela |

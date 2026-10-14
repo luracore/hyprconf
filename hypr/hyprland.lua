@@ -2,7 +2,8 @@
 
 hl.on("hyprland.start", function ()
   hl.exec_cmd("systemctl --user start hyprpolkitagent")
-  hl.exec_cmd("hyprpaper")
+  hl.exec_cmd("awww-daemon")
+  hl.exec_cmd('sleep 2; if [ -f "$HOME/hyprconf/Wallpapers/current" ]; then awww img "$(cat "$HOME/hyprconf/Wallpapers/current")" --resize crop --transition-type none; fi')
   hl.exec_cmd("wayle panel start")
   hl.exec_cmd("hypridle")
 end)
@@ -17,8 +18,7 @@ local menu        = "hyprlauncher"
 -- Monitor
 
 hl.monitor({
-  output   = "HDMI-A-1",
-  --output = "eDP-1",
+  output   = "",
   mode     = "preferred",
   position = "auto",
   scale    = "1",
@@ -186,6 +186,9 @@ hl.device({
 
 -- Atalhos
 
+
+hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("$HOME/hyprconf/rofi/WallpaperPicker/config.sh"))
+
 -- Aplicações
 
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(terminal))
@@ -201,7 +204,6 @@ hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region"))
 -- Janelas
 
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + A", hl.dsp.layout("togglesplit"))
 
 hl.bind(
