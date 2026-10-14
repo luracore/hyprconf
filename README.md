@@ -66,7 +66,6 @@ Após isso, as configurações ficam versionadas em `~/hyprconf`, enquanto os pr
 | Atalho | Ação |
 |---|---|
 | `SUPER + Q` | Fechar janela |
-| `SUPER + V` | Alternar floating |
 | `SUPER + A` | Alternar split |
 | `SUPER + F` | Alternar maximização |
 | `SUPER + SHIFT + F` | Alternar fullscreen |
