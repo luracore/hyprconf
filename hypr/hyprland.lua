@@ -186,8 +186,8 @@ hl.device({
 
 -- Atalhos
 
-
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("$HOME/hyprconf/rofi/WallpaperPicker/config.sh"))
+hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd("quickshell --path $HOME/hyprconf/quickshell/wallpaper-picker/shell.qml"))
 
 -- Aplicações
 
