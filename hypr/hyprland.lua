@@ -6,14 +6,13 @@ hl.on("hyprland.start", function()
   hl.exec_cmd('sleep 2; if [ -e "$HOME/hyprconf/Wallpapers/current" ]; then awww img "$HOME/hyprconf/Wallpapers/current" --resize crop --transition-type none; else awww img --color 000000; fi')
   hl.exec_cmd("wayle panel start")
   hl.exec_cmd("hypridle")
+  hl.exec_cmd("elephant")
+  hl.exec_cmd("walker -gapplication-service")
 end)
 
 -- Variáveis
 
 local mainMod     = "SUPER"
-local terminal    = "kitty"
-local fileManager = "dolphin"
-local menu        = "hyprlauncher"
 
 -- Monitor
 
@@ -190,9 +189,9 @@ hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("quickshell --path $HOME/hyprconf/qui
 
 -- Aplicações
 
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("kitty"))
+hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("dolphin"))
+hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("walker"))
 
 hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'"))

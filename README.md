@@ -6,7 +6,7 @@ Configurações pessoais do meu ambiente Arch Linux + Hyprland.
 
 ```bash
 sudo pacman -S kitty hyprland \
-    hyprpolkitagent hyprlock hypridle hyprlauncher hyprshot \
+    hyprpolkitagent hyprlock hypridle hyprshot \
     wl-clipboard power-profiles-daemon \
     ttf-jetbrains-mono-nerd starship \
     dolphin kio-admin ark \
@@ -15,7 +15,8 @@ sudo pacman -S kitty hyprland \
 ```
 
 ```bash
-yay -S wayle-bin
+yay -S wayle-bin \
+    walker-bin elephant-bin elephant-providerlist elephant-desktopapplications
 ```
 
 ## Instalação
