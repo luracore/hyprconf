@@ -10,7 +10,7 @@ sudo pacman -S kitty hyprland \
     wl-clipboard power-profiles-daemon \
     ttf-jetbrains-mono-nerd starship \
     dolphin kio-admin ark \
-    rofi awww imagemagick \
+    quickshell awww imagemagick \
     networkmanager bluez bluez-utils blueman
 ```
 

@@ -5,6 +5,16 @@ THUMB_DIR="$HOME/hyprconf/Wallpapers/thumbnails"
 
 mkdir -p "$THUMB_DIR"
 
+find "$THUMB_DIR" -maxdepth 1 -type f -name '*.png' -print0 |
+while IFS= read -r -d '' thumb; do
+    name="$(basename "$thumb" .png)"
+    wallpaper="$WALLPAPER_DIR/$name"
+
+    if [[ ! -f "$wallpaper" ]]; then
+        rm -f -- "$thumb"
+    fi
+done
+
 find "$WALLPAPER_DIR" -maxdepth 1 -type f \
     \( -iname '*.jpg' -o -iname '*.jpeg' \
        -o -iname '*.png' -o -iname '*.webp' \) \
