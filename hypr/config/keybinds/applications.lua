@@ -1,6 +1,6 @@
 hl.bind("SUPER + M", hl.dsp.exec_cmd("quickshell --path $HOME/hyprconf/quickshell/wallpaper-picker/shell.qml"))
 
-hl.bind("SUPER + W", hl.dsp.exec_cmd("kitty"))
+hl.bind("SUPER + RETURN", hl.dsp.exec_cmd("foot"))
 hl.bind("SUPER + E", hl.dsp.exec_cmd("dolphin"))
 hl.bind("SUPER + SPACE", hl.dsp.exec_cmd("hyprlauncher"))
 

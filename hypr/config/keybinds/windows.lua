@@ -1,4 +1,4 @@
-hl.bind("SUPER + Q", hl.dsp.window.close())
+hl.bind("SUPER + W", hl.dsp.window.close())
 hl.bind("SUPER + A", hl.dsp.layout("togglesplit"))
 
 hl.bind(

@@ -14,11 +14,6 @@ sudo pacman -S kitty hyprland \
     networkmanager bluez bluez-utils blueman
 ```
 
-```bash
-yay -S wayle-bin \
-    walker-bin elephant-bin elephant-providerlist elephant-desktopapplications
-```
-
 ## Instalação
 
 ## Clonar repositório
