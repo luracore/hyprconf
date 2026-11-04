@@ -1,0 +1,4 @@
+module themes
+singleton Theme 1.0 Theme.qml
+TokyoNight 1.0 TokyoNight.qml
+Catppuccin 1.0 Catppuccin.qml
