@@ -1,23 +1,26 @@
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
+import qs.themes
 
 PanelWindow {
-    anchors.top: true
-    anchors.left: true
-    anchors.right: true
+  anchors.top: true
+  anchors.left: true
+  anchors.right: true
 
-    implicitHeight: 30
-    color: "#1a1b26"
+  implicitHeight: Sizes.barHeight
+  color: Theme.active.background
 
-    RowLayout {
-        anchors.fill: parent
-        anchors.margins: 8
+  RowLayout {
+    anchors.fill: parent
+    anchors.leftMargin: Sizes.barPadding
+    anchors.rightMargin: Sizes.barPadding
+    spacing: 0
 
-        Workspaces {}
-
-        Item {
-            Layout.fillWidth: true
-        }
-    }
+    Workspaces {Layout.alignment: Qt.AlignVCenter}
+    Item {Layout.fillWidth: true}
+    Workspaces {Layout.alignment: Qt.AlignVCenter}
+    Item {Layout.fillWidth: true}
+    Workspaces {Layout.alignment: Qt.AlignVCenter}
+  }
 }

@@ -2,36 +2,53 @@ import Quickshell
 import Quickshell.Hyprland
 import QtQuick
 import QtQuick.Layouts
-import "../themes"
+import qs.themes
 
-RowLayout {
-    spacing: Theme.active.spacing
+Row {
+  Layout.fillHeight: true
+  spacing: Sizes.spacing
 
-    Repeater {
-        model: Hyprland.workspaces.values
+  Repeater {
+    model: Hyprland.workspaces.values
 
-        Text {
-            required property var modelData
+    Rectangle {
+      required property var modelData
 
-            property bool isActive:
-                Hyprland.focusedWorkspace?.id === modelData.id
+      property bool isActive:
+      Hyprland.focusedWorkspace?.id === modelData.id
 
-            text: modelData.id
+      implicitWidth: workspaceText.implicitWidth + 12
+      height: Sizes.barItemSize
 
-            color: isActive
-                ? Theme.active.active
-                : Theme.active.muted
+      anchors.verticalCenter: parent.verticalCenter
 
-            font {
-                family: Theme.active.fontFamily
-                pixelSize: Theme.active.fontSize
-                bold: true
-            }
+      radius: Sizes.radius
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: modelData.activate()
-            }
+      color: isActive
+      ? Theme.active.secondary
+      : Theme.active.surface
+
+      Text {
+        id: workspaceText
+        anchors.centerIn: parent
+
+        text: modelData.id
+
+        color: isActive
+        ? Theme.active.background
+        : Theme.active.foreground
+
+        font {
+          family: Typo.family
+          pixelSize: Typo.normal
+          weight: Typo.weight
         }
+      }
+
+      MouseArea {
+        anchors.fill: parent
+        onClicked: modelData.activate()
+      }
     }
+  }
 }
