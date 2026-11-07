@@ -5,22 +5,24 @@ import QtQuick.Layouts
 import qs.themes
 
 Row {
-  Layout.fillHeight: true
+  id: root
+
+  Layout.alignment: Qt.AlignVCenter
+
   spacing: Sizes.spacing
 
   Repeater {
     model: Hyprland.workspaces.values
 
     Rectangle {
+      id: workspace
+
       required property var modelData
 
-      property bool isActive:
-      Hyprland.focusedWorkspace?.id === modelData.id
+      readonly property bool isActive: modelData.focused
 
       implicitWidth: workspaceText.implicitWidth + 12
-      height: Sizes.barItemSize
-
-      anchors.verticalCenter: parent.verticalCenter
+      implicitHeight: Sizes.itemSize
 
       radius: Sizes.radius
 
@@ -32,9 +34,9 @@ Row {
         id: workspaceText
         anchors.centerIn: parent
 
-        text: modelData.id
+        text: workspace.modelData.id
 
-        color: isActive
+        color: workspace.isActive
         ? Theme.active.background
         : Theme.active.foreground
 
@@ -47,7 +49,8 @@ Row {
 
       MouseArea {
         anchors.fill: parent
-        onClicked: modelData.activate()
+        cursorShape: Qt.PointingHandCursor
+        onClicked: workspace.modelData.activate()
       }
     }
   }

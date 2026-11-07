@@ -3,7 +3,7 @@ pragma Singleton
 import Quickshell
 
 Singleton {
-    readonly property string family: "JetBrainsMono Nerd Font"
+    readonly property string family: "FiraCode Nerd Font"
 
     readonly property int small: 11
     readonly property int normal: 14

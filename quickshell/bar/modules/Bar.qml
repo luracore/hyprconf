@@ -11,16 +11,31 @@ PanelWindow {
   implicitHeight: Sizes.barHeight
   color: Theme.active.background
 
-  RowLayout {
+  Item {
     anchors.fill: parent
-    anchors.leftMargin: Sizes.barPadding
-    anchors.rightMargin: Sizes.barPadding
-    spacing: 0
 
-    Workspaces {Layout.alignment: Qt.AlignVCenter}
-    Item {Layout.fillWidth: true}
-    Workspaces {Layout.alignment: Qt.AlignVCenter}
-    Item {Layout.fillWidth: true}
-    Workspaces {Layout.alignment: Qt.AlignVCenter}
+    RowLayout {
+      anchors.left: parent.left
+      anchors.leftMargin: Sizes.barPadding
+      anchors.verticalCenter: parent.verticalCenter
+      spacing: Sizes.spacing
+
+      Workspaces {}
+    }
+
+    Clock {
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.verticalCenter: parent.verticalCenter
+    }
+
+    RowLayout {
+      anchors.right: parent.right
+      anchors.rightMargin: Sizes.barPadding
+      anchors.verticalCenter: parent.verticalCenter
+      spacing: Sizes.spacing
+
+      Ram {}
+      Cpu {}
+    }
   }
 }
