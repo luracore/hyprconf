@@ -2,56 +2,60 @@ import Quickshell
 import Quickshell.Hyprland
 import QtQuick
 import QtQuick.Layouts
-import qs.themes
+
+import "../config/Sizes.js" as Sizes
+import "../config/Typo.js" as Typo
+import qs.config
 
 Row {
-  id: root
+    id: root
 
-  Layout.alignment: Qt.AlignVCenter
+    Layout.alignment: Qt.AlignVCenter
 
-  spacing: Sizes.spacing
+    spacing: Sizes.spacing.normal
 
-  Repeater {
-    model: Hyprland.workspaces.values
+    Repeater {
+        model: Hyprland.workspaces.values
 
-    Rectangle {
-      id: workspace
+        Rectangle {
+            id: workspace
 
-      required property var modelData
+            required property var modelData
 
-      readonly property bool isActive: modelData.focused
+            readonly property bool isActive: modelData.focused
 
-      implicitWidth: workspaceText.implicitWidth + 12
-      implicitHeight: Sizes.itemSize
+            implicitWidth: workspaceText.implicitWidth + 12
+            implicitHeight: Sizes.item.size
 
-      radius: Sizes.radius
+            radius: Sizes.radius.normal
 
-      color: isActive
-      ? Theme.active.secondary
-      : Theme.active.surface
+            color: isActive
+                ? Theme.colors.secondary
+                : Theme.colors.surface
 
-      Text {
-        id: workspaceText
-        anchors.centerIn: parent
+            Text {
+                id: workspaceText
 
-        text: workspace.modelData.id
+                anchors.centerIn: parent
 
-        color: workspace.isActive
-        ? Theme.active.background
-        : Theme.active.foreground
+                text: workspace.modelData.id
 
-        font {
-          family: Typo.family
-          pixelSize: Typo.normal
-          weight: Typo.weight
+                color: workspace.isActive
+                    ? Theme.colors.background
+                    : Theme.colors.foreground
+
+                font {
+                    family: Typo.family.default
+                    pixelSize: Typo.size.normal
+                    weight: Typo.weight.medium
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: workspace.modelData.activate()
+            }
         }
-      }
-
-      MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        onClicked: workspace.modelData.activate()
-      }
     }
-  }
 }

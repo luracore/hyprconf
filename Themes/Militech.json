@@ -1,0 +1,15 @@
+{
+    "background": "#10151B",
+    "surface": "#1C2630",
+    "foreground": "#DCE5ED",
+    "border": "#354657",
+
+    "primary": "#4D91C9",
+    "secondary": "#D47742",
+    "tertiary": "#A8B7C5",
+
+    "error": "#E05252",
+    "warning": "#E6A344",
+    "success": "#83A982",
+    "info": "#65A9D8"
+}

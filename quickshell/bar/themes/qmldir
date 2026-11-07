@@ -1,4 +1,0 @@
-module qs.themes
-singleton Theme 1.0 Theme.qml
-singleton Sizes 1.0 Sizes.qml
-singleton Typo 1.0 Typo.qml

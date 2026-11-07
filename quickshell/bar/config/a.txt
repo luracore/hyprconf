@@ -1,0 +1,2 @@
+ln -sfn Arasaka.json ~/hyprconf/Themes/current
+qs -p ~/hyprconf/quickshell/bar/shell.qml ipc call theme reloadTheme
