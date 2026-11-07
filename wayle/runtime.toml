@@ -55,6 +55,7 @@ format = "%a %d %H:%M"
 [modules.dashboard]
 border-color = "blue"
 icon-bg-color = "blue"
+right-click = "kitty"
 dropdown-logout-command = "hyprctl dispatch 'hl.dsp.exit()'"
 
 [modules.hyprland-workspaces]

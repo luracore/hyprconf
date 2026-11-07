@@ -1,99 +1,50 @@
 # Hyprconf
 
-Configurações pessoais do meu ambiente Arch Linux + Hyprland.
+Configurações pessoais do meu ambiente **Arch Linux + Hyprland (Wayland)**.
+
+## Estrutura
+
+```text
+hyprconf/
+├── install.sh                # instala dependências e cria os links
+├── hypr/
+│   ├── hyprland.lua          # carrega config/*.lua
+│   ├── hypridle.conf
+│   ├── hyprlock.conf
+│   └── config/
+│       ├── animations.lua
+│       ├── appearance.lua
+│       ├── binds.lua
+│       ├── input.lua
+│       ├── layout.lua
+│       ├── monitor.lua
+│       ├── startup.lua
+│       └── window-rules.lua
+├── foot/
+├── quickshell/               # programas em quickshell
+├── Wallpapers/               # imagens + current (symlink)
+```
 
 ## Dependências
 
 ```bash
-sudo pacman -S kitty hyprland \
-    hyprpolkitagent hyprlock hypridle hyprshot \
-    wl-clipboard power-profiles-daemon \
-    ttf-jetbrains-mono-nerd starship \
-    dolphin kio-admin ark \
-    quickshell awww imagemagick \
-    networkmanager bluez bluez-utils blueman
+sudo pacman -S --needed \
+  hyprland hyprlock hypridle hyprshot hyprlauncher hyprpolkitagent \
+  xdg-desktop-portal-hyprland \
+  foot dolphin ark kio-admin \
+  quickshell awww imagemagick \
+  pipewire-pulse wireplumber playerctl \
+  ddcutil \
+  opencode \
+  networkmanager bluez bluez-utils \
+  git
 ```
 
 ## Instalação
-
-## Clonar repositório
-
-Clonar o repositório diretamente na HOME:
 
 ```bash
 cd ~
 git clone https://github.com/luracore/hyprconf
 cd hyprconf
-```
-
-## Configuração
-
-Criar o diretório de configuração e os links simbólicos:
-
-```bash
-mkdir -p ~/.config
-
-ln -s ~/hyprconf/hypr ~/.config/hypr
-ln -s ~/hyprconf/kitty ~/.config/kitty
-mv ~/.config/wayle ~/.config/wayle.default
-ln -s ~/hyprconf/wayle ~/.config/wayle
-ln -s ~/hyprconf/starship.toml ~/.config/starship.toml
-```
-
-Após isso, as configurações ficam versionadas em `~/hyprconf`, enquanto os programas continuam acessando os arquivos através de `~/.config`.
-
-## Atalhos
-
-### Aplicações
-
-| Atalho | Ação |
-|---|---|
-| `SUPER + W` | Abrir terminal |
-| `SUPER + E` | Abrir gerenciador de arquivos |
-| `SUPER + SPACE` | Abrir launcher |
-| `SUPER + M` | Abrir seletor de wallpapers |
-| `SUPER + P` | Bloquear tela |
-| `SUPER + SHIFT + P` | Sair do Hyprland |
-| `SUPER + S` | Screenshot da janela |
-| `SUPER + SHIFT + S` | Screenshot de região |
-
-### Janelas
-
-| Atalho | Ação |
-|---|---|
-| `SUPER + Q` | Fechar janela |
-| `SUPER + A` | Alternar split |
-| `SUPER + F` | Alternar maximização |
-| `SUPER + SHIFT + F` | Alternar fullscreen |
-
-### Navegação
-
-| Atalho | Ação |
-|---|---|
-| `SUPER + H` | Foco para esquerda |
-| `SUPER + L` | Foco para direita |
-| `SUPER + K` | Foco para cima |
-| `SUPER + J` | Foco para baixo |
-| `SUPER + SHIFT + H` | Mover janela para esquerda |
-| `SUPER + SHIFT + L` | Mover janela para direita |
-| `SUPER + SHIFT + K` | Mover janela para cima |
-| `SUPER + SHIFT + J` | Mover janela para baixo |
-
-### Workspaces
-
-| Atalho | Ação |
-|---|---|
-| `SUPER + 1–9` | Ir para workspace |
-| `SUPER + SHIFT + 1–9` | Mover janela para workspace |
-
-## Configurações adicionais
-
-### Ativar serviços:
-
-```bash
-echo 'eval "$(starship init bash)"' >> ~/.bashrc
-sudo systemctl enable --now NetworkManager
-sudo systemctl enable --now bluetooth
-sudo systemctl enable --now power-profiles-daemon.service
-wpctl settings --save bluetooth.autoswitch-to-headset-profile false
+./install.sh
 ```
