@@ -14,6 +14,11 @@ RowLayout {
 
     spacing: Sizes.spacing.normal
 
+    function openMenu(item, x, y) {
+        const position = item.mapToItem(null, x, y)
+        item.modelData.display(QsWindow.window, position.x, position.y)
+    }
+
     Repeater {
         model: SystemTray.items
 
@@ -55,12 +60,14 @@ RowLayout {
 
                 onClicked: event => {
                     if (event.button === Qt.LeftButton) {
-                        item.modelData.activate()
+                        if (item.modelData.onlyMenu && item.modelData.hasMenu)
+                            root.openMenu(item, event.x, event.y)
+                        else
+                            item.modelData.activate()
                     } else if (event.button === Qt.MiddleButton) {
                         item.modelData.secondaryActivate()
                     } else if (event.button === Qt.RightButton && item.modelData.hasMenu) {
-                        const position = item.mapToItem(null, event.x, event.y)
-                        item.modelData.display(QsWindow.window, position.x, position.y)
+                        root.openMenu(item, event.x, event.y)
                     }
 
                     event.accepted = true
