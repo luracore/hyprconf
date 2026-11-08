@@ -38,10 +38,10 @@ Row {
 
                 anchors.centerIn: parent
 
-                text: workspace.modelData.id
+                text: workspace.modelData.name || workspace.modelData.id
 
                 color: workspace.isActive
-                    ? Theme.colors.background
+                    ? Theme.colors["on-accent"]
                     : Theme.colors.foreground
 
                 font {

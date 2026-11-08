@@ -8,6 +8,8 @@
     "secondary": "#D47742",
     "tertiary": "#A8B7C5",
 
+    "on-accent": "#10151B",
+
     "error": "#E05252",
     "warning": "#E6A344",
     "success": "#83A982",
