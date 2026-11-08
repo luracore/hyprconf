@@ -175,7 +175,7 @@ Rectangle {
             Text {
                 Layout.alignment: Qt.AlignHCenter
 
-                text: Qt.formatDate(clock.date, "dddd, MMMM d, yyyy")
+                text: clock.date.toLocaleDateString(Qt.locale(), Locale.LongFormat)
                 color: root.mutedColor
 
                 font {
