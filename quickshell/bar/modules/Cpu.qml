@@ -14,6 +14,9 @@ Text {
     property real lastCpuTotal: -1
 
     Layout.alignment: Qt.AlignVCenter
+    Layout.preferredWidth: cpuMetrics.width
+
+    horizontalAlignment: Text.AlignRight
 
     text: "CPU " + Math.round(cpuUsage) + "%"
 
@@ -27,6 +30,13 @@ Text {
         family: Typo.family.default
         pixelSize: Typo.size.normal
         weight: Typo.weight.medium
+    }
+
+    TextMetrics {
+        id: cpuMetrics
+
+        font: root.font
+        text: "CPU 100%"
     }
 
     Process {

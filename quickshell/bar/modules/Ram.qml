@@ -12,6 +12,9 @@ Text {
     property real ramUsage: 0
 
     Layout.alignment: Qt.AlignVCenter
+    Layout.preferredWidth: ramMetrics.width
+
+    horizontalAlignment: Text.AlignRight
 
     text: "RAM " + Math.round(ramUsage) + "%"
 
@@ -25,6 +28,13 @@ Text {
         family: Typo.family.default
         pixelSize: Typo.size.normal
         weight: Typo.weight.medium
+    }
+
+    TextMetrics {
+        id: ramMetrics
+
+        font: root.font
+        text: "RAM 100%"
     }
 
     Process {
