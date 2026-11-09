@@ -9,6 +9,11 @@ Singleton {
 
     readonly property string themePath: Quickshell.shellPath("../../Themes/current")
 
+    // Destino atual do symlink Themes/current. O FileView sozinho não percebe a
+    // troca do symlink (o inotify fica no arquivo antigo), então comparamos o
+    // destino periodicamente e recarregamos quando ele muda.
+    property string linkTarget: ""
+
     // Paleta neutra usada até o tema carregar (e caso ele falhe), para que
     // nenhum widget receba cores undefined durante a inicialização.
     readonly property var fallback: ({
@@ -55,6 +60,38 @@ Singleton {
 
     // Mescla com a paleta de fallback para que temas incompletos continuem válidos.
     property var colors: Object.assign({}, root.fallback, root.themeData)
+
+    Process {
+        id: linkProcess
+
+        command: ["readlink", "-f", root.themePath]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const target = text.trim()
+
+                if (target.length === 0 || target === root.linkTarget)
+                    return
+
+                const previous = root.linkTarget
+                root.linkTarget = target
+
+                if (previous.length > 0)
+                    root.reload()
+            }
+        }
+    }
+
+    Timer {
+        interval: 1000
+        running: true
+        repeat: true
+
+        onTriggered: {
+            if (!linkProcess.running)
+                linkProcess.running = true
+        }
+    }
 
     function reload(): void {
         fileView.reload()
