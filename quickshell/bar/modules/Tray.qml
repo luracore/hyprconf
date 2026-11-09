@@ -14,9 +14,15 @@ RowLayout {
 
     spacing: Sizes.spacing.normal
 
-    function openMenu(item, x, y) {
-        const position = item.mapToItem(null, x, y)
-        item.modelData.display(QsWindow.window, position.x, position.y)
+    function openMenu(item) {
+        if (!item.modelData.hasMenu)
+            return
+
+        menu.open(item.modelData.menu, item)
+    }
+
+    TrayMenu {
+        id: menu
     }
 
     Repeater {
@@ -61,13 +67,13 @@ RowLayout {
                 onClicked: event => {
                     if (event.button === Qt.LeftButton) {
                         if (item.modelData.onlyMenu && item.modelData.hasMenu)
-                            root.openMenu(item, event.x, event.y)
+                            root.openMenu(item)
                         else
                             item.modelData.activate()
                     } else if (event.button === Qt.MiddleButton) {
                         item.modelData.secondaryActivate()
-                    } else if (event.button === Qt.RightButton && item.modelData.hasMenu) {
-                        root.openMenu(item, event.x, event.y)
+                    } else if (event.button === Qt.RightButton) {
+                        root.openMenu(item)
                     }
 
                     event.accepted = true
