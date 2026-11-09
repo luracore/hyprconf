@@ -10,6 +10,8 @@ import qs.config
 Text {
     id: root
 
+    property int grabAttempts: 0
+
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
@@ -26,6 +28,8 @@ Text {
     }
 
     function toggleCalendar() {
+        grabAttempts = 0
+
         if (popup.visible) {
             popup.visible = false
         } else {
@@ -72,7 +76,21 @@ Text {
 
         windows: [popup]
         active: popup.visible
+
         onCleared: popup.visible = false
+    }
+
+    // O grab só consegue registrar a superfície depois que o popup é mapeado.
+    // Se a primeira tentativa falhar, reativa até o compositor confirmar.
+    Timer {
+        interval: 50
+        repeat: true
+        running: popup.visible && !focusGrab.active && root.grabAttempts < 20
+        onTriggered: {
+            root.grabAttempts += 1
+            focusGrab.active = false
+            focusGrab.active = true
+        }
     }
 
     IpcHandler {

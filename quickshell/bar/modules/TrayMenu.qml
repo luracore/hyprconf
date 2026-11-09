@@ -14,6 +14,7 @@ PopupWindow {
     property var rootMenu: null
     property var currentMenu: null
     property var menuStack: []
+    property int grabAttempts: 0
 
     function open(menu, item) {
         if (!menu)
@@ -52,6 +53,8 @@ PopupWindow {
     }
 
     onVisibleChanged: {
+        grabAttempts = 0
+
         if (!visible) {
             currentMenu = null
             rootMenu = null
@@ -93,6 +96,19 @@ PopupWindow {
         active: root.visible
 
         onCleared: root.close()
+    }
+
+    // O grab só consegue registrar a superfície depois que o popup é mapeado.
+    // Se a primeira tentativa falhar, reativa até o compositor confirmar.
+    Timer {
+        interval: 50
+        repeat: true
+        running: root.visible && !grab.active && root.grabAttempts < 20
+        onTriggered: {
+            root.grabAttempts += 1
+            grab.active = false
+            grab.active = true
+        }
     }
 
     Rectangle {
