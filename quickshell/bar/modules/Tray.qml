@@ -7,12 +7,22 @@ import QtQuick.Layouts
 import "../config/Sizes.js" as Sizes
 import qs.config
 
-RowLayout {
+// grupo do tray: container "surface" com os ícones
+Rectangle {
     id: root
 
-    Layout.alignment: Qt.AlignVCenter
+    readonly property int pad: Sizes.module.groupPadding
+    readonly property int cell: Sizes.module.height - 2 * pad
 
-    spacing: Sizes.spacing.normal
+    Layout.alignment: Qt.AlignVCenter
+    visible: SystemTray.items.values.length > 0
+    implicitHeight: Sizes.module.height
+    implicitWidth: row.implicitWidth + 2 * pad
+
+    radius: Sizes.module.radius
+    color: Theme.colors.surface
+    border.width: 1
+    border.color: Theme.colors.primary
 
     function openMenu(item) {
         if (!item.modelData.hasMenu)
@@ -25,6 +35,11 @@ RowLayout {
         id: menu
     }
 
+    Row {
+        id: row
+        anchors.centerIn: parent
+        spacing: root.pad
+
     Repeater {
         model: SystemTray.items
 
@@ -33,17 +48,15 @@ RowLayout {
 
             required property var modelData
 
-            implicitWidth: Sizes.item.size
-            implicitHeight: Sizes.item.size
-
-            Layout.alignment: Qt.AlignVCenter
+            implicitWidth: root.cell
+            implicitHeight: root.cell
 
             Rectangle {
                 anchors.fill: parent
-                radius: Sizes.radius.normal
+                radius: Math.max(0, Sizes.module.radius - 1)
 
                 color: mouseArea.containsMouse
-                    ? Theme.colors.surface
+                    ? Theme.hover
                     : "transparent"
             }
 
@@ -80,5 +93,6 @@ RowLayout {
                 }
             }
         }
+    }
     }
 }

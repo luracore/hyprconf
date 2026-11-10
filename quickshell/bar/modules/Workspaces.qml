@@ -7,54 +7,67 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-Row {
+// grupo de workspaces: um container "surface" com quadrados dentro
+Rectangle {
     id: root
 
+    property string accent: "secondary"
+    readonly property color accentColor: Theme.colors[accent] ?? Theme.colors.secondary
+    readonly property color onAccentColor:
+        Theme.colors["on" + accent.charAt(0).toUpperCase() + accent.slice(1)] ?? Theme.colors.background
+
+    readonly property int pad: Sizes.module.groupPadding
+    readonly property int cell: Sizes.module.height - 2 * pad
+
     Layout.alignment: Qt.AlignVCenter
+    implicitHeight: Sizes.module.height
+    implicitWidth: row.implicitWidth + 2 * pad
 
-    spacing: Sizes.spacing.normal
+    radius: Sizes.module.radius
+    color: Theme.colors.surface
 
-    Repeater {
-        model: Hyprland.workspaces.values
+    Row {
+        id: row
+        anchors.centerIn: parent
+        spacing: root.pad
 
-        Rectangle {
-            id: workspace
+        Repeater {
+            // sem workspaces especiais (id negativo)
+            model: Hyprland.workspaces.values.filter(w => w.id > 0)
 
-            required property var modelData
+            Rectangle {
+                id: workspace
 
-            readonly property bool isActive: modelData.focused
+                required property var modelData
+                readonly property bool isActive: modelData.focused
 
-            implicitWidth: workspaceText.implicitWidth + 12
-            implicitHeight: Sizes.item.size
+                implicitWidth: Math.max(root.cell, workspaceText.implicitWidth + 12)
+                implicitHeight: root.cell
+                radius: Math.max(0, Sizes.module.radius - 1)
 
-            radius: Sizes.radius.normal
+                color: isActive ? root.accentColor
+                     : mouse.containsMouse ? Qt.alpha(root.accentColor, 0.2)
+                     : "transparent"
 
-            color: isActive
-                ? Theme.colors.secondary
-                : Theme.colors.surface
+                Behavior on color { ColorAnimation { duration: 120 } }
 
-            Text {
-                id: workspaceText
-
-                anchors.centerIn: parent
-
-                text: workspace.modelData.name || workspace.modelData.id
-
-                color: workspace.isActive
-                    ? Theme.colors["on-accent"]
-                    : Theme.colors.foreground
-
-                font {
-                    family: Typo.family.default
-                    pixelSize: Typo.size.normal
-                    weight: Typo.weight.medium
+                Text {
+                    id: workspaceText
+                    anchors.centerIn: parent
+                    text: workspace.modelData.name || workspace.modelData.id
+                    color: workspace.isActive ? root.onAccentColor : Theme.colors.text
+                    font.family: Typo.family
+                    font.pixelSize: Typo.size.normal - 1
+                    font.weight: Typo.weight.semibold
                 }
-            }
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: workspace.modelData.activate()
+                MouseArea {
+                    id: mouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: workspace.modelData.activate()
+                }
             }
         }
     }

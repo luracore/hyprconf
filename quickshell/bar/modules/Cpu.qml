@@ -6,38 +6,20 @@ import QtQuick.Layouts
 import "../config/Typo.js" as Typo
 import qs.config
 
-Text {
+BarButton {
     id: root
 
     property real cpuUsage: 0
     property real lastCpuIdle: -1
     property real lastCpuTotal: -1
 
-    Layout.alignment: Qt.AlignVCenter
-    Layout.preferredWidth: cpuMetrics.width
+    clickable: false
 
-    horizontalAlignment: Text.AlignRight
+    icon: "󰻠"
+    label: Math.round(cpuUsage) + "%"
+    labelTemplate: "100%"
 
-    text: "CPU " + Math.round(cpuUsage) + "%"
-
-    color: cpuUsage < 50
-        ? Theme.colors.success
-        : cpuUsage < 80
-            ? Theme.colors.warning
-            : Theme.colors.error
-
-    font {
-        family: Typo.family.default
-        pixelSize: Typo.size.normal
-        weight: Typo.weight.medium
-    }
-
-    TextMetrics {
-        id: cpuMetrics
-
-        font: root.font
-        text: "CPU 100%"
-    }
+    accent: cpuUsage < 50 ? "primary" : cpuUsage < 80 ? "warning" : "error"
 
     Process {
         id: cpuProcess

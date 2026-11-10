@@ -7,7 +7,7 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-Text {
+BarButton {
     id: root
 
     property int grabAttempts: 0
@@ -17,15 +17,12 @@ Text {
         precision: SystemClock.Minutes
     }
 
-    text: Qt.formatDateTime(clock.date, "HH:mm")
+    icon: "󰃰"
+    label: Qt.formatDateTime(clock.date, "ddd dd  HH:mm")
+    accent: "primary"
+    active: popup.visible
 
-    color: Theme.colors.foreground
-
-    font {
-        family: Typo.family.default
-        pixelSize: Typo.size.normal
-        weight: Typo.weight.medium
-    }
+    onClicked: root.toggleCalendar()
 
     function toggleCalendar() {
         grabAttempts = 0
@@ -36,12 +33,6 @@ Text {
             calendar.reset()
             popup.visible = true
         }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.toggleCalendar()
     }
 
     PopupWindow {
@@ -80,8 +71,6 @@ Text {
         onCleared: popup.visible = false
     }
 
-    // O grab só consegue registrar a superfície depois que o popup é mapeado.
-    // Se a primeira tentativa falhar, reativa até o compositor confirmar.
     Timer {
         interval: 50
         repeat: true

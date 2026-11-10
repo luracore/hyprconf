@@ -1,0 +1,28 @@
+{
+  "neutrals": {
+    "background": "#05182E",
+    "surface": "#0A2540",
+    "outline": "#2A6B78",
+    "text": "#F6DCAC"
+  },
+
+  "palette": {
+    "red": "#F85525",
+    "orange": "#E97B3C",
+    "yellow": "#FAA968",
+    "green": "#8CBFB8",
+    "cyan": "#028391",
+    "blue": "#4F8FBF",
+    "magenta": "#C77D9B"
+  },
+
+  "roles": {
+    "primary": "yellow",
+    "secondary": "cyan",
+    "tertiary": "green",
+    "error": "red",
+    "warning": "orange",
+    "success": "cyan",
+    "info": "green"
+  }
+}

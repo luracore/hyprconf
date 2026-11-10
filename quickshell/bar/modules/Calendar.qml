@@ -13,7 +13,7 @@ Rectangle {
     // Exposto para o Clock pausar a animação quando o popup está fechado.
     property bool active: true
 
-    signal closeRequested()
+    signal closeRequested
 
     property date today: clock.date
     property int monthOffset: 0
@@ -24,7 +24,7 @@ Rectangle {
     readonly property int cellWidth: 40
     readonly property int cellHeight: 34
     readonly property int cellSpacing: 3
-    readonly property color mutedColor: Qt.darker(Theme.colors.foreground, 1.6)
+    readonly property color mutedColor: Theme.colors.muted
 
     implicitWidth: 340
     implicitHeight: layout.implicitHeight + 24
@@ -32,7 +32,7 @@ Rectangle {
     color: Theme.colors.background
     radius: Sizes.radius.normal + 2
     border.width: 1
-    border.color: Theme.colors.border
+    border.color: Theme.colors.outline
 
     SystemClock {
         id: clock
@@ -47,57 +47,53 @@ Rectangle {
     }
 
     function startOfMonth(value) {
-        return new Date(value.getFullYear(), value.getMonth(), 1)
+        return new Date(value.getFullYear(), value.getMonth(), 1);
     }
 
     function addMonths(value, amount) {
-        return new Date(value.getFullYear(), value.getMonth() + amount, 1)
+        return new Date(value.getFullYear(), value.getMonth() + amount, 1);
     }
 
     function sameDay(a, b) {
-        return a !== null
-            && b !== null
-            && a.getFullYear() === b.getFullYear()
-            && a.getMonth() === b.getMonth()
-            && a.getDate() === b.getDate()
+        return a !== null && b !== null && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
     }
 
     function dayAt(index) {
-        const first = startOfMonth(displayedMonth)
-        const start = new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay())
-        return new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)
+        const first = startOfMonth(displayedMonth);
+        const start = new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay());
+        return new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
     }
 
     function capitalize(value) {
-        return value.length > 0 ? value[0].toUpperCase() + value.slice(1) : value
+        return value.length > 0 ? value[0].toUpperCase() + value.slice(1) : value;
     }
 
     function weekdayName(index) {
-        return capitalize(Qt.locale().dayName(index, Locale.ShortFormat).replace(".", ""))
+        return capitalize(Qt.locale().dayName(index, Locale.ShortFormat).replace(".", ""));
     }
 
     function reset() {
-        monthOffset = 0
-        selectedDay = null
+        monthOffset = 0;
+        selectedDay = null;
     }
 
     function previousMonth() {
-        monthOffset -= 1
-        selectedDay = null
+        monthOffset -= 1;
+        selectedDay = null;
     }
 
     function nextMonth() {
-        monthOffset += 1
-        selectedDay = null
+        monthOffset += 1;
+        selectedDay = null;
     }
 
     function goToToday() {
-        monthOffset = 0
-        selectedDay = null
+        monthOffset = 0;
+        selectedDay = null;
     }
 
     function selectDay(value) {
-        selectedDay = sameDay(value, today) ? null : value
+        selectedDay = sameDay(value, today) ? null : value;
     }
 
     ColumnLayout {
@@ -119,10 +115,10 @@ Rectangle {
 
                 Text {
                     text: Qt.formatDateTime(clock.date, "HH")
-                    color: Theme.colors.foreground
+                    color: Theme.colors.text
 
                     font {
-                        family: Typo.family.default
+                        family: Typo.family
                         pixelSize: 42
                         weight: Typo.weight.medium
                     }
@@ -132,10 +128,10 @@ Rectangle {
                     id: colon
 
                     text: ":"
-                    color: Theme.colors.foreground
+                    color: Theme.colors.text
 
                     font {
-                        family: Typo.family.default
+                        family: Typo.family
                         pixelSize: 42
                         weight: Typo.weight.medium
                     }
@@ -162,10 +158,10 @@ Rectangle {
 
                 Text {
                     text: Qt.formatDateTime(clock.date, "mm")
-                    color: Theme.colors.foreground
+                    color: Theme.colors.text
 
                     font {
-                        family: Typo.family.default
+                        family: Typo.family
                         pixelSize: 42
                         weight: Typo.weight.medium
                     }
@@ -179,7 +175,7 @@ Rectangle {
                 color: root.mutedColor
 
                 font {
-                    family: Typo.family.default
+                    family: Typo.family
                     pixelSize: Typo.size.small + 2
                     weight: Typo.weight.medium
                 }
@@ -189,7 +185,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Theme.colors.border
+            color: Theme.colors.outline
         }
 
         // Cabeçalho do calendário
@@ -201,10 +197,10 @@ Rectangle {
                 Layout.fillWidth: true
 
                 text: root.capitalize(Qt.formatDate(root.displayedMonth, "MMMM yyyy"))
-                color: Theme.colors.foreground
+                color: Theme.colors.text
 
                 font {
-                    family: Typo.family.default
+                    family: Typo.family
                     pixelSize: Typo.size.normal + 1
                     weight: Typo.weight.bold
                 }
@@ -215,9 +211,7 @@ Rectangle {
                 implicitHeight: 26
 
                 radius: Sizes.radius.normal
-                color: todayMouse.containsMouse
-                    ? Qt.lighter(Theme.colors.surface, 1.15)
-                    : "transparent"
+                color: todayMouse.containsMouse ? Theme.hover : "transparent"
 
                 Text {
                     id: todayLabel
@@ -227,7 +221,7 @@ Rectangle {
                     color: root.mutedColor
 
                     font {
-                        family: Typo.family.default
+                        family: Typo.family
                         pixelSize: Typo.size.small + 2
                         weight: Typo.weight.medium
                     }
@@ -248,17 +242,15 @@ Rectangle {
                 implicitHeight: 26
 
                 radius: Sizes.radius.normal
-                color: prevMouse.containsMouse
-                    ? Qt.lighter(Theme.colors.surface, 1.15)
-                    : "transparent"
+                color: prevMouse.containsMouse ? Theme.hover : "transparent"
 
                 Text {
                     anchors.centerIn: parent
                     text: "‹"
-                    color: prevMouse.containsMouse ? Theme.colors.foreground : root.mutedColor
+                    color: prevMouse.containsMouse ? Theme.colors.text : root.mutedColor
 
                     font {
-                        family: Typo.family.default
+                        family: Typo.family
                         pixelSize: 20
                         weight: Typo.weight.medium
                     }
@@ -279,17 +271,15 @@ Rectangle {
                 implicitHeight: 26
 
                 radius: Sizes.radius.normal
-                color: nextMouse.containsMouse
-                    ? Qt.lighter(Theme.colors.surface, 1.15)
-                    : "transparent"
+                color: nextMouse.containsMouse ? Theme.hover : "transparent"
 
                 Text {
                     anchors.centerIn: parent
                     text: "›"
-                    color: nextMouse.containsMouse ? Theme.colors.foreground : root.mutedColor
+                    color: nextMouse.containsMouse ? Theme.colors.text : root.mutedColor
 
                     font {
-                        family: Typo.family.default
+                        family: Typo.family
                         pixelSize: 20
                         weight: Typo.weight.medium
                     }
@@ -336,13 +326,11 @@ Rectangle {
                             verticalAlignment: Text.AlignVCenter
 
                             text: root.weekdayName(index)
-                            color: index === 0 || index === 6
-                                ? Theme.colors.secondary
-                                : root.mutedColor
+                            color: index === 0 || index === 6 ? Theme.colors.secondary : root.mutedColor
                             opacity: index === 0 || index === 6 ? 0.85 : 1
 
                             font {
-                                family: Typo.family.default
+                                family: Typo.family
                                 pixelSize: Typo.size.small
                                 weight: 600
                             }
@@ -372,36 +360,20 @@ Rectangle {
                             height: root.cellHeight
                             radius: Sizes.radius.normal
 
-                            color: isToday
-                                ? Theme.colors.primary
-                                : isSelected
-                                    ? Qt.lighter(Theme.colors.surface, 1.5)
-                                    : cellMouse.containsMouse
-                                        ? Qt.lighter(Theme.colors.surface, 1.25)
-                                        : "transparent"
+                            color: isToday ? Theme.colors.primary : isSelected ? Theme.selected : cellMouse.containsMouse ? Theme.hover : "transparent"
 
                             Text {
                                 anchors.centerIn: parent
                                 text: cell.day.getDate()
 
-                                color: cell.isToday
-                                    ? Theme.colors.background
-                                    : !cell.inMonth
-                                        ? Theme.colors.border
-                                        : cell.isSelected
-                                            ? Theme.colors.primary
-                                            : cell.isWeekend
-                                                ? Theme.colors.secondary
-                                                : Theme.colors.foreground
+                                color: cell.isToday ? Theme.colors.onPrimary : !cell.inMonth ? Theme.colors.muted : cell.isSelected ? Theme.colors.primary : cell.isWeekend ? Theme.colors.secondary : Theme.colors.text
 
                                 opacity: cell.inMonth ? 1 : 0.55
 
                                 font {
-                                    family: Typo.family.default
+                                    family: Typo.family
                                     pixelSize: Typo.size.normal
-                                    weight: cell.isToday
-                                        ? Typo.weight.bold
-                                        : Typo.weight.medium
+                                    weight: cell.isToday ? Typo.weight.bold : Typo.weight.medium
                                 }
                             }
 

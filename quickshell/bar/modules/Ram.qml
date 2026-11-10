@@ -6,36 +6,18 @@ import QtQuick.Layouts
 import "../config/Typo.js" as Typo
 import qs.config
 
-Text {
+BarButton {
     id: root
 
     property real ramUsage: 0
 
-    Layout.alignment: Qt.AlignVCenter
-    Layout.preferredWidth: ramMetrics.width
+    clickable: false
 
-    horizontalAlignment: Text.AlignRight
+    icon: "󰍛"
+    label: Math.round(ramUsage) + "%"
+    labelTemplate: "100%"
 
-    text: "RAM " + Math.round(ramUsage) + "%"
-
-    color: ramUsage < 50
-        ? Theme.colors.success
-        : ramUsage < 80
-            ? Theme.colors.warning
-            : Theme.colors.error
-
-    font {
-        family: Typo.family.default
-        pixelSize: Typo.size.normal
-        weight: Typo.weight.medium
-    }
-
-    TextMetrics {
-        id: ramMetrics
-
-        font: root.font
-        text: "RAM 100%"
-    }
+    accent: ramUsage < 50 ? "success" : ramUsage < 80 ? "warning" : "error"
 
     Process {
         id: ramProcess

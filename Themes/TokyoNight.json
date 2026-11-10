@@ -1,0 +1,29 @@
+{
+  "neutrals": {
+    "background": "#1A1B26",
+    "surface": "#24283B",
+    "outline": "#414868",
+    "muted": "#565F89",
+    "text": "#C0CAF5"
+  },
+
+  "palette": {
+    "red": "#F7768E",
+    "orange": "#FF9E64",
+    "yellow": "#E0AF68",
+    "green": "#9ECE6A",
+    "cyan": "#7DCFFF",
+    "blue": "#7AA2F7",
+    "magenta": "#BB9AF7"
+  },
+
+  "roles": {
+    "primary": "blue",
+    "secondary": "magenta",
+    "tertiary": "cyan",
+    "error": "red",
+    "warning": "yellow",
+    "success": "green",
+    "info": "#73DACA"
+  }
+}

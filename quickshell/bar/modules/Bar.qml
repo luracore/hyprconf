@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 
 import "../config/Sizes.js" as Sizes
+import "../config/Typo.js" as Typo
 import qs.config
 
 PanelWindow {
@@ -20,9 +21,10 @@ PanelWindow {
             anchors.left: parent.left
             anchors.leftMargin: Sizes.bar.padding
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Sizes.spacing.normal
+            spacing: Sizes.module.gap
 
             Workspaces {}
+            Cava {}
         }
 
         Clock {
@@ -34,11 +36,23 @@ PanelWindow {
             anchors.right: parent.right
             anchors.rightMargin: Sizes.bar.padding
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Sizes.spacing.normal
+            spacing: Sizes.module.gap
 
             Tray {}
+            Volume {}
+            Brightness {}
             Ram {}
             Cpu {}
+
+            BarButton {
+                icon: notifs.dnd ? "󰂛" : "󰂚"
+                label: notifs.count > 0 ? String(notifs.count) : ""
+                accent: notifs.dnd ? "warning" : "success"
+                active: notifs.centerOpen
+                onClicked: notifs.centerOpen = !notifs.centerOpen
+            }
         }
+
+        Notifications { id: notifs }
     }
 }
