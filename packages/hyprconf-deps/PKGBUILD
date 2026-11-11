@@ -1,0 +1,68 @@
+# Metapacote do hyprconf: não instala arquivos, só depende de tudo que o
+# setup usa. É a lista oficial de dependências.
+#
+# Instalar ou atualizar (o install.sh faz isso):
+#   cd ~/hyprconf/packages/hyprconf-deps && makepkg -si
+#
+# Os pacotes entram como dependência deste metapacote. Quando um deles sai
+# da lista (trocado por outro, por exemplo) e o metapacote é reinstalado, ele
+# vira órfão e aparece como sobra (pacman -Qdt).
+#
+# Só pacotes dos repositórios oficiais: o pacman não instala o AUR.
+
+pkgname=hyprconf-deps
+pkgver=1
+pkgrel=1
+pkgdesc="Dependências do hyprconf (Hyprland + Quickshell)"
+arch=(any)
+url="https://github.com/luracore/hyprconf"
+license=(custom)
+
+depends=(
+    # Hyprland e sessão
+    hyprland hyprlock hypridle hyprshot hyprpolkitagent
+    xdg-desktop-portal-hyprland xdg-utils
+
+    # Quickshell (barra, lançador, seletor) e o que ele usa
+    quickshell
+    awww              # daemon de wallpaper
+    imagemagick       # miniaturas do seletor de wallpaper
+    cava              # visualizador de áudio da barra
+    curl
+    jq                # lista de temas do seletor (themes.sh)
+    nodejs            # Themes/apply-theme.js (e LSPs do Neovim)
+
+    # Terminal e arquivos
+    foot
+    thunar gvfs tumbler thunar-archive-plugin file-roller
+
+    # Tema nos apps GTK e Qt, fonte
+    qt6ct adw-gtk-theme breeze-icons
+    ttf-firacode-nerd
+
+    # Neovim
+    neovim
+    npm unzip         # Mason (instala os LSPs)
+    ripgrep           # busca em arquivos do Telescope
+    tree-sitter-cli gcc   # compilar os parsers do nvim-treesitter
+    clang             # clangd (LSP de C/C++)
+
+    # Áudio
+    pipewire-pulse wireplumber playerctl
+    libpulse          # pactl: perfil/codec do áudio Bluetooth
+
+    # Rede e Bluetooth (painéis da barra)
+    networkmanager
+    network-manager-applet   # agente de senhas (roda escondido)
+    nm-connection-editor     # botão "Avançado" do painel de rede
+    bluez bluez-utils        # bluetoothctl: agente de pareamento
+
+    # Energia e brilho (módulo Sistema e Brilho)
+    upower power-profiles-daemon
+    ddcutil           # brilho de monitor externo (DDC/CI)
+    brightnessctl     # brilho da tela do notebook
+
+    # Outros
+    opencode          # SUPER + A
+    git
+)

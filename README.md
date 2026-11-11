@@ -43,7 +43,9 @@ hyprconf/
 ├── Wallpapers/               # imagens + current (symlink) + thumbnails/ (gerado)
 ├── foot/                     # foot.ini (cores vêm do tema)
 ├── nvim/                     # config do Neovim (colorscheme segue o tema)
-└── Thunar/                   # ações do menu de contexto (uca.xml)
+├── Thunar/                   # ações do menu de contexto (uca.xml)
+└── packages/
+    └── hyprconf-deps/        # metapacote: a lista de dependências do setup
 ```
 
 O repositório precisa ficar em `~/hyprconf`: vários caminhos (atalhos,
@@ -51,52 +53,31 @@ startup, seletor) apontam para lá.
 
 ## Dependências
 
-O `install.sh` **não** instala pacotes (ele só avisa o que falta). Instale as
-dependências antes, com o sistema atualizado (as configs assumem a versão mais
-recente de cada pacote). Todos estão nos repositórios oficiais:
+A lista oficial é o metapacote
+[`packages/hyprconf-deps/PKGBUILD`](packages/hyprconf-deps/PKGBUILD): um
+pacote vazio que depende de tudo que o setup usa, com um comentário dizendo
+para que serve cada um. Todos estão nos repositórios oficiais. O
+`install.sh` instala o metapacote (e, com ele, o que faltar); para fazer à
+mão:
 
 ```bash
-sudo pacman -Syu --needed \
-  hyprland hyprlock hypridle hyprshot hyprpolkitagent \
-  xdg-desktop-portal-hyprland xdg-utils \
-  quickshell awww imagemagick cava curl jq nodejs \
-  foot thunar gvfs tumbler thunar-archive-plugin file-roller \
-  qt6ct adw-gtk-theme breeze-icons ttf-firacode-nerd \
-  neovim npm ripgrep tree-sitter-cli gcc unzip clang \
-  pipewire-pulse wireplumber playerctl \
-  networkmanager network-manager-applet nm-connection-editor \
-  bluez bluez-utils libpulse \
-  upower power-profiles-daemon \
-  ddcutil brightnessctl \
-  opencode \
-  git
+cd ~/hyprconf/packages/hyprconf-deps
+makepkg -si --clean
 ```
 
-Para que servem as menos óbvias:
+Os pacotes do setup ficam registrados como **dependência** do metapacote, não
+como instalados por você. Quando um deles sai da lista (trocado por outro, por
+exemplo) e o metapacote é reinstalado, ele vira órfão e aparece como sobra:
 
-| Pacote | Usado por |
-| --- | --- |
-| `awww` | daemon de wallpaper |
-| `imagemagick` | miniaturas do seletor de wallpaper |
-| `jq` | lista de temas do seletor (`themes.sh`) |
-| `nodejs` | `Themes/apply-theme.js` e servidores de linguagem do Neovim |
-| `cava` | visualizador de áudio na barra |
-| `qt6ct`, `adw-gtk-theme`, `breeze-icons` | tema nos apps Qt e GTK |
-| `ttf-firacode-nerd` | fonte (com ícones) da barra, do foot e do Neovim |
-| `gvfs`, `tumbler` | lixeira, pendrives, `admin://` e miniaturas no Thunar |
-| `nm-connection-editor` | botão "Avançado" do painel de rede (VPN, casos raros) |
-| `network-manager-applet` | agente de senhas do NetworkManager (roda escondido; o ícone fica fora da bandeja) |
-| `bluez-utils` | `bluetoothctl`, usado como agente de pareamento do Bluetooth |
-| `libpulse` | `pactl`, para trocar o perfil/codec do áudio Bluetooth |
-| `ddcutil` | brilho de monitor externo (DDC/CI) |
-| `brightnessctl` | brilho da tela do notebook |
-| `upower`, `power-profiles-daemon` | bateria e perfis de energia (notebook) |
-| `npm`, `unzip` | Mason (instala os LSPs do Neovim) |
-| `ripgrep` | busca em arquivos do Telescope (`<leader>fg`) |
-| `tree-sitter-cli`, `gcc` | compilar os parsers do nvim-treesitter |
-| `clang` | `clangd` (LSP de C/C++) |
+```bash
+pacman -Qdt                      # lista o que sobrou
+sudo pacman -Rns $(pacman -Qdtq) # remove
+```
 
-Opcional: `dart` para o LSP de Dart.
+Os programas que você instala por conta própria continuam como "instalados
+por você" e nunca aparecem como sobra.
+
+Opcional: `dart`, para o LSP de Dart no Neovim.
 
 ## Instalação
 
@@ -109,8 +90,9 @@ cd hyprconf
 
 O `install.sh`:
 
-1. confere se o repositório está em `~/hyprconf` e avisa se falta algum
-   pacote (inclusive a fonte);
+1. confere se o repositório está em `~/hyprconf` e instala o metapacote
+   `hyprconf-deps` (pede `sudo`); os pacotes do setup que estavam como
+   "instalados por você" passam a ser dependência dele;
 2. cria os links em `~/.config` (`hypr`, `foot`, `nvim`, `Thunar/uca.xml`).
    Uma pasta que já existia vira `nome.bak`;
 3. define o Thunar como gerenciador de arquivos padrão e adiciona o atalho

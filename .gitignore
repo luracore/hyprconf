@@ -6,3 +6,8 @@
 
 # tema ativo: escolha local (o install.sh sorteia um se faltar)
 /Themes/current
+
+# arquivos gerados pelo makepkg nos metapacotes
+/packages/*/pkg/
+/packages/*/src/
+/packages/*/*.pkg.tar.*

@@ -18,41 +18,29 @@ if [[ "$REPO_DIR" != "$HOME/hyprconf" ]]; then
   exit 1
 fi
 
-echo "==> Conferindo as dependências"
+echo "==> Instalando as dependências (metapacote hyprconf-deps)"
 
-# comando -> pacote (só avisa; a lista completa está no README)
-declare -A DEPS=(
-  [hyprctl]=hyprland [hyprlock]=hyprlock [hypridle]=hypridle
-  [quickshell]=quickshell [awww]=awww [magick]=imagemagick [jq]=jq
-  [node]=nodejs [foot]=foot [nvim]=neovim [thunar]=thunar
-  [qt6ct]=qt6ct [cava]=cava [ddcutil]=ddcutil [playerctl]=playerctl
-  [brightnessctl]=brightnessctl
-  [wpctl]=wireplumber [xdg-mime]=xdg-utils [gsettings]=glib2
-  [nmcli]=networkmanager [nm-applet]=network-manager-applet
-  [nm-connection-editor]=nm-connection-editor
-  [bluetoothctl]=bluez-utils [pactl]=libpulse
-  [upower]=upower [powerprofilesctl]=power-profiles-daemon
-)
+# O metapacote depende de tudo que o setup usa (packages/hyprconf-deps/PKGBUILD).
+# O makepkg instala o que falta (como dependência) e depois o metapacote.
+DEPS_DIR="$REPO_DIR/packages/hyprconf-deps"
 
-missing=()
-for cmd in "${!DEPS[@]}"; do
-  command -v "$cmd" >/dev/null || missing+=("${DEPS[$cmd]}")
-done
-
-if [[ ! -d /usr/share/themes/adw-gtk3-dark ]]; then
-  missing+=(adw-gtk-theme)
+if ! pacman -Qq base-devel >/dev/null 2>&1; then
+  echo "    o makepkg precisa do base-devel"
+  sudo pacman -S --needed base-devel
 fi
 
-if ! fc-list 2>/dev/null | grep -qi "FiraCode Nerd Font"; then
-  missing+=(ttf-firacode-nerd)
-fi
+(cd "$DEPS_DIR" && makepkg -si --clean) &&
+  rm -f "$DEPS_DIR"/*.pkg.tar.*
 
-if (( ${#missing[@]} > 0 )); then
-  echo "    aviso: faltam pacotes: ${missing[*]}" >&2
-  echo "    instale com: sudo pacman -S --needed ${missing[*]}" >&2
-  echo "    (o resto da instalação continua, mas essas partes não vão funcionar)" >&2
-else
-  echo "    tudo instalado"
+# Pacotes do setup que estavam instalados como "explícitos" passam a ser
+# dependências do metapacote: se um dia saírem da lista, viram órfãos e
+# aparecem como sobra (pacman -Qdt), em vez de ficarem esquecidos.
+mapfile -t deps < <(cd "$DEPS_DIR" && bash -c 'source PKGBUILD; printf "%s\n" "${depends[@]}"')
+mapfile -t explicit < <(pacman -Qqe "${deps[@]}" 2>/dev/null)
+
+if (( ${#explicit[@]} > 0 )); then
+  echo "    marcando ${#explicit[@]} pacote(s) do setup como dependência do metapacote"
+  sudo pacman -D --asdeps "${explicit[@]}" >/dev/null
 fi
 
 echo "==> Criando links simbólicos em $CONFIG_DIR"
