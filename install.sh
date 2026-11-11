@@ -77,6 +77,7 @@ link_config hypr
 link_config foot
 link_config nvim
 link_config Thunar/uca.xml
+link_config pacman/makepkg.conf
 
 echo "==> Configurando o Thunar"
 

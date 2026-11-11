@@ -44,6 +44,7 @@ hyprconf/
 ├── foot/                     # foot.ini (cores vêm do tema)
 ├── nvim/                     # config do Neovim (colorscheme segue o tema)
 ├── Thunar/                   # ações do menu de contexto (uca.xml)
+├── pacman/                   # makepkg.conf do usuário (sem pacotes -debug)
 └── packages/
     └── hyprconf-deps/        # metapacote: a lista de dependências do setup
 ```
@@ -93,7 +94,8 @@ O `install.sh`:
 1. confere se o repositório está em `~/hyprconf` e instala o metapacote
    `hyprconf-deps` (pede `sudo`); os pacotes do setup que estavam como
    "instalados por você" passam a ser dependência dele;
-2. cria os links em `~/.config` (`hypr`, `foot`, `nvim`, `Thunar/uca.xml`).
+2. cria os links em `~/.config` (`hypr`, `foot`, `nvim`, `Thunar/uca.xml`,
+   `pacman/makepkg.conf`).
    Uma pasta que já existia vira `nome.bak`;
 3. define o Thunar como gerenciador de arquivos padrão e adiciona o atalho
    `admin:///etc` no painel lateral;
