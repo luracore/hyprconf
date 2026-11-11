@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
+# Lista os wallpapers como "caminho<TAB>miniatura", gerando miniaturas 16:9
+# (960x540, jpg) em Wallpapers/thumbnails quando faltam ou estão velhas.
 
 WALLPAPER_DIR="$HOME/hyprconf/Wallpapers"
-THUMB_DIR="$HOME/hyprconf/Wallpapers/thumbnails"
+THUMB_DIR="$WALLPAPER_DIR/thumbnails"
 
 mkdir -p "$THUMB_DIR"
 
-find "$THUMB_DIR" -maxdepth 1 -type f -name '*.png' -print0 |
+# Remove miniaturas órfãs e as do formato antigo (quadradas, *.png).
+find "$THUMB_DIR" -maxdepth 1 -type f -print0 |
 while IFS= read -r -d '' thumb; do
-    name="$(basename "$thumb" .png)"
-    wallpaper="$WALLPAPER_DIR/$name"
+    file="$(basename "$thumb")"
 
-    if [[ ! -f "$wallpaper" ]]; then
+    if [[ "$file" != *.jpg || ! -f "$WALLPAPER_DIR/${file%.jpg}" ]]; then
         rm -f -- "$thumb"
     fi
 done
@@ -18,16 +20,16 @@ done
 find "$WALLPAPER_DIR" -maxdepth 1 -type f \
     \( -iname '*.jpg' -o -iname '*.jpeg' \
        -o -iname '*.png' -o -iname '*.webp' \) \
-    -print0 |
+    -print0 | sort -z |
 while IFS= read -r -d '' file; do
-    name="$(basename "$file")"
-    thumb="$THUMB_DIR/$name.png"
+    thumb="$THUMB_DIR/$(basename "$file").jpg"
 
     if [[ ! -s "$thumb" || "$file" -nt "$thumb" ]]; then
-        magick "$file" \
-            -thumbnail '280x280^' \
+        magick -quiet "$file" \
+            -thumbnail '960x540^' \
             -gravity center \
-            -extent 280x280 \
+            -extent 960x540 \
+            -quality 88 \
             "$thumb" || continue
     fi
 
