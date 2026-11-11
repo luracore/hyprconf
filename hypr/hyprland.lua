@@ -1,3 +1,4 @@
+require("./config/env")
 require("./config/startup")
 require("./config/monitor")
 require("./config/appearance")

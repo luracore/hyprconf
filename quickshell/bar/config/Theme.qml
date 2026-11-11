@@ -16,22 +16,6 @@ Singleton {
   // destino periodicamente e recarregamos quando ele muda.
   property string linkTarget: ""
 
-  // Tema usado para as cores obrigatórias que faltarem (ou se o arquivo falhar).
-  readonly property var fallback: ({
-    "neutrals": {
-      "background": "#1F1F28",
-      "text": "#DCD7BA"
-    },
-    "palette": {
-      "red": "#E82424",
-      "yellow": "#E6C384",
-      "green": "#98BB6C",
-      "cyan": "#7AA89F",
-      "blue": "#7E9CD8",
-      "magenta": "#957FB8"
-    }
-  })
-
   property FileView fileView: FileView {
     id: fileView
 
@@ -60,9 +44,9 @@ Singleton {
   }
 
   // Tabela plana com neutros, paleta, papéis e on<Nome> calculados.
-  // Veja config/ThemeColors.js.
+  // Veja Themes/ThemeColors.js (symlink em config/).
   readonly property var colors: ThemeColors.resolve(
-    root.themeData, root.fallback, msg => console.warn("Theme:", msg)
+    root.themeData, null, msg => console.warn("Theme:", msg)
   )
 
   // Camadas de interação: sobreposições translúcidas da cor do texto, para
