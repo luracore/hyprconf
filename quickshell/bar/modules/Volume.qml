@@ -1,12 +1,15 @@
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import QtQuick
 
+import "../config/Sizes.js" as Sizes
+
 import qs.config
 
 // Volume da saída padrão (PipeWire)
-// clique: mudo · scroll: ±5%
+// clique: painel de áudio · clique do meio: mudo · scroll: ±5%
 BarButton {
     id: root
 
@@ -29,8 +32,12 @@ BarButton {
     labelTemplate: "100%"
     accent: muted ? "error" : "tertiary"
 
+    active: popup.visible
+
     onClicked: m => {
         if (m.button === Qt.LeftButton)
+            root.togglePanel();
+        else if (m.button === Qt.MiddleButton)
             root.toggleMute();
     }
     onScrolled: steps => root.setVolume(volume + steps * step)
@@ -47,12 +54,68 @@ BarButton {
             sink.audio.muted = !sink.audio.muted;
     }
 
-    // qs ipc call volume up|down|mute|set 50
+    property int grabAttempts: 0
+
+    function togglePanel() {
+        grabAttempts = 0;
+        popup.visible = !popup.visible;
+    }
+
+    PopupWindow {
+        id: popup
+
+        anchor.item: root
+        anchor.rect.width: root.width
+        anchor.rect.height: root.height
+        anchor.rect.x: (root.width - panel.implicitWidth) / 2
+        anchor.rect.y: Sizes.bar.height - root.y + 6
+        anchor.edges: Edges.Top | Edges.Left
+        anchor.gravity: Edges.Bottom | Edges.Right
+        anchor.adjustment: PopupAdjustment.SlideX | PopupAdjustment.FlipY
+
+        implicitWidth: panel.implicitWidth
+        implicitHeight: panel.implicitHeight
+        color: "transparent"
+
+        visible: false
+
+        AudioPanel {
+            id: panel
+
+            anchors.fill: parent
+            active: popup.visible
+            onCloseRequested: popup.visible = false
+        }
+    }
+
+    // fecha ao clicar fora (mesmo esquema do calendário)
+    HyprlandFocusGrab {
+        id: focusGrab
+
+        windows: [popup]
+        active: popup.visible
+
+        onCleared: popup.visible = false
+    }
+
+    Timer {
+        interval: 50
+        repeat: true
+        running: popup.visible && !focusGrab.active && root.grabAttempts < 20
+        onTriggered: {
+            root.grabAttempts += 1;
+            focusGrab.active = false;
+            focusGrab.active = true;
+        }
+    }
+
+    // qs ipc call volume up|down|mute|set 50|togglePanel
     IpcHandler {
         target: "volume"
         function up(): void { root.setVolume(root.volume + root.step); }
         function down(): void { root.setVolume(root.volume - root.step); }
         function mute(): void { root.toggleMute(); }
         function set(percent: int): void { root.setVolume(percent / 100); }
+        function togglePanel(): void { root.togglePanel(); }
     }
 }
