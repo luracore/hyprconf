@@ -4,7 +4,9 @@
 
 hl.bind("SUPER + RETURN", hl.dsp.exec_cmd("foot"))
 hl.bind("SUPER + E", hl.dsp.exec_cmd("thunar"))
-hl.bind("SUPER + SPACE", hl.dsp.exec_cmd("hyprlauncher"))
+hl.bind("SUPER + SPACE", hl.dsp.exec_cmd(
+  "quickshell ipc --path $HOME/hyprconf/quickshell/launcher call launcher toggle"
+))
 hl.bind("SUPER + M", hl.dsp.exec_cmd(
   "quickshell --path $HOME/hyprconf/quickshell/wallpaper-picker/shell.qml"
 ))
