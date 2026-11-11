@@ -23,3 +23,13 @@ hl.window_rule({
   move = "20 monitor_h-120",
   float = true,
 })
+
+-- Blur atrás da tela de energia (quickshell/bar/modules/PowerMenu.qml)
+
+hl.layer_rule({
+  name = "blur-power-menu",
+  match = {
+    namespace = "^qs-power$",
+  },
+  blur = true,
+})

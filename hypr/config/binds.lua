@@ -16,6 +16,9 @@ hl.bind("SUPER + A", hl.dsp.exec_cmd("foot -e opencode"))
 -- =========================================
 
 hl.bind("SUPER + P", hl.dsp.exec_cmd("hyprlock"))
+hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd(
+  "quickshell ipc --path $HOME/hyprconf/quickshell/bar call power toggle"
+))
 hl.bind("SUPER + SHIFT + Q", hl.dsp.exit())
 
 

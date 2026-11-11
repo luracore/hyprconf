@@ -23,6 +23,7 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             spacing: Sizes.module.gap
 
+            DistroButton { powerMenu: power }
             Workspaces {}
             Cava {}
         }
@@ -54,5 +55,6 @@ PanelWindow {
         }
 
         Notifications { id: notifs }
+        PowerMenu { id: power }
     }
 }
