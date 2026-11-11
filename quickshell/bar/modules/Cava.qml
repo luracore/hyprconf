@@ -8,7 +8,7 @@ import "../config/Sizes.js" as Sizes
 import "../config/ThemeColors.js" as ThemeColors
 import qs.config
 
-// Visualizador de áudio: lê a saída raw do cava (config/cava.conf)
+// Visualizador de áudio: lê a saída raw do cava (cava.conf, na pasta da barra)
 Rectangle {
     id: root
 
@@ -122,7 +122,7 @@ Rectangle {
     Process {
         id: cava
         running: true
-        command: ["cava", "-p", Quickshell.shellPath("config/cava.conf")]
+        command: ["cava", "-p", Quickshell.shellPath("cava.conf")]
 
         stdout: SplitParser {
             onRead: line => {

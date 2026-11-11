@@ -44,7 +44,7 @@ Singleton {
   }
 
   // Tabela plana com neutros, paleta, papéis e on<Nome> calculados.
-  // Veja Themes/ThemeColors.js (symlink em config/).
+  // Veja Themes/ThemeColors.js (symlink em quickshell/common/).
   readonly property var colors: ThemeColors.resolve(
     root.themeData, null, msg => console.warn("Theme:", msg)
   )
