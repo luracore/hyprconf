@@ -63,8 +63,8 @@ Scope {
     IpcHandler {
         target: "notifications"
         function toggle(): void { root.centerOpen = !root.centerOpen; }
-        function show(): void { root.centerOpen = true; }
-        function hide(): void { root.centerOpen = false; }
+        function open(): void { root.centerOpen = true; }
+        function close(): void { root.centerOpen = false; }
         function clear(): void { history.clear(); }
         function toggleDnd(): void { root.dnd = !root.dnd; }
     }
