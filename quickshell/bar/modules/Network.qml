@@ -44,9 +44,7 @@ BarButton {
         : wiredConnected ? "󰈀"
         : wifiDevice && wifiEnabled ? "󰤯"
         : "󰤮"
-    label: activeWifi ? (activeWifi.ssid.length > 14 ? activeWifi.ssid.slice(0, 13) + "…" : activeWifi.ssid)
-        : wiredConnected ? "cabo"
-        : "off"
+    label: ""      // o nome da rede fica no painel
     accent: connectivity === "portal" || connectivity === "limited" ? "warning"
         : activeWifi || wiredConnected ? "info"
         : "error"

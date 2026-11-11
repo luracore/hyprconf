@@ -24,7 +24,9 @@ Rectangle {
     property color labelColor: accentColor
 
     property bool showIcon: icon !== ""
-    property bool showLabel: label !== ""
+    // compacto: só o ícone (a barra liga quando falta espaço)
+    property bool compact: false
+    property bool showLabel: label !== "" && !compact
     property bool bordered: false
     property bool active: false      // destaque (ex. popup aberto)
     property bool clickable: true

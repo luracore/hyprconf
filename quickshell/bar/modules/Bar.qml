@@ -29,11 +29,26 @@ PanelWindow {
         }
 
         Clock {
+            id: clock
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
         }
 
         RowLayout {
+            id: rightRow
+
+            // Os módulos da direita nunca passam por cima do relógio: se não
+            // couberem no espaço até ele, ficam compactos (só ícone).
+            readonly property real space: parent.width / 2 - clock.width / 2
+                                          - Sizes.bar.padding - 2 * Sizes.module.gap
+            property real fullWidth: 0      // largura com os textos (medida fora do modo compacto)
+            readonly property bool compact: fullWidth > space
+
+            onImplicitWidthChanged: {
+                if (!compact)
+                    fullWidth = implicitWidth;
+            }
+
             anchors.right: parent.right
             anchors.rightMargin: Sizes.bar.padding
             anchors.verticalCenter: parent.verticalCenter
@@ -42,12 +57,12 @@ PanelWindow {
             Tray {}
             Network {}
             Bluetooth {}
-            Volume {}
-            Brightness {}
-            Ram {}
-            Cpu {}
+            Volume { compact: rightRow.compact }
+            Brightness { compact: rightRow.compact }
+            System { compact: rightRow.compact }
 
             BarButton {
+                compact: rightRow.compact
                 icon: notifs.dnd ? "󰂛" : "󰂚"
                 label: notifs.count > 0 ? String(notifs.count) : ""
                 accent: notifs.dnd ? "warning" : "success"

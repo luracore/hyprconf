@@ -1,0 +1,255 @@
+import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Io
+import Quickshell.Services.UPower
+import QtQuick
+
+import "../config/Sizes.js" as Sizes
+import qs.config
+
+// Sistema: CPU, RAM, temperatura e bateria num módulo só. A barra mostra o
+// que for mais urgente; o clique abre o painel com tudo e o perfil de energia.
+//
+// Prioridade (do mais urgente):
+//   bateria ≤ 15% descarregando > temperatura ≥ 90 °C > CPU ≥ 85% > RAM ≥ 90%
+//   > temperatura ≥ 80 °C > padrão (bateria no notebook, CPU no PC)
+// Cada alerta só some quando o valor cai um pouco abaixo do limite, para o
+// módulo não ficar pulando entre um e outro.
+BarButton {
+    id: root
+
+    // ---- CPU, RAM e temperatura (lidos a cada 2 s) ------------------------------
+
+    property real cpu: 0               // %
+    property real ram: 0               // %
+    property real ramUsedKiB: 0
+    property real ramTotalKiB: 0
+    property real temp: -1             // °C, -1 = sem sensor
+    property string tempPath: ""       // arquivo do sensor, achado no início
+
+    property real lastIdle: -1
+    property real lastTotal: -1
+
+    function update(text) {
+        const lines = text.split("\n");
+
+        // /proc/stat: "cpu user nice system idle iowait irq softirq steal"
+        const f = lines[0].trim().split(/\s+/);
+        if (f[0] === "cpu" && f.length >= 9) {
+            let total = 0;
+            for (let i = 1; i <= 8; i++)
+                total += Number(f[i]);
+            const idle = Number(f[4]) + Number(f[5]);
+            if (lastTotal >= 0 && total > lastTotal)
+                cpu = 100 * (1 - (idle - lastIdle) / (total - lastTotal));
+            lastTotal = total;
+            lastIdle = idle;
+        }
+
+        // /proc/meminfo
+        const memTotal = Number((text.match(/MemTotal:\s+(\d+)/) || [])[1]);
+        const memAvailable = Number((text.match(/MemAvailable:\s+(\d+)/) || [])[1]);
+        if (memTotal > 0) {
+            ramTotalKiB = memTotal;
+            ramUsedKiB = memTotal - memAvailable;
+            ram = 100 * ramUsedKiB / memTotal;
+        }
+
+        // sensor: última linha, em miligraus
+        if (tempPath !== "") {
+            const last = lines.filter(l => l.trim() !== "").pop();
+            const milli = Number(last);
+            if (!isNaN(milli) && milli > 0)
+                temp = milli / 1000;
+        }
+    }
+
+    CommandRunner { id: commands }
+
+    // acha o sensor da CPU: Intel (coretemp), AMD (k10temp/zenpower), ARM
+    // (cpu_thermal) e, por último, o da placa (acpitz)
+    readonly property string findSensor: [
+        'for want in coretemp k10temp zenpower cpu_thermal acpitz; do',
+        '  for h in /sys/class/hwmon/hwmon*; do',
+        '    [ "$(cat "$h/name" 2>/dev/null)" = "$want" ] || continue',
+        '    for l in "$h"/temp*_label; do',
+        '      case "$(cat "$l" 2>/dev/null)" in',
+        '        "Package id 0"|Tctl|Tdie) echo "${l%_label}_input"; exit 0 ;;',
+        '      esac',
+        '    done',
+        '    [ -e "$h/temp1_input" ] && { echo "$h/temp1_input"; exit 0; }',
+        '  done',
+        'done',
+        'exit 1'
+    ].join("\n")
+
+    Component.onCompleted: {
+        commands.run(["sh", "-c", findSensor], (code, out) => {
+            if (code === 0)
+                tempPath = out.trim();
+        });
+    }
+
+    Timer {
+        interval: 2000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
+            const files = ["/proc/stat", "/proc/meminfo"].concat(root.tempPath ? [root.tempPath] : []);
+            commands.run(["cat"].concat(files), (code, out) => root.update(out));
+        }
+    }
+
+    // ---- bateria (UPower) -------------------------------------------------------
+
+    readonly property var battery: UPower.displayDevice
+    readonly property bool hasBattery: UPower.devices.values.some(d => d.isLaptopBattery)
+    // 0-100 (o UPower do Quickshell dá 0-1)
+    readonly property int batteryPercent: {
+        const p = battery ? battery.percentage : 0;
+        return Math.round(p <= 1 ? p * 100 : p);
+    }
+    readonly property bool charging: battery !== null
+        && (battery.state === UPowerDeviceState.Charging || battery.state === UPowerDeviceState.PendingCharge)
+    readonly property bool full: battery !== null && battery.state === UPowerDeviceState.FullyCharged
+    readonly property bool discharging: hasBattery && !charging && !full && UPower.onBattery
+
+    function batteryIcon() {
+        if (charging)
+            return "󰂄";
+        if (full)
+            return "󰂅";
+        const icons = ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"];
+        return icons[Math.max(0, Math.min(10, Math.round(batteryPercent / 10)))];
+    }
+
+    // "1h 20min", "35min"
+    function duration(seconds) {
+        if (!seconds || seconds <= 0)
+            return "";
+        const h = Math.floor(seconds / 3600);
+        const m = Math.round(seconds % 3600 / 60);
+        return h > 0 ? h + "h " + String(m).padStart(2, "0") + "min" : m + "min";
+    }
+
+    // ---- o que mostrar ------------------------------------------------------------
+
+    // alertas com folga para desligar (histerese)
+    property bool batteryLow: false
+    property bool tempCritical: false
+    property bool cpuHigh: false
+    property bool ramHigh: false
+    property bool tempHigh: false
+
+    onBatteryPercentChanged: batteryLow = discharging && (batteryPercent <= 15 || (batteryLow && batteryPercent <= 18))
+    onDischargingChanged: batteryLow = discharging && batteryPercent <= 15
+    onCpuChanged: cpuHigh = cpu >= 85 || (cpuHigh && cpu >= 75)
+    onRamChanged: ramHigh = ram >= 90 || (ramHigh && ram >= 85)
+    onTempChanged: {
+        tempCritical = temp >= 90 || (tempCritical && temp >= 85);
+        tempHigh = temp >= 80 || (tempHigh && temp >= 75);
+    }
+
+    readonly property string shown: batteryLow ? "battery"
+        : tempCritical ? "temp"
+        : cpuHigh ? "cpu"
+        : ramHigh ? "ram"
+        : tempHigh ? "temp"
+        : hasBattery ? "battery"
+        : "cpu"
+
+    // cor de cada métrica (também usada no painel)
+    function cpuAccent() { return cpu >= 95 ? "error" : cpu >= 85 ? "warning" : "primary"; }
+    function ramAccent() { return ram >= 95 ? "error" : ram >= 90 ? "warning" : "success"; }
+    function tempAccent() { return temp >= 90 ? "error" : temp >= 80 ? "warning" : "info"; }
+    function batteryAccent() {
+        if (charging || full)
+            return "success";
+        return batteryPercent <= 15 ? "error" : batteryPercent <= 30 ? "warning" : "success";
+    }
+
+    icon: shown === "battery" ? batteryIcon()
+        : shown === "temp" ? "󰔏"
+        : shown === "ram" ? "󰍛"
+        : "󰻠"
+    label: shown === "battery" ? batteryPercent + "%"
+        : shown === "temp" ? Math.round(temp) + "°C"
+        : shown === "ram" ? Math.round(ram) + "%"
+        : Math.round(cpu) + "%"
+    labelTemplate: "100%"
+    accent: shown === "battery" ? batteryAccent()
+        : shown === "temp" ? tempAccent()
+        : shown === "ram" ? ramAccent()
+        : cpuAccent()
+    active: popup.visible
+
+    onClicked: m => {
+        if (m.button === Qt.LeftButton)
+            root.togglePanel();
+    }
+
+    // ---- painel -----------------------------------------------------------------
+
+    property int grabAttempts: 0
+
+    function togglePanel() {
+        grabAttempts = 0;
+        popup.visible = !popup.visible;
+    }
+
+    PopupWindow {
+        id: popup
+
+        anchor.item: root
+        anchor.rect.width: root.width
+        anchor.rect.height: root.height
+        anchor.rect.x: (root.width - panel.implicitWidth) / 2
+        anchor.rect.y: Sizes.bar.height - root.y + 6
+        anchor.edges: Edges.Top | Edges.Left
+        anchor.gravity: Edges.Bottom | Edges.Right
+        anchor.adjustment: PopupAdjustment.SlideX | PopupAdjustment.FlipY
+
+        implicitWidth: panel.implicitWidth
+        implicitHeight: panel.implicitHeight
+        color: "transparent"
+
+        visible: false
+
+        SystemPanel {
+            id: panel
+
+            anchors.fill: parent
+            sys: root
+            active: popup.visible
+            onCloseRequested: popup.visible = false
+        }
+    }
+
+    // qs ipc call system togglePanel
+    IpcHandler {
+        target: "system"
+        function togglePanel(): void { root.togglePanel(); }
+    }
+
+    // fecha ao clicar fora (mesmo esquema do calendário)
+    HyprlandFocusGrab {
+        id: focusGrab
+
+        windows: [popup]
+        active: popup.visible
+
+        onCleared: popup.visible = false
+    }
+
+    Timer {
+        interval: 50
+        repeat: true
+        running: popup.visible && !focusGrab.active && root.grabAttempts < 20
+        onTriggered: {
+            root.grabAttempts += 1;
+            focusGrab.active = false;
+            focusGrab.active = true;
+        }
+    }
+}

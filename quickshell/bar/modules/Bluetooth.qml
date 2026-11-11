@@ -62,14 +62,7 @@ BarButton {
     visible: adapter !== null
 
     icon: !powered ? "󰂲" : connectedDevices.length > 0 ? "󰂱" : "󰂯"
-    label: {
-        if (!powered || connectedDevices.length === 0)
-            return "";
-        if (connectedDevices.length > 1)
-            return connectedDevices.length + " disp.";
-        const name = deviceName(connectedDevices[0]);
-        return name.length > 14 ? name.slice(0, 13) + "…" : name;
-    }
+    label: ""      // o nome do dispositivo fica no painel
     accent: "secondary"
     active: popup.visible
 

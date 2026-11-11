@@ -26,10 +26,12 @@ declare -A DEPS=(
   [quickshell]=quickshell [awww]=awww [magick]=imagemagick [jq]=jq
   [node]=nodejs [foot]=foot [nvim]=neovim [thunar]=thunar
   [qt6ct]=qt6ct [cava]=cava [ddcutil]=ddcutil [playerctl]=playerctl
+  [brightnessctl]=brightnessctl
   [wpctl]=wireplumber [xdg-mime]=xdg-utils [gsettings]=glib2
   [nmcli]=networkmanager [nm-applet]=network-manager-applet
   [nm-connection-editor]=nm-connection-editor
   [bluetoothctl]=bluez-utils [pactl]=libpulse
+  [upower]=upower [powerprofilesctl]=power-profiles-daemon
 )
 
 missing=()
@@ -164,6 +166,7 @@ enable_service() {
 
 enable_service NetworkManager.service
 enable_service bluetooth.service
+enable_service power-profiles-daemon.service
 
 echo "==> Ajustando o perfil de áudio do Bluetooth"
 

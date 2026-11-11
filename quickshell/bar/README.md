@@ -28,7 +28,8 @@ bar/
     ├── Network.qml (+ NetworkPanel.qml)
     ├── Bluetooth.qml (+ BluetoothPanel.qml)
     ├── Volume.qml (+ AudioPanel.qml)
-    ├── Brightness.qml, Ram.qml, Cpu.qml
+    ├── System.qml (+ SystemPanel.qml)     # CPU, RAM, temperatura, bateria, perfil
+    ├── Brightness.qml        # backlight (brightnessctl) ou DDC/CI (ddcutil)
     ├── Notifications.qml
     │
     ├── PowerMenu.qml         # tela de energia (tela cheia, SUPER + SHIFT + P)
@@ -41,12 +42,16 @@ bar/
 
 ## Padrões
 
-**Módulo com painel** (Volume, Network, Bluetooth, Clock): o módulo é um
+**Módulo com painel** (Volume, Network, Bluetooth, System, Clock): o módulo é um
 `BarButton` que guarda o estado e as ações; o painel (`*Panel.qml`) só
 desenha, recebendo o módulo numa propriedade (`net`, `bt`). O painel abre num
 `PopupWindow` ancorado no botão, e um `HyprlandFocusGrab` fecha ao clicar
 fora (com um `Timer` que tenta de novo, porque o grab às vezes falha na
 primeira tentativa).
+
+**Modo compacto:** o `Bar.qml` mede o espaço da direita até o relógio; se os
+módulos não couberem, liga `compact` nos `BarButton`, que escondem o texto e
+ficam só com o ícone.
 
 **Comandos externos:** `CommandRunner.run(args, callback)` roda com
 `LC_ALL=C`, para a saída não depender do idioma do sistema.
@@ -74,6 +79,7 @@ quickshell ipc --path ~/hyprconf/quickshell/bar call <alvo> <função> [args]
 | `bluetooth` | `togglePanel` |
 | `volume` | `togglePanel`, `up`, `down`, `mute`, `set <0-100>` |
 | `brightness` | `up`, `down`, `set <0-100>` |
+| `system` | `togglePanel` |
 | `notifications` | `toggle`, `open`, `close`, `clear`, `toggleDnd` |
 | `bar` | `toggleCalendar`, `nextMonth`, `previousMonth`, `selectOffset <dias>` |
 | `theme` | `reloadTheme` |

@@ -66,7 +66,8 @@ sudo pacman -Syu --needed \
   pipewire-pulse wireplumber playerctl \
   networkmanager network-manager-applet nm-connection-editor \
   bluez bluez-utils libpulse \
-  ddcutil \
+  upower power-profiles-daemon \
+  ddcutil brightnessctl \
   opencode \
   git
 ```
@@ -87,7 +88,9 @@ Para que servem as menos óbvias:
 | `network-manager-applet` | agente de senhas do NetworkManager (roda escondido; o ícone fica fora da bandeja) |
 | `bluez-utils` | `bluetoothctl`, usado como agente de pareamento do Bluetooth |
 | `libpulse` | `pactl`, para trocar o perfil/codec do áudio Bluetooth |
-| `ddcutil` | brilho do monitor externo (DDC/CI) |
+| `ddcutil` | brilho de monitor externo (DDC/CI) |
+| `brightnessctl` | brilho da tela do notebook |
+| `upower`, `power-profiles-daemon` | bateria e perfis de energia (notebook) |
 | `npm`, `unzip` | Mason (instala os LSPs do Neovim) |
 | `ripgrep` | busca em arquivos do Telescope (`<leader>fg`) |
 | `tree-sitter-cli`, `gcc` | compilar os parsers do nvim-treesitter |
@@ -113,7 +116,7 @@ O `install.sh`:
 3. define o Thunar como gerenciador de arquivos padrão e adiciona o atalho
    `admin:///etc` no painel lateral;
 4. sorteia um tema e um wallpaper, se ainda não houver, e aplica o tema;
-5. ativa o NetworkManager e o Bluetooth (pede `sudo`);
+5. ativa o NetworkManager, o Bluetooth e o power-profiles-daemon (pede `sudo`);
 6. desliga a troca automática do fone Bluetooth para o modo headset (que
    derruba a qualidade do som); para usar o microfone do fone, escolha o
    modo "Microfone" no painel de Bluetooth;
@@ -154,11 +157,11 @@ Depois:
 | Visualizador | barras do áudio tocando (cava), na cor da capa do que está tocando |
 | Relógio | clique abre o calendário |
 | Bandeja | esquerdo: abre o app; direito: menu; meio: ação secundária |
-| Rede | clique abre o painel de rede (ver abaixo) |
-| Bluetooth | clique abre o painel de Bluetooth (ver abaixo) |
+| Rede | ícone do cabo ou do sinal do Wi-Fi; clique abre o painel de rede (ver abaixo) |
+| Bluetooth | ícone do estado; clique abre o painel de Bluetooth (ver abaixo) |
 | Volume | clique abre o painel de áudio (volume e dispositivo de saída/entrada); clique do meio: mudo; scroll: ±5% |
-| Brilho | scroll: ±5%; clique relê o valor do monitor; teclas de brilho: ±10% |
-| RAM / CPU | uso atual |
+| Brilho | tela do notebook ou monitor externo (detecta sozinho); scroll: ±5%; teclas de brilho: ±10%; clique relê o valor |
+| Sistema | mostra o mais urgente entre bateria, CPU, RAM e temperatura; clique abre o painel Sistema (ver abaixo) |
 | Notificações | clique abre a central (não perturbe, limpar) |
 
 ### Painel de rede
@@ -191,6 +194,28 @@ testada só com dados simulados.
 
 O agente de pareamento é um `bluetoothctl --agent` rodando pela barra; o
 perfil do áudio é trocado com `pactl`.
+
+Quando os módulos da direita não cabem até o relógio (tela menor, muitos
+ícones na bandeja), eles ficam compactos, só com o ícone, em vez de passar por
+cima dele.
+
+### Módulo e painel Sistema
+
+Na barra, o módulo mostra o que for mais urgente, nesta ordem:
+
+1. bateria em 15% ou menos, descarregando;
+2. temperatura da CPU em 90 °C ou mais;
+3. CPU em 85% ou mais;
+4. RAM em 90% ou mais;
+5. temperatura da CPU em 80 °C ou mais;
+6. sem alertas: a bateria no notebook, a CPU no PC.
+
+Um alerta só sai quando o valor cai um pouco abaixo do limite, para o módulo
+não ficar pulando. O painel mostra a bateria (no notebook: carga, tempo até
+acabar ou encher, consumo e saúde, quando o notebook informa), CPU, memória,
+temperatura da CPU e o perfil de energia (Economia, Equilibrado, Desempenho).
+Os perfis vêm do power-profiles-daemon, que não convive com o TLP. A
+temperatura é lida direto do kernel (`coretemp` na Intel, `k10temp` na AMD).
 
 ### Tela de energia (`SUPER + SHIFT + P`)
 
