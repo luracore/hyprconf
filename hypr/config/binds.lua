@@ -116,7 +116,7 @@ hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tr
 hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
 
 -- Brilho do monitor (DDC/CI, requer ddcutil)
--- Sem "repeating": cada acionamento do ddcutil leva ~0.5s e não convém
--- disparar vários processos concorrentes no barramento i2c.
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("ddcutil setvcp 10 + 10"), { locked = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("ddcutil setvcp 10 - 10"), { locked = true })
+-- Passa pela barra (módulo Brightness), que mostra o valor na hora e grava
+-- no monitor com debounce, sem disparar vários ddcutil no barramento i2c.
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("quickshell ipc --path $HOME/hyprconf/quickshell/bar call brightness up"),   { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("quickshell ipc --path $HOME/hyprconf/quickshell/bar call brightness down"), { locked = true, repeating = true })

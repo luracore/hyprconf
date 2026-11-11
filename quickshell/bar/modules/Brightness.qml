@@ -5,7 +5,7 @@ import QtQuick
 import qs.config
 
 // Brilho do monitor externo via DDC/CI (ddcutil)
-// scroll: ±5% · clique: relê o valor do monitor
+// scroll: ±5% · atalhos (IPC up/down): ±10% · clique: relê o valor do monitor
 BarButton {
     id: root
 
@@ -13,7 +13,8 @@ BarButton {
     property int brightness: -1    // 0-100, -1 = desconhecido
     property int maxValue: 100
     property int target: -1        // valor pendente para gravar
-    readonly property int step: 5
+    readonly property int step: 5        // scroll
+    readonly property int keyStep: 10    // atalhos do Hyprland (IPC up/down)
 
     visible: bus !== ""
 
@@ -103,8 +104,8 @@ BarButton {
     // qs ipc call brightness up|down|set 50
     IpcHandler {
         target: "brightness"
-        function up(): void { root.setBrightness(root.brightness + root.step); }
-        function down(): void { root.setBrightness(root.brightness - root.step); }
+        function up(): void { root.setBrightness((root.target >= 0 ? root.target : root.brightness) + root.keyStep); }
+        function down(): void { root.setBrightness((root.target >= 0 ? root.target : root.brightness) - root.keyStep); }
         function set(percent: int): void { root.setBrightness(percent); }
     }
 }
