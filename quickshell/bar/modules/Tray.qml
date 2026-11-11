@@ -11,11 +11,16 @@ import qs.config
 Rectangle {
     id: root
 
+    // nm-applet fica rodando (agente de senhas do NetworkManager), mas o
+    // módulo Network substitui o ícone dele
+    readonly property var hiddenIds: ["nm-applet"]
+    readonly property var items: SystemTray.items.values.filter(i => !hiddenIds.includes(i.id))
+
     readonly property int pad: Sizes.module.groupPadding
     readonly property int cell: Sizes.module.height - 2 * pad
 
     Layout.alignment: Qt.AlignVCenter
-    visible: SystemTray.items.values.length > 0
+    visible: items.length > 0
     implicitHeight: Sizes.module.height
     implicitWidth: row.implicitWidth + 2 * pad
 
@@ -41,7 +46,7 @@ Rectangle {
         spacing: root.pad
 
     Repeater {
-        model: SystemTray.items
+        model: root.items
 
         delegate: Item {
             id: item

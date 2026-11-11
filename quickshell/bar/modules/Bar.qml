@@ -40,6 +40,7 @@ PanelWindow {
             spacing: Sizes.module.gap
 
             Tray {}
+            Network {}
             Volume {}
             Brightness {}
             Ram {}
