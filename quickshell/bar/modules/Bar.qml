@@ -41,6 +41,7 @@ PanelWindow {
 
             Tray {}
             Network {}
+            Bluetooth {}
             Volume {}
             Brightness {}
             Ram {}
