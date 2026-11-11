@@ -232,7 +232,8 @@ ln -sfn TokyoNight.json ~/hyprconf/Themes/current
 ~/hyprconf/Themes/apply-theme.js
 ```
 
-Temas disponíveis: `OsakaJade`, `Retro82`, `TokyoNight`. Para criar um, veja
+Temas disponíveis: `EverforestDark`, `GruvboxDark`, `KanagawaWave`, `OsakaJade`,
+`Retro82` e `TokyoNight`. Para criar um, veja
 [`Themes/README.md`](Themes/README.md).
 
 ### Onde o tema é aplicado
