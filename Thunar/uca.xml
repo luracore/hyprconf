@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ações personalizadas do Thunar (menu de contexto). Ligado pelo install.sh
+     em ~/.config/Thunar/uca.xml. -->
+<actions>
+<action>
+	<icon>utilities-terminal</icon>
+	<name>Abrir terminal aqui</name>
+	<submenu></submenu>
+	<unique-id>hyprconf-open-terminal</unique-id>
+	<command>sh -c 'dir="${1#admin://}"; exec foot --working-directory="$dir"' sh %f</command>
+	<description>Abre o foot nesta pasta (também em pastas admin://)</description>
+	<range></range>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<directories/>
+</action>
+</actions>
