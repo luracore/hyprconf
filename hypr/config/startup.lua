@@ -16,7 +16,6 @@ hl.on("hyprland.start", function()
   ]])
 
   -- Panel
-  --hl.exec_cmd("wayle panel start") vai ser removido
   hl.exec_cmd("quickshell --path $HOME/hyprconf/quickshell/bar")
 
   -- Idle manager
