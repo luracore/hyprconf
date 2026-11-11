@@ -15,6 +15,7 @@ Configurações pessoais do meu ambiente **Arch Linux + Hyprland (Wayland)**.
 - [Atalhos](#atalhos)
 - [Barra](#barra)
 - [Lançador](#lançador-super--space)
+- [Pacotes](#pacotes)
 - [Temas](#temas)
 - [Wallpapers](#wallpapers)
 - [Thunar](#thunar)
@@ -44,6 +45,8 @@ hyprconf/
 ├── foot/                     # foot.ini (cores vêm do tema)
 ├── nvim/                     # config do Neovim (colorscheme segue o tema)
 ├── Thunar/                   # ações do menu de contexto (uca.xml)
+├── apps/                     # apps de terminal do hyprconf (ex.: Pacman)
+├── applications/             # atalhos (.desktop) desses apps, para o lançador
 ├── pacman/                   # makepkg.conf do usuário (sem pacotes -debug)
 └── packages/
     └── hyprconf-deps/        # metapacote: a lista de dependências do setup
@@ -97,14 +100,16 @@ O `install.sh`:
 2. cria os links em `~/.config` (`hypr`, `foot`, `nvim`, `Thunar/uca.xml`,
    `pacman/makepkg.conf`).
    Uma pasta que já existia vira `nome.bak`;
-3. define o Thunar como gerenciador de arquivos padrão e adiciona o atalho
+3. liga os atalhos de `applications/` em `~/.local/share/applications`
+   (é assim que os apps do hyprconf aparecem no lançador);
+4. define o Thunar como gerenciador de arquivos padrão e adiciona o atalho
    `admin:///etc` no painel lateral;
-4. sorteia um tema e um wallpaper, se ainda não houver, e aplica o tema;
-5. ativa o NetworkManager, o Bluetooth e o power-profiles-daemon (pede `sudo`);
-6. desliga a troca automática do fone Bluetooth para o modo headset (que
+5. sorteia um tema e um wallpaper, se ainda não houver, e aplica o tema;
+6. ativa o NetworkManager, o Bluetooth e o power-profiles-daemon (pede `sudo`);
+7. desliga a troca automática do fone Bluetooth para o modo headset (que
    derruba a qualidade do som); para usar o microfone do fone, escolha o
    modo "Microfone" no painel de Bluetooth;
-7. recarrega o Hyprland.
+8. recarrega o Hyprland.
 
 Depois:
 
@@ -228,6 +233,33 @@ no login (independente da barra), e abre por IPC:
 ```bash
 quickshell ipc --path ~/hyprconf/quickshell/launcher call launcher toggle
 ```
+
+## Pacotes
+
+Apps de terminal (fzf) para cuidar dos pacotes, abertos pelo lançador. Eles
+abrem no foot, flutuando, e seguem o tema.
+
+### Pacman
+
+Instala e atualiza pacotes dos repositórios oficiais.
+
+- **Instalar:** todos os pacotes, com `✓` nos instalados e a descrição em
+  português na prévia. `Tab` marca vários; `Enter` instala; `Alt+Enter`
+  instala num **grupo** seu (ver abaixo).
+- **Atualizar** (`Ctrl+U` alterna): lista o que tem atualização (versão atual
+  → nova). `Enter` atualiza o sistema todo: no Arch não se atualiza só uma
+  parte. Antes, mostra as notícias do Arch desde a última atualização (algumas
+  pedem um passo manual); depois, avisa se o kernel mudou (reiniciar), se há
+  configurações `.pacnew` para revisar e se sobraram pacotes órfãos.
+- Prévia: `Alt+P` mostra/esconde, `Alt+J/K` rola.
+
+### Grupos
+
+Um grupo é um metapacote seu (em `~/.local/share/hyprconf/grupos/<nome>/`), do
+qual os pacotes instalados nele passam a ser dependência. Serve para organizar
+e para tirar tudo de uma vez: removendo o grupo, os pacotes dele viram órfãos
+e saem juntos. Para levar um grupo para outro PC, copie a pasta dele e rode
+`yay -Bi .` dentro dela.
 
 ## Temas
 

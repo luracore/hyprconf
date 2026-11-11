@@ -9,6 +9,7 @@
 //   neovim   ~/.local/state/hyprconf/theme/nvim.lua   (o nvim observa e recarrega)
 //   gtk      ~/.local/share/themes/Hyprconf           (tema baseado no adw-gtk3)
 //            + ~/.config/gtk-4.0/gtk.css para apps libadwaita
+//   fzf      ~/.local/state/hyprconf/theme/fzf.opts   (apps de pacotes)
 //   qt       ~/.local/state/hyprconf/theme/qt6ct.conf (paleta do qt6ct)
 //            + cores do KDE em ~/.config/kdeglobals (apps KDE)
 //
@@ -202,6 +203,19 @@ function applyFoot(c) {
             warn(`não foi possível atualizar ${tty}: ${error.message}`);
         }
     }
+}
+
+// ---- fzf (apps de pacotes) -----------------------------------------------------
+
+function applyFzf(c) {
+    // fundo transparente (-1): usa o do terminal, que já segue o tema
+    const lines = [
+        `--color=fg:${c.text},bg:-1,hl:${c.primary},fg+:${c.text},bg+:${c.surface},hl+:${c.primary}`,
+        `--color=info:${c.muted},prompt:${c.primary},pointer:${c.primary},marker:${c.green},spinner:${c.primary}`,
+        `--color=header:${c.muted},border:${c.outline},separator:${c.outline},scrollbar:${c.outline}`,
+        `--color=label:${c.primary},query:${c.text},preview-bg:-1,gutter:-1`,
+    ];
+    write(path.join(STATE, "fzf.opts"), lines.join("\n") + "\n");
 }
 
 // ---- neovim ------------------------------------------------------------------
@@ -430,7 +444,7 @@ function main() {
 
     const colors = ThemeColors.resolve(theme, null, warn);
     let failed = false;
-    for (const [name, step] of [["foot", applyFoot], ["neovim", applyNvim], ["gtk", applyGtk], ["qt", applyQt]]) {
+    for (const [name, step] of [["foot", applyFoot], ["fzf", applyFzf], ["neovim", applyNvim], ["gtk", applyGtk], ["qt", applyQt]]) {
         try {
             step(colors);
         } catch (error) {  // um programa com problema não trava os outros

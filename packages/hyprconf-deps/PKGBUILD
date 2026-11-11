@@ -62,6 +62,10 @@ depends=(
     ddcutil           # brilho de monitor externo (DDC/CI)
     brightnessctl     # brilho da tela do notebook
 
+    # Apps de pacotes (Pacman, AUR, Remover)
+    fzf
+    pacman-contrib    # checkupdates (ver atualizações) e pacdiff (.pacnew)
+
     # Outros
     opencode          # SUPER + A
     git

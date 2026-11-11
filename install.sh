@@ -79,6 +79,14 @@ link_config nvim
 link_config Thunar/uca.xml
 link_config pacman/makepkg.conf
 
+# atalhos dos apps do hyprconf (aparecem no lançador)
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}"
+mkdir -p "$DATA_DIR/applications"
+for desktop in "$REPO_DIR"/applications/*.desktop; do
+  ln -sfn "$desktop" "$DATA_DIR/applications/$(basename -- "$desktop")"
+  echo "    link:   $DATA_DIR/applications/$(basename -- "$desktop")"
+done
+
 echo "==> Configurando o Thunar"
 
 # Thunar como gerenciador de arquivos padrão

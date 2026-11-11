@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Pacman
+GenericName=Instalar e atualizar pacotes
+Comment=Busca, instala e atualiza pacotes dos repositórios oficiais
+Icon=system-software-install
+Exec=sh -c 'exec foot --app-id=hyprconf-pacman --title=Pacman -o colors-dark.alpha=1 "$HOME/hyprconf/apps/hyprconf-pacman"'
+Terminal=false
+Categories=System;PackageManager;
+Keywords=pacote;instalar;atualizar;pacman;package;install;update;

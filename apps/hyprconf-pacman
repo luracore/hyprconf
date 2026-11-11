@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+# Pacman: instalar e atualizar pacotes dos repositórios oficiais.
+#
+#   Instalar   - lista todos os pacotes (✓ = instalado); Tab marca vários,
+#                Enter instala, Alt+Enter instala num grupo seu
+#   Atualizar  - Ctrl+U alterna; mostra o que tem atualização e, com Enter,
+#                atualiza o sistema todo (no Arch não se atualiza só parte)
+#
+# Subcomandos internos (usados pelo fzf): --list, --preview, --toggle
+
+set -uo pipefail
+
+SELF=$(readlink -f "$0")
+source "$(dirname "$SELF")/lib/common.sh"
+
+STATE=${HYPRCONF_PKG_STATE:-}
+
+mode() { cat "$STATE/mode" 2>/dev/null || echo install; }
+
+# ---- listas ---------------------------------------------------------------------
+
+list_install() {
+    LC_ALL=C pacman -Sl | awk -v ok="$C_OK" -v dim="$C_DIM" -v reset="$C_RESET" '{
+        mark = ($4 ~ /installed/) ? ok "✓" reset : " "
+        printf "%-38s %s %s%-22s %-10s%s\n", $2, mark, dim, $3, $1, reset
+    }'
+}
+
+list_update() {
+    # checkupdates usa uma cópia do banco de dados: não mexe no sistema
+    checkupdates 2>/dev/null > "$STATE/updates"
+    if [[ ! -s $STATE/updates ]]; then
+        printf '%s\n' "${C_OK}Tudo atualizado${C_RESET}"
+        return
+    fi
+    awk -v dim="$C_DIM" -v ok="$C_OK" -v reset="$C_RESET" '{
+        printf "%-38s %s%-20s%s → %s%s%s\n", $1, dim, $2, reset, ok, $4, reset
+    }' "$STATE/updates"
+}
+
+# ---- prévia ---------------------------------------------------------------------
+
+# realça os nomes dos campos ("Nome            :") da saída do pacman
+paint() {
+    sed -E "s/^([^ :][^:]*[^ :]) *:/${C_ACCENT}&${C_RESET}/"
+}
+
+preview() {
+    local pkg=$1
+    if [[ $(mode) == update ]]; then
+        [[ $pkg == Tudo ]] && { info "Nenhuma atualização pendente."; return; }
+        local line
+        line=$(grep -m1 "^$pkg " "$STATE/updates" 2>/dev/null)
+        [[ -n $line ]] && printf '%s%s%s  %s → %s%s%s\n\n' \
+            "$C_BOLD" "$pkg" "$C_RESET" "$(cut -d' ' -f2 <<< "$line")" "$C_OK" "$(cut -d' ' -f4 <<< "$line")" "$C_RESET"
+        pacman -Si "$pkg" 2>/dev/null | paint
+    else
+        pacman -Si "$pkg" 2>/dev/null | paint
+        if pacman -Qq "$pkg" >/dev/null 2>&1; then
+            printf '\n%s✓ instalado%s (%s)\n' "$C_OK" "$C_RESET" "$(pacman -Q "$pkg" | cut -d' ' -f2)"
+        fi
+    fi
+}
+
+# ---- troca de modo (Ctrl+U) -------------------------------------------------------
+
+HEADER_INSTALL="Instalar  ·  Tab marca  ·  Enter instala  ·  Alt+Enter instala num grupo  ·  Ctrl+U atualizações"
+HEADER_UPDATE="Atualizações  ·  Enter atualiza tudo  ·  Ctrl+U volta a instalar"
+
+toggle() {
+    if [[ $(mode) == install ]]; then
+        echo update > "$STATE/mode"
+        printf 'change-header(%s)+change-prompt(󰚰  )+reload(%q --list)+first' "$HEADER_UPDATE" "$SELF"
+    else
+        echo install > "$STATE/mode"
+        printf 'change-header(%s)+change-prompt(󰍉  )+reload(%q --list)+first' "$HEADER_INSTALL" "$SELF"
+    fi
+}
+
+# ---- ações -----------------------------------------------------------------------
+
+install_packages() {
+    title "Instalando: $*"
+    sudo pacman -S --needed "$@"
+}
+
+install_in_group() {
+    local group
+    group=$(group_pick) || return
+
+    # já instalados: só entram no grupo (sem passar pelo pacman de novo)
+    local missing=()
+    local pkg
+    for pkg in "$@"; do
+        pacman -Qq "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
+    done
+    if (( ${#missing[@]} > 0 )); then
+        install_packages "${missing[@]}" || return
+    fi
+
+    title "Adicionando ao grupo \"$group\""
+    group_add "$group" "$@" && ok "Pronto: $* no grupo \"$group\"."
+}
+
+# notícias do Arch publicadas depois da última atualização completa
+arch_news() {
+    local last
+    last=$(grep -a 'starting full system upgrade' /var/log/pacman.log 2>/dev/null | tail -1 | grep -oE '^\[[^]]+\]' | tr -d '[]')
+    curl -fsS --max-time 8 https://archlinux.org/feeds/news/ 2>/dev/null |
+        LAST="$last" node -e '
+            let xml = "";
+            process.stdin.on("data", d => xml += d).on("end", () => {
+                const since = process.env.LAST ? new Date(process.env.LAST) : new Date(0);
+                for (const item of xml.split("<item>").slice(1)) {
+                    const get = tag => (item.match(new RegExp("<" + tag + ">([\\s\\S]*?)</" + tag + ">")) || [])[1] || "";
+                    const date = new Date(get("pubDate"));
+                    if (date > since)
+                        console.log(date.toLocaleDateString("pt-BR") + "  " + get("title") + "\n            " + get("link"));
+                }
+            });'
+}
+
+update_system() {
+    title "Notícias do Arch desde a última atualização"
+    local news
+    news=$(arch_news)
+    if [[ -n $news ]]; then
+        warn "$news"
+        printf '\n'
+        info "Algumas notícias pedem um passo manual antes ou depois de atualizar."
+        confirm "Continuar com a atualização?" || return
+    else
+        info "Nenhuma notícia nova."
+    fi
+
+    title "Atualizando o sistema"
+    sudo pacman -Syu || return
+
+    title "Depois da atualização"
+    local nothing=1
+    if [[ ! -d /usr/lib/modules/$(uname -r) ]]; then
+        warn "O kernel foi atualizado: reinicie para usar o novo."
+        nothing=0
+    fi
+    local pacnew
+    pacnew=$(pacdiff -o 2>/dev/null)
+    if [[ -n $pacnew ]]; then
+        warn "Configurações novas para revisar (.pacnew):"
+        printf '  %s\n' $pacnew
+        info "  Para comparar e mesclar: sudo DIFFPROG='nvim -d' pacdiff"
+        nothing=0
+    fi
+    local orphans
+    orphans=$(pacman -Qdtq | wc -l)
+    if (( orphans > 0 )); then
+        warn "$orphans pacote(s) sobrando (órfãos): veja no app Remover."
+        nothing=0
+    fi
+    (( nothing )) && ok "Tudo certo."
+}
+
+# ---- interface --------------------------------------------------------------------
+
+main() {
+    require fzf:fzf checkupdates:pacman-contrib pacdiff:pacman-contrib node:nodejs curl:curl
+
+    STATE=$(mktemp -d)
+    export HYPRCONF_PKG_STATE=$STATE
+    trap 'rm -rf "$STATE"' EXIT
+    echo install > "$STATE/mode"
+
+    local opts
+    mapfile -t opts < <(fzf_base_opts)
+
+    while true; do
+        local header=$HEADER_INSTALL prompt='󰍉  '
+        if [[ $(mode) == update ]]; then
+            header=$HEADER_UPDATE
+            prompt='󰚰  '
+        fi
+
+        local out
+        out=$("$SELF" --list | fzf "${opts[@]}" --multi \
+            --header="$header" --prompt="$prompt" \
+            --expect=enter,alt-enter \
+            --preview="$SELF --preview {1}" \
+            --bind="ctrl-u:transform:$SELF --toggle") || break
+
+        local key
+        key=$(head -1 <<< "$out")
+        local pkgs
+        mapfile -t pkgs < <(tail -n +2 <<< "$out" | awk '{print $1}')
+
+        clear
+        if [[ $(mode) == update ]]; then
+            if [[ -s $STATE/updates ]]; then
+                update_system
+            else
+                ok "Nada para atualizar."
+            fi
+        elif (( ${#pkgs[@]} > 0 )); then
+            if [[ $key == alt-enter ]]; then
+                install_in_group "${pkgs[@]}"
+            else
+                install_packages "${pkgs[@]}"
+            fi
+        fi
+        pause || break
+    done
+}
+
+case "${1:-}" in
+    --list) [[ $(mode) == update ]] && list_update || list_install ;;
+    --preview) preview "$2" ;;
+    --toggle) toggle ;;
+    *) main ;;
+esac
