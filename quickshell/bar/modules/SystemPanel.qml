@@ -38,7 +38,11 @@ Rectangle {
 
     onActiveChanged: {
         if (active)
-            commands.run(["sh", "-c", "command -v powerprofilesctl >/dev/null && powerprofilesctl get"],
+            // pelo D-Bus direto: o powerprofilesctl precisa do python-gobject,
+            // que nem sempre está instalado
+            commands.run(["busctl", "--system", "get-property",
+                          "org.freedesktop.UPower.PowerProfiles", "/org/freedesktop/UPower/PowerProfiles",
+                          "org.freedesktop.UPower.PowerProfiles", "ActiveProfile"],
                          code => root.profilesAvailable = code === 0);
     }
 

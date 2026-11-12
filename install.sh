@@ -111,18 +111,6 @@ done < <(find "$CONFIG_DIR" "$DATA_DIR/applications" -maxdepth 3 -type l -print0
 
 (( removed > 0 )) || echo "    nada para limpar"
 
-# O lançador fica aberto desde o login e só observa pastas que existiam quando
-# iniciou. Se o install rodou depois dele, os atalhos novos não aparecem até
-# reiniciar o lançador; reinicia aqui para valer na hora.
-LAUNCHER_CMD="quickshell --path $REPO_DIR/quickshell/launcher"
-
-if pgrep -f -- "$LAUNCHER_CMD" >/dev/null 2>&1; then
-  pkill -f -- "$LAUNCHER_CMD" || true
-  sleep 0.3
-  setsid quickshell --path "$REPO_DIR/quickshell/launcher" >/dev/null 2>&1 &
-  echo "    lançador reiniciado"
-fi
-
 echo "==> Configurando o Thunar"
 
 # Thunar como gerenciador de arquivos padrão
@@ -223,6 +211,7 @@ fi
 
 echo
 echo "Hyprconf instalado. Próximos passos:"
-echo "  - saia e entre de novo no Hyprland (variáveis de ambiente, como a do qt6ct);"
+echo "  - saia e entre de novo no Hyprland: a barra, o lançador e as variáveis de"
+echo "    ambiente (como a do qt6ct) só pegam tudo o que foi instalado numa sessão nova;"
 echo "  - abra o nvim uma vez: ele baixa os plugins e o Mason instala os LSPs;"
 echo "  - SUPER + SPACE abre o lançador; o app Configurações leva a todo o resto."
