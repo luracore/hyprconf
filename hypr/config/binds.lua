@@ -2,11 +2,12 @@
 -- APPLICATIONS
 -- =========================================
 
--- terminal e explorador: os padrões de ~/hyprconf/defaults.conf
+-- terminal, explorador e navegador: os padrões de ~/hyprconf/defaults.conf
 local run = "$HOME/hyprconf/apps/hyprconf-run"
 
 hl.bind("SUPER + RETURN", hl.dsp.exec_cmd(run .. " terminal"))
 hl.bind("SUPER + E", hl.dsp.exec_cmd(run .. " files"))
+hl.bind("SUPER + B", hl.dsp.exec_cmd(run .. " browser"))
 hl.bind("SUPER + SPACE", hl.dsp.exec_cmd(
   "quickshell ipc --path $HOME/hyprconf/quickshell/launcher call launcher toggle"
 ))
@@ -20,10 +21,10 @@ hl.bind("SUPER + A", hl.dsp.exec_cmd(run .. " terminal -e opencode"))
 -- SYSTEM
 -- =========================================
 
-hl.bind("SUPER + P", hl.dsp.exec_cmd("hyprlock"))
-hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd(
+hl.bind("SUPER + P", hl.dsp.exec_cmd(
   "quickshell ipc --path $HOME/hyprconf/quickshell/bar call power toggle"
 ))
+hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("hyprlock"))
 hl.bind("SUPER + SHIFT + Q", hl.dsp.exit())
 
 

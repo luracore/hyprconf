@@ -15,8 +15,9 @@ git clone https://github.com/luracore/hyprconf ~/hyprconf
 ```
 
 O repositório precisa ficar em `~/hyprconf`. O `install.sh` instala as
-dependências (pede `sudo`), liga as configurações em `~/.config` e aplica um
-tema. Depois, saia e entre de novo no Hyprland.
+dependências (pede `sudo`), oferece instalar os apps sugeridos (navegador,
+explorador e editor, listados em `packages/apps.txt`), liga as configurações
+em `~/.config` e aplica um tema. Depois, saia e entre de novo no Hyprland.
 
 ## Uso
 

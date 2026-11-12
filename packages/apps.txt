@@ -1,0 +1,9 @@
+# Apps sugeridos: os programas do defaults.conf e o que eles usam.
+# O install.sh oferece instalar na primeira instalação (como pacotes
+# explícitos: dá para remover ou trocar depois, pelo app Pacotes).
+#
+# nome | pacotes | para quê
+Firefox  | firefox | navegador (SUPER + B)
+Thunar   | thunar thunar-archive-plugin tumbler file-roller | explorador de arquivos (SUPER + E)
+Neovim   | neovim npm unzip ripgrep tree-sitter-cli gcc clang | editor, com os LSPs e o Telescope (apps de config)
+opencode | opencode | assistente de código no terminal (SUPER + A)

@@ -29,7 +29,9 @@ if ! pacman -Qq base-devel >/dev/null 2>&1; then
   sudo pacman -S --needed base-devel
 fi
 
-(cd "$DEPS_DIR" && makepkg -si --clean) &&
+# -f: compila de novo mesmo se sobrou um pacote de uma vez anterior (sem ele,
+# o makepkg recusa e o metapacote novo não é instalado)
+(cd "$DEPS_DIR" && makepkg -sif --clean) &&
   rm -f "$DEPS_DIR"/*.pkg.tar.*
 
 # Pacotes do setup que estavam instalados como "explícitos" passam a ser
@@ -41,6 +43,57 @@ mapfile -t explicit < <(pacman -Qqe "${deps[@]}" 2>/dev/null)
 if (( ${#explicit[@]} > 0 )); then
   echo "    marcando ${#explicit[@]} pacote(s) do setup como dependência do metapacote"
   sudo pacman -D --asdeps "${explicit[@]}" >/dev/null
+fi
+
+echo "==> Apps sugeridos"
+
+# packages/apps.txt: os programas do defaults.conf (navegador, explorador,
+# editor). Entram como pacotes explícitos, então dá para trocar ou remover
+# depois pelo app Pacotes. A pergunta é feita uma vez só: rodar o install.sh
+# de novo não reinstala o que foi removido.
+APPS_FILE="$REPO_DIR/packages/apps.txt"
+APPS_MARK="$HOME/.local/state/hyprconf/apps-oferecidos"
+mapfile -t apps < <(grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' "$APPS_FILE")
+
+# instalações antigas tinham esses apps no metapacote (como dependência):
+# viram explícitos, senão ficariam sobrando e sairiam na limpeza de órfãos
+mapfile -t app_pkgs < <(printf '%s\n' "${apps[@]}" | cut -d'|' -f2 | tr -s ' ' '\n' | grep -v '^$')
+mapfile -t app_deps < <(pacman -Qqd "${app_pkgs[@]}" 2>/dev/null)
+if (( ${#app_deps[@]} > 0 )); then
+  sudo pacman -D --asexplicit "${app_deps[@]}" >/dev/null
+fi
+
+# só os apps com algum pacote faltando, no formato do fzf:
+# "nome   para quê<TAB>pacotes"
+missing=()
+for app in "${apps[@]}"; do
+  IFS='|' read -r name pkgs desc <<< "$app"
+  read -ra pkg_list <<< "$pkgs"
+  if ! pacman -Qq "${pkg_list[@]}" >/dev/null 2>&1; then
+    missing+=("$(printf '%-10s %s\t%s' "$(echo $name)" "$(echo $desc)" "$(echo $pkgs)")")
+  fi
+done
+
+if [[ -e $APPS_MARK ]]; then
+  echo "    já oferecidos antes (a lista fica em packages/apps.txt)"
+elif (( ${#missing[@]} == 0 )); then
+  echo "    todos já instalados"
+  mkdir -p "$(dirname -- "$APPS_MARK")" && touch "$APPS_MARK"
+elif [[ ! -t 0 ]]; then
+  echo "    sem terminal para perguntar; a lista fica em packages/apps.txt"
+else
+  chosen=$(printf '%s\n' "${missing[@]}" | fzf --multi --bind 'load:select-all' \
+    --delimiter=$'\t' --with-nth=1 --layout=reverse --height=~10 --border=rounded \
+    --no-input --pointer='›' --marker='✓ ' --gutter=' ' --no-info \
+    --border-label=' Apps sugeridos ' \
+    --header='Tab marca ou desmarca · Enter instala os marcados · Esc pula' || true)
+  if [[ -n $chosen ]]; then
+    mapfile -t to_install < <(cut -f2 <<< "$chosen" | tr -s ' ' '\n' | grep -v '^$')
+    sudo pacman -S --needed "${to_install[@]}"
+  else
+    echo "    nenhum app instalado (a lista fica em packages/apps.txt)"
+  fi
+  mkdir -p "$(dirname -- "$APPS_MARK")" && touch "$APPS_MARK"
 fi
 
 echo "==> Criando links simbólicos em $CONFIG_DIR"
@@ -113,8 +166,10 @@ done < <(find "$CONFIG_DIR" "$DATA_DIR/applications" -maxdepth 3 -type l -print0
 
 echo "==> Configurando o Thunar"
 
-# Thunar como gerenciador de arquivos padrão
-if xdg-mime default thunar.desktop inode/directory; then
+# Thunar como gerenciador de arquivos padrão (se ele foi instalado)
+if ! command -v thunar >/dev/null; then
+  echo "    Thunar não instalado; o explorador padrão fica como está"
+elif xdg-mime default thunar.desktop inode/directory; then
   echo "    padrão para pastas: thunar.desktop"
 else
   echo "    aviso: não foi possível definir o Thunar como padrão (xdg-utils instalado?)" >&2

@@ -2,13 +2,17 @@
 # setup usa. É a lista oficial de dependências.
 #
 # Instalar ou atualizar (o install.sh faz isso):
-#   cd ~/hyprconf/packages/hyprconf-deps && makepkg -si
+#   cd ~/hyprconf/packages/hyprconf-deps && makepkg -sif --clean
 #
 # Os pacotes entram como dependência deste metapacote. Quando um deles sai
 # da lista (trocado por outro, por exemplo) e o metapacote é reinstalado, ele
 # vira órfão e aparece como sobra (pacman -Qdt).
 #
 # Só pacotes dos repositórios oficiais: o pacman não instala o AUR.
+#
+# Só o que o setup precisa para funcionar. Os apps que ele sugere (navegador,
+# explorador, editor) ficam em packages/apps.txt: o install.sh oferece
+# instalar na primeira vez, e depois cada um pode trocar ou remover.
 
 pkgname=hyprconf-deps
 pkgver=1
@@ -22,7 +26,7 @@ depends=(
     # Hyprland e sessão
     hyprland hyprlock hypridle hyprshot hyprpolkitagent
     xdg-desktop-portal-hyprland xdg-utils
-    wl-clipboard      # copiar e colar (Neovim, hyprshot)
+    wl-clipboard      # copiar e colar (hyprshot, editores)
     libnotify         # notify-send (avisos dos scripts)
 
     # Quickshell (barra, lançador, seletor) e o que ele usa
@@ -32,47 +36,38 @@ depends=(
     cava              # visualizador de áudio da barra
     curl
     jq                # lista de temas do seletor (themes.sh)
-    nodejs            # Themes/apply-theme.js (e LSPs do Neovim)
+    nodejs            # Themes/apply-theme.js
 
-    # Terminal e arquivos
+    # Terminal (o app Pacotes abre nele) e discos/admin:// para os exploradores
     foot
-    thunar gvfs tumbler thunar-archive-plugin file-roller
+    gvfs
 
-    # Tema nos apps GTK e Qt
-    qt6ct adw-gtk-theme breeze-icons
+    # Tema nos apps GTK e Qt; ícones Papirus (as pastas seguem o tema)
+    qt6ct adw-gtk-theme papirus-icon-theme
 
     # Fontes: a do sistema, emoji e japonês/chinês/coreano (sem elas o texto
     # nessas línguas aparece como quadradinhos)
     ttf-firacode-nerd
     noto-fonts noto-fonts-emoji noto-fonts-cjk
 
-    # Neovim
-    neovim
-    npm unzip         # Mason (instala os LSPs)
-    ripgrep           # busca em arquivos do Telescope
-    tree-sitter-cli gcc   # compilar os parsers do nvim-treesitter
-    clang             # clangd (LSP de C/C++)
-
     # Áudio
     pipewire-pulse wireplumber playerctl
-    libpulse          # pactl: perfil/codec do áudio Bluetooth
+    libpulse          # pactl: apps tocando (cava) e perfil do áudio Bluetooth
 
     # Rede e Bluetooth (painéis da barra)
     networkmanager
-    network-manager-applet   # agente de senhas (roda escondido)
     nm-connection-editor     # botão "Avançado" do painel de rede
     bluez bluez-utils        # bluetoothctl: agente de pareamento
 
     # Energia e brilho (módulo Sistema e Brilho)
     upower power-profiles-daemon
     ddcutil           # brilho de monitor externo (DDC/CI)
+    hyprsunset        # modo noturno (painel de monitores)
     brightnessctl     # brilho da tela do notebook
 
     # Apps de pacotes (Pacman, AUR, Remover)
     fzf
     pacman-contrib    # checkupdates (ver atualizações) e pacdiff (.pacnew)
 
-    # Outros
-    opencode          # SUPER + A
     git
 )
