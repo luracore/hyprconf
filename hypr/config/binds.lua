@@ -15,6 +15,9 @@ hl.bind("SUPER + T", hl.dsp.exec_cmd(
   "quickshell --path $HOME/hyprconf/quickshell/wallpaper-picker/shell.qml"
 ))
 hl.bind("SUPER + A", hl.dsp.exec_cmd(run .. " terminal -e opencode"))
+hl.bind("SUPER + M", hl.dsp.exec_cmd(
+  "quickshell ipc --path $HOME/hyprconf/quickshell/bar call media togglePanel"
+))
 
 
 -- =========================================
