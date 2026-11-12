@@ -111,6 +111,18 @@ done < <(find "$CONFIG_DIR" "$DATA_DIR/applications" -maxdepth 3 -type l -print0
 
 (( removed > 0 )) || echo "    nada para limpar"
 
+# O lançador fica aberto desde o login e só observa pastas que existiam quando
+# iniciou. Se o install rodou depois dele, os atalhos novos não aparecem até
+# reiniciar o lançador; reinicia aqui para valer na hora.
+LAUNCHER_CMD="quickshell --path $REPO_DIR/quickshell/launcher"
+
+if pgrep -f -- "$LAUNCHER_CMD" >/dev/null 2>&1; then
+  pkill -f -- "$LAUNCHER_CMD" || true
+  sleep 0.3
+  setsid quickshell --path "$REPO_DIR/quickshell/launcher" >/dev/null 2>&1 &
+  echo "    lançador reiniciado"
+fi
+
 echo "==> Configurando o Thunar"
 
 # Thunar como gerenciador de arquivos padrão
@@ -187,6 +199,10 @@ enable_service() {
 
 enable_service NetworkManager.service
 enable_service bluetooth.service
+# o upower precisa estar rodando antes da barra: o Quickshell tenta falar com
+# ele ao iniciar e, se o serviço ainda não estiver ativo, desiste de vez (a
+# bateria some do módulo Sistema até reiniciar a barra).
+enable_service upower.service
 enable_service power-profiles-daemon.service
 
 echo "==> Ajustando o perfil de áudio do Bluetooth"
