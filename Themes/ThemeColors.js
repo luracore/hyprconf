@@ -171,8 +171,8 @@ function ensureContrast(fg, bg, ratio, towards) {
 
 // candidates: lista de hex (ex.: saída do ColorQuantizer)
 // theme: Theme.colors (usa surface e text)
-// Retorna a cor mais "viva" ajustada para ser legível no surface,
-// ou fallback se nenhuma cor da imagem servir (capa cinza, preta...).
+// Retorna a cor mais "viva" ajustada para ser legível no surface; numa imagem
+// sem cor viva (capa cinza, preta...), a cor do texto; sem imagem, fallback.
 function accentFromImage(candidates, theme, fallback) {
     let best = null, bestScore = 0
     for (const hex of candidates || []) {
@@ -188,7 +188,9 @@ function accentFromImage(candidates, theme, fallback) {
             bestScore = score
         }
     }
+    // capa sem cor viva (preto e branco, cinza): a cor do texto, que contrasta
+    // com a barra em tema escuro ou claro; sem capa nenhuma, a cor do tema
     if (!best)
-        return fallback
+        return (candidates || []).length > 0 ? theme.text : fallback
     return ensureContrast(best, theme.surface, 3, theme.text)
 }

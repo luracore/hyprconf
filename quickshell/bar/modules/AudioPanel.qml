@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Services.Pipewire
+import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
 
@@ -8,69 +9,149 @@ import "../config/Typo.js" as Typo
 import qs.config
 
 // Painel de áudio (aberto pelo módulo de volume): volume e dispositivo
-// padrão de saída e de entrada.
-Rectangle {
+// padrão de saída e de entrada, e o volume de cada app tocando som.
+PanelSurface {
     id: root
-
-    property bool active: true
-
-    signal closeRequested
 
     readonly property var devices: Pipewire.nodes.values.filter(n => !n.isStream && n.audio !== null)
     readonly property var sinks: devices.filter(n => n.isSink)
     readonly property var sources: devices.filter(n => !n.isSink)
+    // apps mandando som para uma saída (o cava só escuta: fica de fora)
+    readonly property var apps: Pipewire.nodes.values.filter(n => n.isStream && n.isSink && n.audio !== null)
 
     // necessário para o PipeWire expor volume/mudo dos nós
     PwObjectTracker {
-        objects: root.devices
+        objects: root.devices.concat(root.apps)
     }
 
     implicitWidth: 380
-    implicitHeight: layout.implicitHeight + 28
 
-    color: Theme.colors.background
-    radius: Sizes.radius.normal + 2
-    border.width: 1
-    border.color: Theme.colors.outline
-
-    Shortcut {
-        sequence: "Escape"
-        context: Qt.WindowShortcut
-        enabled: root.active
-        onActivated: root.closeRequested()
+    AudioSection {
+        Layout.fillWidth: true
+        title: "SAÍDA"
+        node: Pipewire.defaultAudioSink
+        devices: root.sinks
+        icons: ["󰝟", "󰕿", "󰖀", "󰕾"]
+        emptyText: "Nenhum dispositivo de saída"
+        onSelect: node => Pipewire.preferredDefaultAudioSink = node
     }
 
+    PanelDivider {}
+
+    AudioSection {
+        Layout.fillWidth: true
+        title: "ENTRADA"
+        node: Pipewire.defaultAudioSource
+        devices: root.sources
+        icons: ["󰍭", "󰍬", "󰍬", "󰍬"]
+        emptyText: "Nenhum dispositivo de entrada"
+        onSelect: node => Pipewire.preferredDefaultAudioSource = node
+    }
+
+    PanelDivider {}
+
+    // ---- volume de cada app (o WirePlumber guarda e reaplica depois) ----
+
     ColumnLayout {
-        id: layout
+        Layout.fillWidth: true
+        spacing: 10
 
-        anchors.fill: parent
-        anchors.margins: 14
-        spacing: 14
+        PanelTitle { text: "APLICATIVOS" }
 
-        AudioSection {
-            Layout.fillWidth: true
-            title: "SAÍDA"
-            node: Pipewire.defaultAudioSink
-            devices: root.sinks
-            icons: ["󰝟", "󰕿", "󰖀", "󰕾"]
-            emptyText: "Nenhum dispositivo de saída"
-            onSelect: node => Pipewire.preferredDefaultAudioSink = node
+        Repeater {
+            model: root.apps
+
+            delegate: AppRow {}
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 1
-            color: Qt.alpha(Theme.colors.outline, 0.6)
+        Text {
+            visible: root.apps.length === 0
+            text: "Nenhum app tocando som"
+            color: Theme.colors.muted
+            font.family: Typo.family
+            font.pixelSize: Typo.size.small
+        }
+    }
+
+    // ---- linha de um app: ícone (clique = mudo), nome, slider e volume -------
+
+    component AppRow: RowLayout {
+        id: app
+
+        required property PwNode modelData
+        readonly property var props: modelData.properties ?? {}
+        readonly property string name: props["application.name"] || modelData.description || modelData.name
+        // o que está tocando (título da música ou do vídeo), se for diferente do nome
+        readonly property string media: (props["media.name"] ?? "") !== name ? (props["media.name"] ?? "") : ""
+        readonly property bool ready: modelData.audio !== null
+        readonly property bool muted: ready && modelData.audio.muted
+        readonly property real volume: ready ? modelData.audio.volume : 0
+
+        function iconPath() {
+            const binary = props["application.process.binary"] ?? "";
+            const entry = DesktopEntries.heuristicLookup(name) ?? DesktopEntries.heuristicLookup(binary);
+            for (const icon of [props["application.icon-name"], entry?.icon, binary, name.toLowerCase()]) {
+                if (icon && Quickshell.iconPath(icon, true) !== "")
+                    return Quickshell.iconPath(icon);
+            }
+            return Quickshell.iconPath("audio-x-generic");
         }
 
-        AudioSection {
+        function setVolume(v) {
+            if (!ready)
+                return;
+            modelData.audio.muted = false;
+            modelData.audio.volume = Math.max(0, Math.min(1, v));
+        }
+
+        Layout.fillWidth: true
+        spacing: 12
+
+        IconImage {
+            implicitSize: 28
+            source: app.iconPath()
+            asynchronous: true
+            opacity: app.muted ? 0.35 : 1
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (app.ready)
+                        app.modelData.audio.muted = !app.modelData.audio.muted;
+                }
+            }
+        }
+
+        ColumnLayout {
             Layout.fillWidth: true
-            title: "ENTRADA"
-            node: Pipewire.defaultAudioSource
-            devices: root.sources
-            icons: ["󰍭", "󰍬", "󰍬", "󰍬"]
-            emptyText: "Nenhum dispositivo de entrada"
-            onSelect: node => Pipewire.preferredDefaultAudioSource = node
+            spacing: 4
+
+            Text {
+                Layout.fillWidth: true
+                text: app.media !== "" ? app.name + "  ·  " + app.media : app.name
+                elide: Text.ElideRight
+                color: Theme.colors.text
+                font.family: Typo.family
+                font.pixelSize: Typo.size.small
+            }
+
+            PanelSlider {
+                Layout.fillWidth: true
+                accent: app.muted ? Theme.colors.muted : Theme.colors.tertiary
+                value: app.muted ? 0 : app.volume
+                onMoved: v => app.setVolume(v)
+            }
+        }
+
+        Text {
+            Layout.preferredWidth: 44
+            horizontalAlignment: Text.AlignRight
+            text: !app.ready ? "--" : app.muted ? "mudo" : Math.round(app.volume * 100) + "%"
+            color: Theme.colors.text
+            font.family: Typo.family
+            font.pixelSize: Typo.size.normal - 1
+            font.weight: Typo.weight.semibold
         }
     }
 
@@ -104,23 +185,14 @@ Rectangle {
 
         spacing: 10
 
-        Text {
-            text: section.title
-            color: Theme.colors.muted
-            font.family: Typo.family
-            font.pixelSize: Typo.size.small
-            font.weight: Typo.weight.bold
-            font.letterSpacing: 2
-        }
+        PanelTitle { text: section.title }
 
-        // volume do dispositivo padrão
         RowLayout {
             Layout.fillWidth: true
             spacing: 12
             enabled: section.ready
             opacity: enabled ? 1 : 0.5
 
-            // botão de mudo
             Rectangle {
                 implicitWidth: 34
                 implicitHeight: 34
@@ -151,62 +223,11 @@ Rectangle {
                 }
             }
 
-            // slider
-            Item {
-                id: slider
-
+            PanelSlider {
                 Layout.fillWidth: true
-                implicitHeight: 20
-
-                readonly property real shown: section.muted ? 0 : section.volume
-
-                Rectangle {
-                    id: track
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    height: 6
-                    radius: 3
-                    color: Theme.colors.surface
-
-                    Rectangle {
-                        width: parent.width * slider.shown
-                        height: parent.height
-                        radius: parent.radius
-                        color: section.muted ? Theme.colors.muted : Theme.colors.tertiary
-                    }
-                }
-
-                Rectangle {
-                    x: (slider.width - width) * slider.shown
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 16
-                    height: 16
-                    radius: 8
-                    color: Theme.colors.text
-                    border.width: 3
-                    border.color: section.muted ? Theme.colors.muted : Theme.colors.tertiary
-                    scale: sliderMouse.pressed || sliderMouse.containsMouse ? 1.15 : 1
-                    Behavior on scale { NumberAnimation { duration: 100 } }
-                }
-
-                MouseArea {
-                    id: sliderMouse
-                    anchors.fill: parent
-                    anchors.margins: -6
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-
-                    function update(mouse) {
-                        section.setVolume((mouse.x - 6) / slider.width);
-                    }
-
-                    onPressed: mouse => update(mouse)
-                    onPositionChanged: mouse => {
-                        if (pressed)
-                            update(mouse);
-                    }
-                    onWheel: wheel => section.setVolume(section.volume + (wheel.angleDelta.y > 0 ? 0.05 : -0.05))
-                }
+                accent: section.muted ? Theme.colors.muted : Theme.colors.tertiary
+                value: section.muted ? 0 : section.volume
+                onMoved: v => section.setVolume(v)
             }
 
             Text {
@@ -220,7 +241,6 @@ Rectangle {
             }
         }
 
-        // dispositivos
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 2
