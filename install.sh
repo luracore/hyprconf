@@ -47,6 +47,10 @@ echo "==> Criando links simbólicos em $CONFIG_DIR"
 
 mkdir -p "$CONFIG_DIR"
 
+# Todo link criado entra nesta lista; no fim, os links para o repositório que
+# não estão nela são restos de versões antigas e são apagados.
+CREATED_LINKS=()
+
 link_config() {
   local name="$1"
   local source="$REPO_DIR/$name"
@@ -70,6 +74,7 @@ link_config() {
 
   mkdir -p "$(dirname -- "$dest")"
   ln -sfn "$source" "$dest"
+  CREATED_LINKS+=("$dest")
   echo "    link:   $dest -> $source"
 }
 
@@ -84,8 +89,27 @@ DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}"
 mkdir -p "$DATA_DIR/applications"
 for desktop in "$REPO_DIR"/applications/*.desktop; do
   ln -sfn "$desktop" "$DATA_DIR/applications/$(basename -- "$desktop")"
+  CREATED_LINKS+=("$DATA_DIR/applications/$(basename -- "$desktop")")
   echo "    link:   $DATA_DIR/applications/$(basename -- "$desktop")"
 done
+
+echo "==> Limpando restos de versões antigas"
+
+# Links para dentro do repositório que esta versão não criou: configs que
+# saíram do setup ou arquivos renomeados (eles ficariam quebrados).
+removed=0
+while IFS= read -r -d '' link; do
+  target="$(readlink -- "$link")"
+  [[ "$target" == "$REPO_DIR"/* ]] || continue
+  for created in "${CREATED_LINKS[@]}"; do
+    [[ "$link" == "$created" ]] && continue 2
+  done
+  rm -f -- "$link"
+  echo "    removido: $link -> $target"
+  removed=$((removed + 1))
+done < <(find "$CONFIG_DIR" "$DATA_DIR/applications" -maxdepth 3 -type l -print0 2>/dev/null)
+
+(( removed > 0 )) || echo "    nada para limpar"
 
 echo "==> Configurando o Thunar"
 

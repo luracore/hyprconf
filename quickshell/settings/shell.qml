@@ -25,7 +25,7 @@ PanelWindow {
 
     readonly property string repo: Quickshell.env("HOME") + "/hyprconf"
     readonly property string run: repo + "/apps/hyprconf-run"
-    readonly property int columns: 3
+    readonly property int columns: 5
 
     readonly property var items: [
         { icon: "󰸉", title: "Wallpapers", desc: "imagens de fundo",
@@ -45,7 +45,9 @@ PanelWindow {
         { icon: "󰃣", title: "Aparência", desc: "bordas e espaços",
           cmd: [run, "editor", repo + "/hypr/config/appearance.lua"] },
         { icon: "󰐥", title: "Inicialização", desc: "o que abre com o Hyprland",
-          cmd: [run, "editor", repo + "/hypr/config/startup.lua"] }
+          cmd: [run, "editor", repo + "/hypr/config/startup.lua"] },
+        { icon: "󰚰", title: "Atualizar", desc: "a versão nova do setup",
+          cmd: ["sh", "-c", "exec foot --app-id=hyprconf-atualizar --title=Atualizar -o colors-dark.alpha=1 sh -c '\"$HOME/hyprconf/update.sh\"; echo; echo Enter fecha; read x'"] }
     ]
 
     property int selected: 0

@@ -24,3 +24,5 @@ tema. Depois, saia e entre de novo no Hyprland.
 - O app **Configurações** (no lançador) leva a tudo que dá para mudar:
   wallpapers, temas, atalhos, programas padrão, pacotes, monitores, aparência
   e o que abre com o Hyprland.
+- Para atualizar, use **Atualizar** no app Configurações (ou rode
+  `~/hyprconf/update.sh`). Wallpapers e tema escolhido continuam como estão.
