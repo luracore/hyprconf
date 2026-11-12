@@ -22,6 +22,8 @@ depends=(
     # Hyprland e sessão
     hyprland hyprlock hypridle hyprshot hyprpolkitagent
     xdg-desktop-portal-hyprland xdg-utils
+    wl-clipboard      # copiar e colar (Neovim, hyprshot)
+    libnotify         # notify-send (avisos dos scripts)
 
     # Quickshell (barra, lançador, seletor) e o que ele usa
     quickshell
@@ -36,9 +38,13 @@ depends=(
     foot
     thunar gvfs tumbler thunar-archive-plugin file-roller
 
-    # Tema nos apps GTK e Qt, fonte
+    # Tema nos apps GTK e Qt
     qt6ct adw-gtk-theme breeze-icons
+
+    # Fontes: a do sistema, emoji e japonês/chinês/coreano (sem elas o texto
+    # nessas línguas aparece como quadradinhos)
     ttf-firacode-nerd
+    noto-fonts noto-fonts-emoji noto-fonts-cjk
 
     # Neovim
     neovim
