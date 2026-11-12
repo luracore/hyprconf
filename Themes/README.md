@@ -4,7 +4,7 @@ Cada `.json` desta pasta é um tema. `current` é um symlink para o tema ativo.
 
 ## Trocar
 
-Pelo seletor (`SUPER + M`, `j/k` escolhem o tema) ou pela linha de comando:
+Pelo seletor (`SUPER + T`, `j/k` escolhem o tema) ou pela linha de comando:
 
 ```bash
 ln -sfn TokyoNight.json ~/hyprconf/Themes/current
