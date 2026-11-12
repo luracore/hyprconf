@@ -330,19 +330,44 @@ help_lines() {
 # chega como Esc + "l") vire um Esc de verdade.
 
 # ações do fzf que mostram uma tela (aba, grupo ou ajuda)
+#
+# A ajuda aparece na hora. As abas carregam em duas etapas: primeiro uma linha
+# "carregando…" (assim a tela anterior some na hora) e, quando ela termina de
+# entrar, o evento load (on_load) pede a lista de verdade e só então volta a
+# prévia e a busca.
 show_actions() {
     local target=$1
     set_screen "$target"
 
     local header
     if [[ $target == help ]]; then header=$(tabs_header "$(origin)"); else header=$(tabs_header "$target"); fi
-    printf 'change-header(%s)+change-prompt(%s)+change-ghost(%s)+clear-query+reload(%s --list)+first' \
-        "$header" "$(prompt_for "$target")" "$(ghost_for "$target")" "$SELF"
+    printf 'change-header(%s)+change-prompt(%s)+change-ghost(%s)' \
+        "$header" "$(prompt_for "$target")" "$(ghost_for "$target")"
     printf '+change-preview-window(%s)' "$PREVIEW_NORMAL"
     if [[ $target == help ]]; then
-        printf '+hide-input+hide-preview+change-pointer( )'
+        rm -f "$STATE/pending"
+        # sem busca: o que for digitado não filtra o texto da ajuda
+        printf '+disable-search+clear-query+hide-input+hide-preview+change-pointer( )+reload(%s --list)+first' "$SELF"
     else
-        printf '+show-input+show-preview+change-pointer(▌)'
+        touch "$STATE/pending" "$STATE/clear"
+        printf '+enable-search+clear-query+hide-input+hide-preview+change-pointer( )+reload(%s --loading)' "$SELF"
+    fi
+}
+
+# evento load: a linha "carregando…" entrou (pede a lista) ou a lista entrou
+# (mostra a prévia e a busca)
+on_load() {
+    if [[ -f $STATE/pending ]]; then
+        rm -f "$STATE/pending"
+        printf 'reload(%s --list)' "$SELF"
+    elif [[ $(screen) != help ]]; then
+        printf 'show-input+show-preview+change-pointer(▌)+first'
+        # o show-input devolve a busca de antes do hide-input: a busca só
+        # fica limpa se o clear-query vier depois dele
+        if [[ -f $STATE/clear ]]; then
+            rm -f "$STATE/clear"
+            printf '+clear-query'
+        fi
     fi
 }
 
@@ -618,6 +643,7 @@ main() {
         --bind="esc:transform:$SELF --key esc"
         --bind="ctrl-h:transform:$SELF --key ctrl-h"
         --bind="enter:transform:$SELF --key enter {1}"
+        --bind="load:transform:$SELF --on-load"
     )
     local k
     for k in alt-enter ctrl-g ctrl-r ctrl-l ctrl-x ctrl-d; do
@@ -659,6 +685,8 @@ case "${1:-}" in
     --fetch-aur) fetch_aur ;;
     --preview) preview "$2" ;;
     --tab) tab_cmd "$2" ;;
+    --on-load) on_load ;;
+    --loading) printf '%s— carregando…%s\n' "$C_DIM" "$C_RESET" ;;
     --key) shift; key_cmd "$@" ;;
     *) main ;;
 esac
