@@ -10,35 +10,22 @@ import qs.config
 // Painel de Bluetooth (aberto pelo módulo Bluetooth): liga/desliga, pedidos
 // de pareamento, dispositivos pareados (conectar, esquecer, qualidade do
 // áudio) e dispositivos novos por perto.
-Rectangle {
+PanelSurface {
     id: root
 
     required property var bt           // o módulo Bluetooth (estado + ações)
-    property bool active: true
-
-    signal closeRequested
 
     property string expanded: ""       // endereço do dispositivo aberto
     property string pinInput: ""
 
     implicitWidth: 400
-    implicitHeight: layout.implicitHeight + 28
 
-    color: Theme.colors.background
-    radius: Sizes.radius.normal + 2
-    border.width: 1
-    border.color: Theme.colors.outline
-
-    Shortcut {
-        sequence: "Escape"
-        context: Qt.WindowShortcut
-        enabled: root.active
-        onActivated: {
-            if (root.expanded !== "")
-                root.expanded = "";
-            else
-                root.closeRequested();
-        }
+    closesOnEscape: false
+    onEscapePressed: {
+        if (root.expanded !== "")
+            root.expanded = "";
+        else
+            root.closeRequested();
     }
 
     function statusText(d) {
@@ -53,303 +40,295 @@ Rectangle {
         return battery >= 0 ? base + "  ·  bateria " + battery + "%" : base;
     }
 
-    ColumnLayout {
-        id: layout
+    spacing: 12
 
-        anchors.fill: parent
-        anchors.margins: 14
-        spacing: 12
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 6
 
-        // cabeçalho
-        RowLayout {
+        PanelTitle {
             Layout.fillWidth: true
-            spacing: 6
-
-            PanelTitle {
-                Layout.fillWidth: true
-                text: "BLUETOOTH"
-            }
-
-            PanelIconButton {
-                visible: root.bt.powered
-                icon: "󰑐"
-                spinning: root.bt.adapter !== null && root.bt.adapter.discovering
-                onClicked: root.bt.setDiscovering(!root.bt.adapter.discovering)
-            }
-
-            PanelSwitch {
-                checked: root.bt.powered
-                onToggled: root.bt.setPowered(!root.bt.powered)
-            }
+            text: "BLUETOOTH"
         }
 
-        // pedido de pareamento (agente)
-        Rectangle {
-            Layout.fillWidth: true
-            visible: root.bt.prompt !== null
-            implicitHeight: promptColumn.implicitHeight + 24
-            radius: Sizes.radius.normal
-            color: Qt.alpha(Theme.colors.primary, 0.12)
-            border.width: 1
-            border.color: Qt.alpha(Theme.colors.primary, 0.6)
+        PanelIconButton {
+            visible: root.bt.powered
+            icon: "󰑐"
+            spinning: root.bt.adapter !== null && root.bt.adapter.discovering
+            onClicked: root.bt.setDiscovering(!root.bt.adapter.discovering)
+        }
 
-            readonly property string kind: root.bt.prompt ? root.bt.prompt.kind : ""
-            readonly property string code: root.bt.prompt ? root.bt.prompt.code : ""
-            readonly property string deviceName: root.bt.pendingDevice ? root.bt.deviceName(root.bt.pendingDevice) : "o dispositivo"
+        PanelSwitch {
+            checked: root.bt.powered
+            onToggled: root.bt.setPowered(!root.bt.powered)
+        }
+    }
 
-            id: promptBox
+    // pedido de pareamento (agente)
+    Rectangle {
+        Layout.fillWidth: true
+        visible: root.bt.prompt !== null
+        implicitHeight: promptColumn.implicitHeight + 24
+        radius: Sizes.radius.normal
+        color: Qt.alpha(Theme.colors.primary, 0.12)
+        border.width: 1
+        border.color: Qt.alpha(Theme.colors.primary, 0.6)
 
-            ColumnLayout {
-                id: promptColumn
+        readonly property string kind: root.bt.prompt ? root.bt.prompt.kind : ""
+        readonly property string code: root.bt.prompt ? root.bt.prompt.code : ""
+        readonly property string deviceName: root.bt.pendingDevice ? root.bt.deviceName(root.bt.pendingDevice) : "o dispositivo"
 
-                anchors.fill: parent
-                anchors.margins: 12
-                spacing: 10
+        id: promptBox
 
-                Text {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    color: Theme.colors.text
-                    font.family: Typo.family
-                    font.pixelSize: Typo.size.small + 1
-                    text: {
-                        switch (promptBox.kind) {
-                        case "confirm": return "Confirme se " + promptBox.deviceName + " mostra este código:";
-                        case "accept": return "Aceitar o pareamento com " + promptBox.deviceName + "?";
-                        case "authorize": return "Permitir que " + promptBox.deviceName + " use um serviço do computador?";
-                        case "pin": return "Digite o PIN de " + promptBox.deviceName + " (geralmente 0000 ou 1234):";
-                        case "passkey": return "Digite a senha numérica mostrada em " + promptBox.deviceName + ":";
-                        case "display": return "Digite este código em " + promptBox.deviceName + " e aperte Enter nele:";
-                        }
-                        return "";
+        ColumnLayout {
+            id: promptColumn
+
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 10
+
+            Text {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                color: Theme.colors.text
+                font.family: Typo.family
+                font.pixelSize: Typo.size.small + 1
+                text: {
+                    switch (promptBox.kind) {
+                    case "confirm": return "Confirme se " + promptBox.deviceName + " mostra este código:";
+                    case "accept": return "Aceitar o pareamento com " + promptBox.deviceName + "?";
+                    case "authorize": return "Permitir que " + promptBox.deviceName + " use um serviço do computador?";
+                    case "pin": return "Digite o PIN de " + promptBox.deviceName + " (geralmente 0000 ou 1234):";
+                    case "passkey": return "Digite a senha numérica mostrada em " + promptBox.deviceName + ":";
+                    case "display": return "Digite este código em " + promptBox.deviceName + " e aperte Enter nele:";
                     }
+                    return "";
                 }
+            }
 
-                Text {
-                    visible: promptBox.kind === "confirm" || promptBox.kind === "display"
-                    text: promptBox.code
-                    color: Theme.colors.primary
-                    font.family: Typo.family
-                    font.pixelSize: 28
-                    font.weight: Typo.weight.bold
-                    font.letterSpacing: 4
+            Text {
+                visible: promptBox.kind === "confirm" || promptBox.kind === "display"
+                text: promptBox.code
+                color: Theme.colors.primary
+                font.family: Typo.family
+                font.pixelSize: 28
+                font.weight: Typo.weight.bold
+                font.letterSpacing: 4
+            }
+
+            PanelField {
+                Layout.fillWidth: true
+                visible: promptBox.kind === "pin" || promptBox.kind === "passkey"
+                label: promptBox.kind === "pin" ? "PIN" : "Senha numérica"
+                value: root.pinInput
+                onEdited: v => root.pinInput = v
+                onAccepted: {
+                    root.bt.respond(root.pinInput);
+                    root.pinInput = "";
                 }
+            }
 
-                PanelField {
-                    Layout.fillWidth: true
-                    visible: promptBox.kind === "pin" || promptBox.kind === "passkey"
-                    label: promptBox.kind === "pin" ? "PIN" : "Senha numérica"
-                    value: root.pinInput
-                    onEdited: v => root.pinInput = v
-                    onAccepted: {
-                        root.bt.respond(root.pinInput);
+            RowLayout {
+                visible: promptBox.kind !== "display"
+                spacing: 6
+
+                PanelButton {
+                    text: promptBox.kind === "pin" || promptBox.kind === "passkey" ? "Enviar"
+                        : promptBox.kind === "authorize" ? "Permitir"
+                        : "Confirmar"
+                    onClicked: {
+                        const typed = promptBox.kind === "pin" || promptBox.kind === "passkey";
+                        root.bt.respond(typed ? root.pinInput : "yes");
                         root.pinInput = "";
                     }
                 }
 
-                RowLayout {
-                    visible: promptBox.kind !== "display"
-                    spacing: 6
-
-                    PanelButton {
-                        text: promptBox.kind === "pin" || promptBox.kind === "passkey" ? "Enviar"
-                            : promptBox.kind === "authorize" ? "Permitir"
-                            : "Confirmar"
-                        onClicked: {
-                            const typed = promptBox.kind === "pin" || promptBox.kind === "passkey";
-                            root.bt.respond(typed ? root.pinInput : "yes");
-                            root.pinInput = "";
-                        }
-                    }
-
-                    PanelButton {
-                        text: "Recusar"
-                        accent: Theme.colors.muted
-                        onClicked: {
-                            const typed = promptBox.kind === "pin" || promptBox.kind === "passkey";
-                            root.bt.respond(typed ? "" : "no");
-                            root.pinInput = "";
-                        }
+                PanelButton {
+                    text: "Recusar"
+                    accent: Theme.colors.muted
+                    onClicked: {
+                        const typed = promptBox.kind === "pin" || promptBox.kind === "passkey";
+                        root.bt.respond(typed ? "" : "no");
+                        root.pinInput = "";
                     }
                 }
             }
         }
+    }
+
+    Text {
+        visible: !root.bt.powered
+        text: "Bluetooth desligado"
+        color: Theme.colors.muted
+        font.family: Typo.family
+        font.pixelSize: Typo.size.small
+    }
+
+    // ---- pareados -----------------------------------------------------------
+
+    ColumnLayout {
+        Layout.fillWidth: true
+        visible: root.bt.powered
+        spacing: 2
+
+        PanelTitle {
+            Layout.bottomMargin: 4
+            text: "DISPOSITIVOS"
+        }
 
         Text {
-            visible: !root.bt.powered
-            text: "Bluetooth desligado"
+            visible: root.bt.pairedDevices.length === 0
+            text: "Nenhum dispositivo pareado"
             color: Theme.colors.muted
             font.family: Typo.family
             font.pixelSize: Typo.size.small
         }
 
-        // ---- pareados -----------------------------------------------------------
+        Repeater {
+            model: root.bt.pairedDevices
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            visible: root.bt.powered
-            spacing: 2
+            delegate: ColumnLayout {
+                id: paired
 
-            PanelTitle {
-                Layout.bottomMargin: 4
-                text: "DISPOSITIVOS"
-            }
+                required property var modelData
+                readonly property var d: modelData
+                readonly property bool isExpanded: root.expanded === d.address
+                readonly property var audio: root.bt.audioCards[d.address] ?? null
 
-            Text {
-                visible: root.bt.pairedDevices.length === 0
-                text: "Nenhum dispositivo pareado"
-                color: Theme.colors.muted
-                font.family: Typo.family
-                font.pixelSize: Typo.size.small
-            }
+                Layout.fillWidth: true
+                spacing: 0
 
-            Repeater {
-                model: root.bt.pairedDevices
-
-                delegate: ColumnLayout {
-                    id: paired
-
-                    required property var modelData
-                    readonly property var d: modelData
-                    readonly property bool isExpanded: root.expanded === d.address
-                    readonly property var audio: root.bt.audioCards[d.address] ?? null
-
+                DeviceRow {
                     Layout.fillWidth: true
-                    spacing: 0
+                    icon: root.bt.deviceIcon(paired.d)
+                    name: root.bt.deviceName(paired.d)
+                    status: root.statusText(paired.d)
+                    highlighted: paired.d.connected
+                    open: paired.isExpanded
+                    onClicked: root.expanded = paired.isExpanded ? "" : paired.d.address
+                }
 
-                    DeviceRow {
-                        Layout.fillWidth: true
-                        icon: root.bt.deviceIcon(paired.d)
-                        name: root.bt.deviceName(paired.d)
-                        status: root.statusText(paired.d)
-                        highlighted: paired.d.connected
-                        open: paired.isExpanded
-                        onClicked: root.expanded = paired.isExpanded ? "" : paired.d.address
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 12
+                    Layout.rightMargin: 12
+                    Layout.topMargin: 6
+                    Layout.bottomMargin: 8
+                    visible: paired.isExpanded || root.bt.errorAddress === paired.d.address
+                    spacing: 10
+
+                    PanelError {
+                        visible: root.bt.errorAddress === paired.d.address
+                        text: root.bt.errorText
                     }
 
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 12
-                        Layout.rightMargin: 12
-                        Layout.topMargin: 6
-                        Layout.bottomMargin: 8
-                        visible: paired.isExpanded || root.bt.errorAddress === paired.d.address
-                        spacing: 10
+                    RowLayout {
+                        visible: paired.isExpanded
+                        spacing: 6
 
-                        PanelError {
-                            visible: root.bt.errorAddress === paired.d.address
-                            text: root.bt.errorText
-                        }
-
-                        RowLayout {
-                            visible: paired.isExpanded
-                            spacing: 6
-
-                            PanelButton {
-                                text: paired.d.connected ? "Desconectar" : "Conectar"
-                                accent: paired.d.connected ? Theme.colors.muted : Theme.colors.primary
-                                onClicked: {
-                                    if (paired.d.connected)
-                                        paired.d.disconnect();
-                                    else
-                                        root.bt.connectDevice(paired.d);
-                                }
-                            }
-
-                            PanelButton {
-                                text: "Esquecer"
-                                accent: Theme.colors.error
-                                onClicked: {
-                                    root.expanded = "";
-                                    paired.d.forget();
-                                }
+                        PanelButton {
+                            text: paired.d.connected ? "Desconectar" : "Conectar"
+                            accent: paired.d.connected ? Theme.colors.muted : Theme.colors.primary
+                            onClicked: {
+                                if (paired.d.connected)
+                                    paired.d.disconnect();
+                                else
+                                    root.bt.connectDevice(paired.d);
                             }
                         }
 
-                        // qualidade do áudio (perfil/codec)
-                        PanelChips {
-                            visible: paired.isExpanded && paired.d.connected && paired.audio !== null
-                                && paired.audio.profiles.length > 1
-                            label: "Áudio  (Microfone = qualidade de ligação)"
-                            options: paired.audio ? paired.audio.profiles.map(p => ({ value: p.name, label: p.label })) : []
-                            value: paired.audio ? paired.audio.active : ""
-                            onPicked: v => root.bt.setProfile(paired.d.address, v)
+                        PanelButton {
+                            text: "Esquecer"
+                            accent: Theme.colors.error
+                            onClicked: {
+                                root.expanded = "";
+                                paired.d.forget();
+                            }
                         }
+                    }
+
+                    PanelChips {
+                        visible: paired.isExpanded && paired.d.connected && paired.audio !== null
+                            && paired.audio.profiles.length > 1
+                        label: "Áudio  (Microfone = qualidade de ligação)"
+                        options: paired.audio ? paired.audio.profiles.map(p => ({ value: p.name, label: p.label })) : []
+                        value: paired.audio ? paired.audio.active : ""
+                        onPicked: v => root.bt.setProfile(paired.d.address, v)
                     }
                 }
             }
         }
+    }
 
-        // ---- novos ----------------------------------------------------------------
+    // ---- novos ----------------------------------------------------------------
 
-        ColumnLayout {
+    ColumnLayout {
+        Layout.fillWidth: true
+        visible: root.bt.powered
+        spacing: 2
+
+        PanelTitle {
+            Layout.bottomMargin: 4
+            text: "POR PERTO"
+        }
+
+        Text {
+            visible: root.bt.newDevices.length === 0
+            text: root.bt.adapter !== null && root.bt.adapter.discovering
+                ? "Procurando… (coloque o dispositivo em modo de pareamento)"
+                : "Clique em 󰑐 para procurar"
+            wrapMode: Text.WordWrap
             Layout.fillWidth: true
-            visible: root.bt.powered
-            spacing: 2
+            color: Theme.colors.muted
+            font.family: Typo.family
+            font.pixelSize: Typo.size.small
+        }
 
-            PanelTitle {
-                Layout.bottomMargin: 4
-                text: "POR PERTO"
-            }
+        Flickable {
+            id: newScroll
 
-            Text {
-                visible: root.bt.newDevices.length === 0
-                text: root.bt.adapter !== null && root.bt.adapter.discovering
-                    ? "Procurando… (coloque o dispositivo em modo de pareamento)"
-                    : "Clique em 󰑐 para procurar"
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-                color: Theme.colors.muted
-                font.family: Typo.family
-                font.pixelSize: Typo.size.small
-            }
+            Layout.fillWidth: true
+            visible: root.bt.newDevices.length > 0
+            implicitHeight: Math.min(newColumn.implicitHeight, 260)
+            contentHeight: newColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
 
-            Flickable {
-                id: newScroll
+            ColumnLayout {
+                id: newColumn
 
-                Layout.fillWidth: true
-                visible: root.bt.newDevices.length > 0
-                implicitHeight: Math.min(newColumn.implicitHeight, 260)
-                contentHeight: newColumn.implicitHeight
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
+                width: newScroll.width
+                spacing: 2
 
-                ColumnLayout {
-                    id: newColumn
+                Repeater {
+                    model: root.bt.newDevices
 
-                    width: newScroll.width
-                    spacing: 2
+                    delegate: ColumnLayout {
+                        id: fresh
 
-                    Repeater {
-                        model: root.bt.newDevices
+                        required property var modelData
+                        readonly property var d: modelData
 
-                        delegate: ColumnLayout {
-                            id: fresh
+                        Layout.fillWidth: true
+                        spacing: 0
 
-                            required property var modelData
-                            readonly property var d: modelData
-
+                        DeviceRow {
                             Layout.fillWidth: true
-                            spacing: 0
-
-                            DeviceRow {
-                                Layout.fillWidth: true
-                                icon: root.bt.deviceIcon(fresh.d)
-                                name: root.bt.deviceName(fresh.d)
-                                status: fresh.d.pairing ? "pareando…" : "clique para parear"
-                                busy: fresh.d.pairing
-                                onClicked: {
-                                    if (!fresh.d.pairing)
-                                        root.bt.pairDevice(fresh.d);
-                                }
+                            icon: root.bt.deviceIcon(fresh.d)
+                            name: root.bt.deviceName(fresh.d)
+                            status: fresh.d.pairing ? "pareando…" : "clique para parear"
+                            busy: fresh.d.pairing
+                            onClicked: {
+                                if (!fresh.d.pairing)
+                                    root.bt.pairDevice(fresh.d);
                             }
+                        }
 
-                            PanelError {
-                                Layout.leftMargin: 12
-                                Layout.bottomMargin: 6
-                                visible: root.bt.errorAddress === fresh.d.address
-                                text: root.bt.errorText
-                            }
+                        PanelError {
+                            Layout.leftMargin: 12
+                            Layout.bottomMargin: 6
+                            visible: root.bt.errorAddress === fresh.d.address
+                            text: root.bt.errorText
                         }
                     }
                 }
@@ -357,7 +336,6 @@ Rectangle {
         }
     }
 
-    // linha de dispositivo
     component DeviceRow: Rectangle {
         id: row
 

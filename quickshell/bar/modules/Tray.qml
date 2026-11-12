@@ -11,8 +11,8 @@ import qs.config
 Rectangle {
     id: root
 
-    // ícones substituídos por módulos da barra: nm-applet (Network; continua
-    // rodando como agente de senhas) e blueman (Bluetooth)
+    // ícones substituídos por módulos da barra, caso estejam instalados:
+    // nm-applet (Network) e blueman (Bluetooth)
     readonly property var hiddenIds: ["nm-applet", "blueman"]
     readonly property var items: SystemTray.items.values.filter(i => !hiddenIds.includes(i.id))
 

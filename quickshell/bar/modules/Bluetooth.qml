@@ -1,6 +1,5 @@
 import Quickshell
 import Quickshell.Bluetooth
-import Quickshell.Hyprland
 import Quickshell.Io
 import QtQuick
 
@@ -259,33 +258,20 @@ BarButton {
 
     // ---- painel -----------------------------------------------------------------
 
-    property int grabAttempts: 0
-
+    // a procura só começa pelo botão do painel: procurar dispositivos usa o
+    // mesmo rádio do áudio e picota o som de um fone conectado
     function togglePanel() {
-        grabAttempts = 0;
         popup.visible = !popup.visible;
-        setDiscovering(popup.visible);
         if (popup.visible)
             errorAddress = "";
     }
 
-    PopupWindow {
+    BarPopup {
         id: popup
 
-        anchor.item: root
-        anchor.rect.width: root.width
-        anchor.rect.height: root.height
-        anchor.rect.x: (root.width - panel.implicitWidth) / 2
-        anchor.rect.y: Sizes.bar.height - root.y + 6
-        anchor.edges: Edges.Top | Edges.Left
-        anchor.gravity: Edges.Bottom | Edges.Right
-        anchor.adjustment: PopupAdjustment.SlideX | PopupAdjustment.FlipY
-
+        module: root
         implicitWidth: panel.implicitWidth
         implicitHeight: panel.implicitHeight
-        color: "transparent"
-
-        visible: false
         onVisibleChanged: {
             if (!visible)
                 root.setDiscovering(false);
@@ -298,27 +284,6 @@ BarButton {
             bt: root
             active: popup.visible
             onCloseRequested: popup.visible = false
-        }
-    }
-
-    // fecha ao clicar fora (mesmo esquema do calendário)
-    HyprlandFocusGrab {
-        id: focusGrab
-
-        windows: [popup]
-        active: popup.visible
-
-        onCleared: popup.visible = false
-    }
-
-    Timer {
-        interval: 50
-        repeat: true
-        running: popup.visible && !focusGrab.active && root.grabAttempts < 20
-        onTriggered: {
-            root.grabAttempts += 1;
-            focusGrab.active = false;
-            focusGrab.active = true;
         }
     }
 

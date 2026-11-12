@@ -9,13 +9,10 @@ import qs.config
 
 // Painel do Sistema (aberto pelo módulo System): bateria (no notebook), CPU,
 // RAM, temperatura e perfil de energia.
-Rectangle {
+PanelSurface {
     id: root
 
     required property var sys          // o módulo System
-    property bool active: true
-
-    signal closeRequested
 
     readonly property var battery: sys.battery
 
@@ -71,179 +68,149 @@ Rectangle {
     }
 
     implicitWidth: 400
-    implicitHeight: layout.implicitHeight + 28
 
-    color: Theme.colors.background
-    radius: Sizes.radius.normal + 2
-    border.width: 1
-    border.color: Theme.colors.outline
+    PanelTitle { text: "SISTEMA" }
 
-    Shortcut {
-        sequence: "Escape"
-        context: Qt.WindowShortcut
-        enabled: root.active
-        onActivated: root.closeRequested()
-    }
+    // ---- bateria (só no notebook) ------------------------------------------
 
     ColumnLayout {
-        id: layout
+        Layout.fillWidth: true
+        visible: root.sys.hasBattery
+        spacing: 10
 
-        anchors.fill: parent
-        anchors.margins: 14
-        spacing: 14
-
-        PanelTitle { text: "SISTEMA" }
-
-        // ---- bateria (só no notebook) ------------------------------------------
-
-        ColumnLayout {
+        RowLayout {
             Layout.fillWidth: true
-            visible: root.sys.hasBattery
-            spacing: 10
+            spacing: 14
 
-            RowLayout {
+            Text {
+                text: root.sys.batteryIcon()
+                color: root.accentColorOf(root.sys.batteryAccent())
+                font.family: Typo.family
+                font.pixelSize: 40
+            }
+
+            ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: 2
 
                 Text {
-                    text: root.sys.batteryIcon()
-                    color: root.accentColorOf(root.sys.batteryAccent())
+                    text: root.sys.batteryPercent + "%"
+                    color: Theme.colors.text
                     font.family: Typo.family
-                    font.pixelSize: 40
+                    font.pixelSize: 26
+                    font.weight: Typo.weight.bold
                 }
 
-                ColumnLayout {
+                Text {
                     Layout.fillWidth: true
-                    spacing: 2
-
-                    Text {
-                        text: root.sys.batteryPercent + "%"
-                        color: Theme.colors.text
-                        font.family: Typo.family
-                        font.pixelSize: 26
-                        font.weight: Typo.weight.bold
-                    }
-
-                    Text {
-                        Layout.fillWidth: true
-                        text: root.batteryStatus()
-                        wrapMode: Text.WordWrap
-                        color: Theme.colors.muted
-                        font.family: Typo.family
-                        font.pixelSize: Typo.size.small
-                    }
+                    text: root.batteryStatus()
+                    wrapMode: Text.WordWrap
+                    color: Theme.colors.muted
+                    font.family: Typo.family
+                    font.pixelSize: Typo.size.small
                 }
             }
-
-            Meter {
-                Layout.fillWidth: true
-                fraction: root.sys.batteryPercent / 100
-                barColor: root.accentColorOf(root.sys.batteryAccent())
-            }
-
-            Detail {
-                visible: root.battery !== null && root.sys.discharging && root.battery.changeRate > 0
-                label: "Consumo"
-                value: root.battery ? root.battery.changeRate.toFixed(1).replace(".", ",") + " W" : ""
-            }
-
-            Detail {
-                visible: root.battery !== null && root.battery.healthSupported
-                label: "Saúde da bateria"
-                value: root.battery ? Math.round(root.battery.healthPercentage <= 1
-                    ? root.battery.healthPercentage * 100 : root.battery.healthPercentage) + "%" : ""
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 1
-                color: Qt.alpha(Theme.colors.outline, 0.6)
-            }
         }
 
-        // ---- CPU, RAM e temperatura ----------------------------------------------
-
-        MeterRow {
+        Meter {
             Layout.fillWidth: true
-            icon: "󰻠"
-            label: "CPU"
-            value: Math.round(root.sys.cpu) + "%"
-            fraction: root.sys.cpu / 100
-            barColor: root.accentColorOf(root.sys.cpuAccent())
+            fraction: root.sys.batteryPercent / 100
+            barColor: root.accentColorOf(root.sys.batteryAccent())
         }
 
-        MeterRow {
-            Layout.fillWidth: true
-            icon: "󰍛"
-            label: "Memória"
-            value: root.gib(root.sys.ramUsedKiB) + " de " + root.gib(root.sys.ramTotalKiB) + " GiB"
-            fraction: root.sys.ram / 100
-            barColor: root.accentColorOf(root.sys.ramAccent())
+        Detail {
+            visible: root.battery !== null && root.sys.discharging && root.battery.changeRate > 0
+            label: "Consumo"
+            value: root.battery ? root.battery.changeRate.toFixed(1).replace(".", ",") + " W" : ""
         }
 
-        MeterRow {
-            Layout.fillWidth: true
-            visible: root.sys.temp >= 0
-            icon: "󰔏"
-            label: "Temperatura da CPU"
-            value: Math.round(root.sys.temp) + " °C"
-            // escala de 30 °C (frio) a 100 °C
-            fraction: (root.sys.temp - 30) / 70
-            barColor: root.accentColorOf(root.sys.tempAccent())
+        Detail {
+            visible: root.battery !== null && root.battery.healthSupported
+            label: "Saúde da bateria"
+            value: root.battery ? Math.round(root.battery.healthPercentage <= 1
+                ? root.battery.healthPercentage * 100 : root.battery.healthPercentage) + "%" : ""
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 1
-            color: Qt.alpha(Theme.colors.outline, 0.6)
+        PanelDivider {}
+    }
+
+    // ---- CPU, RAM e temperatura ----------------------------------------------
+
+    MeterRow {
+        Layout.fillWidth: true
+        icon: "󰻠"
+        label: "CPU"
+        value: Math.round(root.sys.cpu) + "%"
+        fraction: root.sys.cpu / 100
+        barColor: root.accentColorOf(root.sys.cpuAccent())
+    }
+
+    MeterRow {
+        Layout.fillWidth: true
+        icon: "󰍛"
+        label: "Memória"
+        value: root.gib(root.sys.ramUsedKiB) + " de " + root.gib(root.sys.ramTotalKiB) + " GiB"
+        fraction: root.sys.ram / 100
+        barColor: root.accentColorOf(root.sys.ramAccent())
+    }
+
+    MeterRow {
+        Layout.fillWidth: true
+        visible: root.sys.temp >= 0
+        icon: "󰔏"
+        label: "Temperatura da CPU"
+        value: Math.round(root.sys.temp) + " °C"
+        // escala de 30 °C (frio) a 100 °C
+        fraction: (root.sys.temp - 30) / 70
+        barColor: root.accentColorOf(root.sys.tempAccent())
+    }
+
+    PanelDivider {}
+
+    // ---- perfil de energia ------------------------------------------------------
+
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 8
+
+        PanelChips {
+            visible: root.profilesAvailable
+            label: "Perfil de energia"
+            options: [
+                { value: "saver", label: "󰌪  Economia" },
+                { value: "balanced", label: "󰗑  Equilibrado" }
+            ].concat(PowerProfiles.hasPerformanceProfile
+                ? [{ value: "performance", label: "󱐋  Desempenho" }] : [])
+            value: root.profileKeys[PowerProfiles.profile] ?? ""
+            onPicked: v => PowerProfiles.profile = root.profileValues[v]
         }
 
-        // ---- perfil de energia ------------------------------------------------------
-
-        ColumnLayout {
+        Text {
             Layout.fillWidth: true
-            spacing: 8
+            visible: root.profilesAvailable && PowerProfiles.profile === PowerProfile.Performance
+                && PowerProfiles.degradationReason !== PerformanceDegradationReason.None
+            text: PowerProfiles.degradationReason === PerformanceDegradationReason.HighTemperature
+                ? "Desempenho limitado: temperatura alta"
+                : "Desempenho limitado: notebook no colo"
+            wrapMode: Text.WordWrap
+            color: Theme.colors.warning
+            font.family: Typo.family
+            font.pixelSize: Typo.size.small
+        }
 
-            PanelChips {
-                visible: root.profilesAvailable
-                label: "Perfil de energia"
-                options: [
-                    { value: "saver", label: "󰌪  Economia" },
-                    { value: "balanced", label: "󰗑  Equilibrado" }
-                ].concat(PowerProfiles.hasPerformanceProfile
-                    ? [{ value: "performance", label: "󱐋  Desempenho" }] : [])
-                value: root.profileKeys[PowerProfiles.profile] ?? ""
-                onPicked: v => PowerProfiles.profile = root.profileValues[v]
-            }
-
-            Text {
-                Layout.fillWidth: true
-                visible: root.profilesAvailable && PowerProfiles.profile === PowerProfile.Performance
-                    && PowerProfiles.degradationReason !== PerformanceDegradationReason.None
-                text: PowerProfiles.degradationReason === PerformanceDegradationReason.HighTemperature
-                    ? "Desempenho limitado: temperatura alta"
-                    : "Desempenho limitado: notebook no colo"
-                wrapMode: Text.WordWrap
-                color: Theme.colors.warning
-                font.family: Typo.family
-                font.pixelSize: Typo.size.small
-            }
-
-            Text {
-                Layout.fillWidth: true
-                visible: !root.profilesAvailable
-                text: "Perfis de energia indisponíveis: o power-profiles-daemon não está rodando."
-                wrapMode: Text.WordWrap
-                color: Theme.colors.muted
-                font.family: Typo.family
-                font.pixelSize: Typo.size.small
-            }
+        Text {
+            Layout.fillWidth: true
+            visible: !root.profilesAvailable
+            text: "Perfis de energia indisponíveis: o power-profiles-daemon não está rodando."
+            wrapMode: Text.WordWrap
+            color: Theme.colors.muted
+            font.family: Typo.family
+            font.pixelSize: Typo.size.small
         }
     }
 
     // ---- componentes ------------------------------------------------------------
 
-    // barra de nível
     component Meter: Rectangle {
         id: meter
 

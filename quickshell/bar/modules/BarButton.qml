@@ -48,7 +48,6 @@ Rectangle {
     border.width: bordered || active ? 1 : 0
     border.color: accentColor
 
-    // bloco do ícone
     Rectangle {
         id: iconBlock
         visible: root.showIcon
@@ -75,7 +74,6 @@ Rectangle {
         }
     }
 
-    // valor
     Item {
         id: labelBox
         visible: root.showLabel
@@ -100,7 +98,6 @@ Rectangle {
         text: root.labelTemplate
     }
 
-    // hover
     Rectangle {
         anchors.fill: parent
         radius: root.radius

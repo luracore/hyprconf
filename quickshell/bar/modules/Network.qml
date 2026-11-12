@@ -1,5 +1,4 @@
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import QtQuick
 
@@ -236,7 +235,6 @@ BarButton {
         refreshDebounce.restart();
     }
 
-    // Conecta numa rede já salva.
     function connectKnown(ssid) {
         clearError();
         busySsid = ssid;
@@ -264,8 +262,7 @@ BarButton {
             args.push("hidden", "yes");
         if (wifiDevice)
             args.push("ifname", wifiDevice.device);
-        // conexão nova que falhou não fica salva com a senha errada
-        // (só apaga se ela não existia antes)
+        // se falhar, apaga a conexão recém-criada para não salvar a senha errada
         const isNew = !savedWifi.includes(ssid);
         run(args, (code, out, err) => finish(ssid, code, err,
             isNew ? ["nmcli", "connection", "delete", "id", ssid] : null));
@@ -335,10 +332,7 @@ BarButton {
 
     // ---- painel -----------------------------------------------------------------
 
-    property int grabAttempts: 0
-
     function togglePanel() {
-        grabAttempts = 0;
         popup.visible = !popup.visible;
         if (popup.visible) {
             clearError();
@@ -347,23 +341,12 @@ BarButton {
         }
     }
 
-    PopupWindow {
+    BarPopup {
         id: popup
 
-        anchor.item: root
-        anchor.rect.width: root.width
-        anchor.rect.height: root.height
-        anchor.rect.x: (root.width - panel.implicitWidth) / 2
-        anchor.rect.y: Sizes.bar.height - root.y + 6
-        anchor.edges: Edges.Top | Edges.Left
-        anchor.gravity: Edges.Bottom | Edges.Right
-        anchor.adjustment: PopupAdjustment.SlideX | PopupAdjustment.FlipY
-
+        module: root
         implicitWidth: panel.implicitWidth
         implicitHeight: panel.implicitHeight
-        color: "transparent"
-
-        visible: false
 
         NetworkPanel {
             id: panel
@@ -372,27 +355,6 @@ BarButton {
             net: root
             active: popup.visible
             onCloseRequested: popup.visible = false
-        }
-    }
-
-    // fecha ao clicar fora (mesmo esquema do calendário)
-    HyprlandFocusGrab {
-        id: focusGrab
-
-        windows: [popup]
-        active: popup.visible
-
-        onCleared: popup.visible = false
-    }
-
-    Timer {
-        interval: 50
-        repeat: true
-        running: popup.visible && !focusGrab.active && root.grabAttempts < 20
-        onTriggered: {
-            root.grabAttempts += 1;
-            focusGrab.active = false;
-            focusGrab.active = true;
         }
     }
 

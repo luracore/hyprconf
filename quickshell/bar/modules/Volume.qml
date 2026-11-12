@@ -1,5 +1,4 @@
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import QtQuick
@@ -54,30 +53,16 @@ BarButton {
             sink.audio.muted = !sink.audio.muted;
     }
 
-    property int grabAttempts: 0
-
     function togglePanel() {
-        grabAttempts = 0;
         popup.visible = !popup.visible;
     }
 
-    PopupWindow {
+    BarPopup {
         id: popup
 
-        anchor.item: root
-        anchor.rect.width: root.width
-        anchor.rect.height: root.height
-        anchor.rect.x: (root.width - panel.implicitWidth) / 2
-        anchor.rect.y: Sizes.bar.height - root.y + 6
-        anchor.edges: Edges.Top | Edges.Left
-        anchor.gravity: Edges.Bottom | Edges.Right
-        anchor.adjustment: PopupAdjustment.SlideX | PopupAdjustment.FlipY
-
+        module: root
         implicitWidth: panel.implicitWidth
         implicitHeight: panel.implicitHeight
-        color: "transparent"
-
-        visible: false
 
         AudioPanel {
             id: panel
@@ -85,27 +70,6 @@ BarButton {
             anchors.fill: parent
             active: popup.visible
             onCloseRequested: popup.visible = false
-        }
-    }
-
-    // fecha ao clicar fora (mesmo esquema do calendário)
-    HyprlandFocusGrab {
-        id: focusGrab
-
-        windows: [popup]
-        active: popup.visible
-
-        onCleared: popup.visible = false
-    }
-
-    Timer {
-        interval: 50
-        repeat: true
-        running: popup.visible && !focusGrab.active && root.grabAttempts < 20
-        onTriggered: {
-            root.grabAttempts += 1;
-            focusGrab.active = false;
-            focusGrab.active = true;
         }
     }
 

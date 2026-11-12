@@ -78,7 +78,6 @@ Scope {
         function close(): void { root.hide(); }
     }
 
-    // "ligado há ..."
     FileView {
         id: uptimeFile
         path: "/proc/uptime"

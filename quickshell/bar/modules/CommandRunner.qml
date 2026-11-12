@@ -6,6 +6,9 @@ import QtQuick
 Item {
     id: root
 
+    // não desenha nada (e não ocupa lugar quando fica dentro de um layout)
+    visible: false
+
     Component {
         id: commandComponent
 

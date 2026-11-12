@@ -10,6 +10,8 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
+// Servidor de notificações: popups no canto e a central (o sino da barra),
+// com histórico e "não perturbe".
 Scope {
     id: root
 
@@ -60,6 +62,7 @@ Scope {
         }
     }
 
+    // qs ipc call notifications toggle|open|close|clear|toggleDnd
     IpcHandler {
         target: "notifications"
         function toggle(): void { root.centerOpen = !root.centerOpen; }
@@ -75,7 +78,7 @@ Scope {
         visible: !root.centerOpen && server.trackedNotifications.values.length > 0
 
         anchors { top: true; right: true }
-        margins { top: Sizes.bar.height + 6; right: 12 }
+        margins { top: Sizes.bar.height + Sizes.bar.padding; right: Sizes.bar.padding }
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qs-notifications"
@@ -183,7 +186,6 @@ Scope {
                                 elide: Text.ElideRight
                             }
 
-                            // botões de ação (exceto a "default")
                             Flow {
                                 Layout.fillWidth: true
                                 Layout.topMargin: 4
@@ -233,7 +235,7 @@ Scope {
         visible: root.centerOpen
 
         anchors { top: true; right: true }
-        margins { top: Sizes.bar.height + 6; right: 12 }
+        margins { top: Sizes.bar.height + Sizes.bar.padding; right: Sizes.bar.padding }
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qs-notification-center"
@@ -266,7 +268,6 @@ Scope {
                 anchors.margins: 12
                 spacing: 10
 
-                // cabeçalho
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 12
@@ -306,7 +307,6 @@ Scope {
                     }
                 }
 
-                // estado vazio
                 Text {
                     Layout.fillWidth: true
                     Layout.topMargin: 16
@@ -320,7 +320,6 @@ Scope {
                     lineHeight: 1.4
                 }
 
-                // histórico
                 ListView {
                     id: list
                     Layout.fillWidth: true

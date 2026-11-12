@@ -7,13 +7,8 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-Rectangle {
+PanelSurface {
     id: root
-
-    // Exposto para o Clock pausar a animação quando o popup está fechado.
-    property bool active: true
-
-    signal closeRequested
 
     property date today: clock.date
     property int monthOffset: 0
@@ -27,23 +22,10 @@ Rectangle {
     readonly property color mutedColor: Theme.colors.muted
 
     implicitWidth: 340
-    implicitHeight: layout.implicitHeight + 24
-
-    color: Theme.colors.background
-    radius: Sizes.radius.normal + 2
-    border.width: 1
-    border.color: Theme.colors.outline
 
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
-    }
-
-    Shortcut {
-        sequence: "Escape"
-        context: Qt.WindowShortcut
-        enabled: root.active
-        onActivated: root.closeRequested()
     }
 
     function startOfMonth(value) {
@@ -96,82 +78,120 @@ Rectangle {
         selectedDay = sameDay(value, today) ? null : value;
     }
 
+    padding: 12
+    spacing: 10
+
+    // Relógio grande
     ColumnLayout {
-        id: layout
+        Layout.fillWidth: true
+        Layout.preferredWidth: parent.width
+        spacing: 0
 
-        anchors.fill: parent
-        anchors.margins: 12
-        spacing: 10
+        Row {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 1
 
-        // Relógio grande
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.preferredWidth: layout.width
-            spacing: 0
+            Text {
+                text: Qt.formatDateTime(clock.date, "HH")
+                color: Theme.colors.text
 
-            Row {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 1
+                font {
+                    family: Typo.family
+                    pixelSize: 42
+                    weight: Typo.weight.medium
+                }
+            }
 
-                Text {
-                    text: Qt.formatDateTime(clock.date, "HH")
-                    color: Theme.colors.text
+            Text {
+                id: colon
 
-                    font {
-                        family: Typo.family
-                        pixelSize: 42
-                        weight: Typo.weight.medium
-                    }
+                text: ":"
+                color: Theme.colors.text
+
+                font {
+                    family: Typo.family
+                    pixelSize: 42
+                    weight: Typo.weight.medium
                 }
 
-                Text {
-                    id: colon
+                SequentialAnimation on opacity {
+                    running: root.active
+                    loops: Animation.Infinite
 
-                    text: ":"
-                    color: Theme.colors.text
-
-                    font {
-                        family: Typo.family
-                        pixelSize: 42
-                        weight: Typo.weight.medium
+                    NumberAnimation {
+                        from: 1
+                        to: 0.25
+                        duration: 500
+                        easing.type: Easing.InOutQuad
                     }
 
-                    SequentialAnimation on opacity {
-                        running: root.active
-                        loops: Animation.Infinite
-
-                        NumberAnimation {
-                            from: 1
-                            to: 0.25
-                            duration: 500
-                            easing.type: Easing.InOutQuad
-                        }
-
-                        NumberAnimation {
-                            from: 0.25
-                            to: 1
-                            duration: 500
-                            easing.type: Easing.InOutQuad
-                        }
-                    }
-                }
-
-                Text {
-                    text: Qt.formatDateTime(clock.date, "mm")
-                    color: Theme.colors.text
-
-                    font {
-                        family: Typo.family
-                        pixelSize: 42
-                        weight: Typo.weight.medium
+                    NumberAnimation {
+                        from: 0.25
+                        to: 1
+                        duration: 500
+                        easing.type: Easing.InOutQuad
                     }
                 }
             }
 
             Text {
-                Layout.alignment: Qt.AlignHCenter
+                text: Qt.formatDateTime(clock.date, "mm")
+                color: Theme.colors.text
 
-                text: clock.date.toLocaleDateString(Qt.locale(), Locale.LongFormat)
+                font {
+                    family: Typo.family
+                    pixelSize: 42
+                    weight: Typo.weight.medium
+                }
+            }
+        }
+
+        Text {
+            Layout.alignment: Qt.AlignHCenter
+
+            text: clock.date.toLocaleDateString(Qt.locale(), Locale.LongFormat)
+            color: root.mutedColor
+
+            font {
+                family: Typo.family
+                pixelSize: Typo.size.small + 2
+                weight: Typo.weight.medium
+            }
+        }
+    }
+
+    PanelDivider {}
+
+    // Cabeçalho do calendário
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 4
+
+        Text {
+            Layout.fillWidth: true
+
+            text: root.capitalize(Qt.formatDate(root.displayedMonth, "MMMM yyyy"))
+            color: Theme.colors.text
+
+            font {
+                family: Typo.family
+                pixelSize: Typo.size.normal + 1
+                weight: Typo.weight.bold
+            }
+        }
+
+        Rectangle {
+            implicitWidth: todayLabel.implicitWidth + 16
+            implicitHeight: 26
+
+            radius: Sizes.radius.normal
+            color: todayMouse.containsMouse ? Theme.hover : "transparent"
+
+            Text {
+                id: todayLabel
+
+                anchors.centerIn: parent
+                text: "Hoje"
                 color: root.mutedColor
 
                 font {
@@ -180,211 +200,164 @@ Rectangle {
                     weight: Typo.weight.medium
                 }
             }
+
+            MouseArea {
+                id: todayMouse
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.goToToday()
+            }
         }
 
         Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            color: Theme.colors.outline
-        }
+            implicitWidth: 26
+            implicitHeight: 26
 
-        // Cabeçalho do calendário
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 4
+            radius: Sizes.radius.normal
+            color: prevMouse.containsMouse ? Theme.hover : "transparent"
 
             Text {
-                Layout.fillWidth: true
-
-                text: root.capitalize(Qt.formatDate(root.displayedMonth, "MMMM yyyy"))
-                color: Theme.colors.text
+                anchors.centerIn: parent
+                text: "‹"
+                color: prevMouse.containsMouse ? Theme.colors.text : root.mutedColor
 
                 font {
                     family: Typo.family
-                    pixelSize: Typo.size.normal + 1
-                    weight: Typo.weight.bold
+                    pixelSize: 20
+                    weight: Typo.weight.medium
                 }
             }
 
-            Rectangle {
-                implicitWidth: todayLabel.implicitWidth + 16
-                implicitHeight: 26
+            MouseArea {
+                id: prevMouse
 
-                radius: Sizes.radius.normal
-                color: todayMouse.containsMouse ? Theme.hover : "transparent"
-
-                Text {
-                    id: todayLabel
-
-                    anchors.centerIn: parent
-                    text: "Hoje"
-                    color: root.mutedColor
-
-                    font {
-                        family: Typo.family
-                        pixelSize: Typo.size.small + 2
-                        weight: Typo.weight.medium
-                    }
-                }
-
-                MouseArea {
-                    id: todayMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.goToToday()
-                }
-            }
-
-            Rectangle {
-                implicitWidth: 26
-                implicitHeight: 26
-
-                radius: Sizes.radius.normal
-                color: prevMouse.containsMouse ? Theme.hover : "transparent"
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "‹"
-                    color: prevMouse.containsMouse ? Theme.colors.text : root.mutedColor
-
-                    font {
-                        family: Typo.family
-                        pixelSize: 20
-                        weight: Typo.weight.medium
-                    }
-                }
-
-                MouseArea {
-                    id: prevMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.previousMonth()
-                }
-            }
-
-            Rectangle {
-                implicitWidth: 26
-                implicitHeight: 26
-
-                radius: Sizes.radius.normal
-                color: nextMouse.containsMouse ? Theme.hover : "transparent"
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "›"
-                    color: nextMouse.containsMouse ? Theme.colors.text : root.mutedColor
-
-                    font {
-                        family: Typo.family
-                        pixelSize: 20
-                        weight: Typo.weight.medium
-                    }
-                }
-
-                MouseArea {
-                    id: nextMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.nextMonth()
-                }
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.previousMonth()
             }
         }
 
-        // Grade 6x7
         Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: gridColumn.implicitHeight + 16
+            implicitWidth: 26
+            implicitHeight: 26
 
-            color: Theme.colors.surface
             radius: Sizes.radius.normal
+            color: nextMouse.containsMouse ? Theme.hover : "transparent"
 
-            Column {
-                id: gridColumn
-
+            Text {
                 anchors.centerIn: parent
+                text: "›"
+                color: nextMouse.containsMouse ? Theme.colors.text : root.mutedColor
+
+                font {
+                    family: Typo.family
+                    pixelSize: 20
+                    weight: Typo.weight.medium
+                }
+            }
+
+            MouseArea {
+                id: nextMouse
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.nextMonth()
+            }
+        }
+    }
+
+    // Grade 6x7
+    Rectangle {
+        Layout.fillWidth: true
+        Layout.preferredHeight: gridColumn.implicitHeight + 16
+
+        color: Theme.colors.surface
+        radius: Sizes.radius.normal
+
+        Column {
+            id: gridColumn
+
+            anchors.centerIn: parent
+            spacing: root.cellSpacing
+
+            Row {
                 spacing: root.cellSpacing
 
-                Row {
-                    spacing: root.cellSpacing
+                Repeater {
+                    model: 7
 
-                    Repeater {
-                        model: 7
+                    Text {
+                        required property int index
 
-                        Text {
-                            required property int index
+                        width: root.cellWidth
+                        height: 20
 
-                            width: root.cellWidth
-                            height: 20
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
 
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                        text: root.weekdayName(index)
+                        color: index === 0 || index === 6 ? Theme.colors.secondary : root.mutedColor
+                        opacity: index === 0 || index === 6 ? 0.85 : 1
 
-                            text: root.weekdayName(index)
-                            color: index === 0 || index === 6 ? Theme.colors.secondary : root.mutedColor
-                            opacity: index === 0 || index === 6 ? 0.85 : 1
-
-                            font {
-                                family: Typo.family
-                                pixelSize: Typo.size.small
-                                weight: 600
-                            }
+                        font {
+                            family: Typo.family
+                            pixelSize: Typo.size.small
+                            weight: 600
                         }
                     }
                 }
+            }
 
-                Grid {
-                    columns: 7
-                    spacing: root.cellSpacing
+            Grid {
+                columns: 7
+                spacing: root.cellSpacing
 
-                    Repeater {
-                        model: 42
+                Repeater {
+                    model: 42
 
-                        Rectangle {
-                            id: cell
+                    Rectangle {
+                        id: cell
 
-                            required property int index
+                        required property int index
 
-                            readonly property date day: root.dayAt(index)
-                            readonly property bool inMonth: day.getMonth() === root.displayedMonth.getMonth()
-                            readonly property bool isToday: root.sameDay(day, root.today)
-                            readonly property bool isSelected: root.sameDay(day, root.selectedDay)
-                            readonly property bool isWeekend: day.getDay() === 0 || day.getDay() === 6
+                        readonly property date day: root.dayAt(index)
+                        readonly property bool inMonth: day.getMonth() === root.displayedMonth.getMonth()
+                        readonly property bool isToday: root.sameDay(day, root.today)
+                        readonly property bool isSelected: root.sameDay(day, root.selectedDay)
+                        readonly property bool isWeekend: day.getDay() === 0 || day.getDay() === 6
 
-                            width: root.cellWidth
-                            height: root.cellHeight
-                            radius: Sizes.radius.normal
+                        width: root.cellWidth
+                        height: root.cellHeight
+                        radius: Sizes.radius.normal
 
-                            color: isToday ? Theme.colors.primary : isSelected ? Theme.selected : cellMouse.containsMouse ? Theme.hover : "transparent"
+                        color: isToday ? Theme.colors.primary : isSelected ? Theme.selected : cellMouse.containsMouse ? Theme.hover : "transparent"
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: cell.day.getDate()
+                        Text {
+                            anchors.centerIn: parent
+                            text: cell.day.getDate()
 
-                                color: cell.isToday ? Theme.colors.onPrimary : !cell.inMonth ? Theme.colors.muted : cell.isSelected ? Theme.colors.primary : cell.isWeekend ? Theme.colors.secondary : Theme.colors.text
+                            color: cell.isToday ? Theme.colors.onPrimary : !cell.inMonth ? Theme.colors.muted : cell.isSelected ? Theme.colors.primary : cell.isWeekend ? Theme.colors.secondary : Theme.colors.text
 
-                                opacity: cell.inMonth ? 1 : 0.55
+                            opacity: cell.inMonth ? 1 : 0.55
 
-                                font {
-                                    family: Typo.family
-                                    pixelSize: Typo.size.normal
-                                    weight: cell.isToday ? Typo.weight.bold : Typo.weight.medium
-                                }
+                            font {
+                                family: Typo.family
+                                pixelSize: Typo.size.normal
+                                weight: cell.isToday ? Typo.weight.bold : Typo.weight.medium
                             }
+                        }
 
-                            MouseArea {
-                                id: cellMouse
+                        MouseArea {
+                            id: cellMouse
 
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.selectDay(cell.day)
-                            }
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.selectDay(cell.day)
                         }
                     }
                 }

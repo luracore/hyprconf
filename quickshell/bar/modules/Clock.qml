@@ -1,5 +1,4 @@
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import QtQuick
 
@@ -9,8 +8,6 @@ import qs.config
 
 BarButton {
     id: root
-
-    property int grabAttempts: 0
 
     SystemClock {
         id: clock
@@ -25,8 +22,6 @@ BarButton {
     onClicked: root.toggleCalendar()
 
     function toggleCalendar() {
-        grabAttempts = 0
-
         if (popup.visible) {
             popup.visible = false
         } else {
@@ -35,23 +30,12 @@ BarButton {
         }
     }
 
-    PopupWindow {
+    BarPopup {
         id: popup
 
-        anchor.item: root
-        anchor.rect.width: root.width
-        anchor.rect.height: root.height
-        anchor.rect.x: (root.width - calendar.implicitWidth) / 2
-        anchor.rect.y: Sizes.bar.height - root.y + 6
-        anchor.edges: Edges.Top | Edges.Left
-        anchor.gravity: Edges.Bottom | Edges.Right
-        anchor.adjustment: PopupAdjustment.SlideX | PopupAdjustment.FlipY
-
+        module: root
         implicitWidth: calendar.implicitWidth
         implicitHeight: calendar.implicitHeight
-        color: "transparent"
-
-        visible: false
 
         Calendar {
             id: calendar
@@ -62,26 +46,7 @@ BarButton {
         }
     }
 
-    HyprlandFocusGrab {
-        id: focusGrab
-
-        windows: [popup]
-        active: popup.visible
-
-        onCleared: popup.visible = false
-    }
-
-    Timer {
-        interval: 50
-        repeat: true
-        running: popup.visible && !focusGrab.active && root.grabAttempts < 20
-        onTriggered: {
-            root.grabAttempts += 1
-            focusGrab.active = false
-            focusGrab.active = true
-        }
-    }
-
+    // qs ipc call bar toggleCalendar|nextMonth|previousMonth|selectOffset <dias>
     IpcHandler {
         target: "bar"
 

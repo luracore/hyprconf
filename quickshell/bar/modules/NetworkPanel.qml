@@ -8,13 +8,10 @@ import qs.config
 
 // Painel de rede (aberto pelo módulo Network): cabo, Wi-Fi e formulários de
 // conexão (senha comum, corporativa/802.1X e rede oculta).
-Rectangle {
+PanelSurface {
     id: root
 
     required property var net          // o módulo Network (estado + ações)
-    property bool active: true
-
-    signal closeRequested
 
     // ---- estado do painel -------------------------------------------------------
 
@@ -128,459 +125,431 @@ Rectangle {
     // ---- aparência --------------------------------------------------------------
 
     implicitWidth: 420
-    implicitHeight: layout.implicitHeight + 28
 
-    color: Theme.colors.background
-    radius: Sizes.radius.normal + 2
-    border.width: 1
-    border.color: Theme.colors.outline
+    closesOnEscape: false
+    onEscapePressed: {
+        if (root.expanded !== "") {
+            root.expanded = "";
+            root.formFor = "";
+        } else {
+            root.closeRequested();
+        }
+    }
 
-    Shortcut {
-        sequence: "Escape"
-        context: Qt.WindowShortcut
-        enabled: root.active
-        onActivated: {
-            if (root.expanded !== "") {
-                root.expanded = "";
-                root.formFor = "";
-            } else {
-                root.closeRequested();
+    spacing: 12
+
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 6
+
+        PanelTitle {
+            Layout.fillWidth: true
+            text: "REDE"
+        }
+
+        PanelIconButton {
+            visible: root.net.wifiDevice !== null && root.net.wifiEnabled
+            icon: "󰑐"
+            spinning: root.net.scanning
+            onClicked: root.net.rescan()
+        }
+
+        PanelIconButton {
+            icon: "󰒓"
+            onClicked: root.net.openAdvanced()
+        }
+    }
+
+    // portal cativo (login de hotel, aeroporto…)
+    Rectangle {
+        Layout.fillWidth: true
+        visible: root.net.connectivity === "portal" || root.net.connectivity === "limited"
+        implicitHeight: portalRow.implicitHeight + 16
+        radius: Sizes.radius.normal
+        color: Qt.alpha(Theme.colors.warning, 0.14)
+        border.width: 1
+        border.color: Qt.alpha(Theme.colors.warning, 0.5)
+
+        RowLayout {
+            id: portalRow
+            anchors.fill: parent
+            anchors.margins: 8
+            anchors.leftMargin: 12
+            spacing: 10
+
+            Text {
+                Layout.fillWidth: true
+                text: root.net.connectivity === "portal"
+                    ? "Esta rede pede login no navegador"
+                    : "Conectado, mas sem acesso à internet"
+                wrapMode: Text.WordWrap
+                color: Theme.colors.warning
+                font.family: Typo.family
+                font.pixelSize: Typo.size.small
+            }
+
+            PanelButton {
+                visible: root.net.connectivity === "portal"
+                text: "Abrir login"
+                accent: Theme.colors.warning
+                onClicked: root.net.openPortalLogin()
             }
         }
     }
 
+    // ---- cabo -----------------------------------------------------------------
+
     ColumnLayout {
-        id: layout
+        Layout.fillWidth: true
+        visible: root.net.wiredDevices.length > 0
+        spacing: 6
 
-        anchors.fill: parent
-        anchors.margins: 14
-        spacing: 12
+        PanelTitle { text: "CABO" }
 
-        // cabeçalho
+        Repeater {
+            model: root.net.wiredDevices
+
+            delegate: Rectangle {
+                id: wired
+
+                required property var modelData
+                readonly property bool connected: modelData.state === "connected"
+                readonly property bool unplugged: modelData.state === "unavailable"
+
+                Layout.fillWidth: true
+                implicitHeight: 48
+                radius: Sizes.radius.normal
+                color: connected ? Theme.selected : Theme.colors.surface
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 8
+                    spacing: 12
+
+                    Text {
+                        text: wired.connected ? "󰈀" : "󰈂"
+                        color: wired.connected ? Theme.colors.info : Theme.colors.muted
+                        font.family: Typo.family
+                        font.pixelSize: Typo.size.large
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: wired.connected ? wired.modelData.connection : "Desconectado"
+                            elide: Text.ElideRight
+                            color: Theme.colors.text
+                            font.family: Typo.family
+                            font.pixelSize: Typo.size.normal - 1
+                            font.weight: Typo.weight.semibold
+                        }
+
+                        Text {
+                            text: wired.modelData.device + "  ·  "
+                                + (wired.connected ? "conectado" : wired.unplugged ? "cabo desconectado" : wired.modelData.state)
+                            color: Theme.colors.muted
+                            font.family: Typo.family
+                            font.pixelSize: Typo.size.small - 1
+                        }
+                    }
+
+                    PanelButton {
+                        visible: !wired.unplugged
+                        text: wired.connected ? "Desconectar" : "Conectar"
+                        accent: wired.connected ? Theme.colors.muted : Theme.colors.primary
+                        onClicked: root.net.setWiredConnected(wired.modelData.device, !wired.connected)
+                    }
+                }
+            }
+        }
+    }
+
+    // ---- Wi-Fi ------------------------------------------------------------------
+
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 6
+
         RowLayout {
             Layout.fillWidth: true
-            spacing: 6
 
             PanelTitle {
                 Layout.fillWidth: true
-                text: "REDE"
+                text: "WI-FI"
             }
 
-            PanelIconButton {
-                visible: root.net.wifiDevice !== null && root.net.wifiEnabled
-                icon: "󰑐"
-                spinning: root.net.scanning
-                onClicked: root.net.rescan()
-            }
-
-            PanelIconButton {
-                icon: "󰒓"
-                onClicked: root.net.openAdvanced()
+            PanelSwitch {
+                visible: root.net.wifiDevice !== null
+                checked: root.net.wifiEnabled
+                onToggled: root.net.setWifiEnabled(!root.net.wifiEnabled)
             }
         }
 
-        // portal cativo (login de hotel, aeroporto…)
-        Rectangle {
-            Layout.fillWidth: true
-            visible: root.net.connectivity === "portal" || root.net.connectivity === "limited"
-            implicitHeight: portalRow.implicitHeight + 16
-            radius: Sizes.radius.normal
-            color: Qt.alpha(Theme.colors.warning, 0.14)
-            border.width: 1
-            border.color: Qt.alpha(Theme.colors.warning, 0.5)
-
-            RowLayout {
-                id: portalRow
-                anchors.fill: parent
-                anchors.margins: 8
-                anchors.leftMargin: 12
-                spacing: 10
-
-                Text {
-                    Layout.fillWidth: true
-                    text: root.net.connectivity === "portal"
-                        ? "Esta rede pede login no navegador"
-                        : "Conectado, mas sem acesso à internet"
-                    wrapMode: Text.WordWrap
-                    color: Theme.colors.warning
-                    font.family: Typo.family
-                    font.pixelSize: Typo.size.small
-                }
-
-                PanelButton {
-                    visible: root.net.connectivity === "portal"
-                    text: "Abrir login"
-                    accent: Theme.colors.warning
-                    onClicked: root.net.openPortalLogin()
-                }
-            }
+        Text {
+            visible: root.net.wifiDevice === null
+            text: "Nenhuma placa Wi-Fi encontrada"
+            color: Theme.colors.muted
+            font.family: Typo.family
+            font.pixelSize: Typo.size.small
         }
 
-        // ---- cabo -----------------------------------------------------------------
+        Text {
+            visible: root.net.wifiDevice !== null && !root.net.wifiEnabled
+            text: "Wi-Fi desligado"
+            color: Theme.colors.muted
+            font.family: Typo.family
+            font.pixelSize: Typo.size.small
+        }
 
-        ColumnLayout {
+        Text {
+            visible: root.net.wifiDevice !== null && root.net.wifiEnabled && root.net.wifiNetworks.length === 0
+            text: root.net.scanning ? "Procurando redes…" : "Nenhuma rede encontrada"
+            color: Theme.colors.muted
+            font.family: Typo.family
+            font.pixelSize: Typo.size.small
+        }
+
+        Flickable {
+            id: wifiScroll
+
             Layout.fillWidth: true
-            visible: root.net.wiredDevices.length > 0
-            spacing: 6
+            visible: root.net.wifiDevice !== null && root.net.wifiEnabled && root.net.wifiNetworks.length > 0
+            implicitHeight: Math.min(wifiColumn.implicitHeight, 560)
+            contentHeight: wifiColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
 
-            PanelTitle { text: "CABO" }
+            ColumnLayout {
+                id: wifiColumn
 
-            Repeater {
-                model: root.net.wiredDevices
+                width: wifiScroll.width
+                spacing: 2
 
-                delegate: Rectangle {
-                    id: wired
+                Repeater {
+                    model: root.net.wifiNetworks
 
-                    required property var modelData
-                    readonly property bool connected: modelData.state === "connected"
-                    readonly property bool unplugged: modelData.state === "unavailable"
+                    delegate: ColumnLayout {
+                        id: wifi
 
-                    Layout.fillWidth: true
-                    implicitHeight: 48
-                    radius: Sizes.radius.normal
-                    color: connected ? Theme.selected : Theme.colors.surface
+                        required property var modelData
+                        readonly property var n: modelData
+                        readonly property bool isExpanded: root.expanded === n.ssid
+                        readonly property bool showForm: root.formFor === n.ssid
+                        readonly property bool busy: root.net.busySsid === n.ssid
+                        readonly property bool failed: root.net.errorSsid === n.ssid
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 8
-                        spacing: 12
+                        Layout.fillWidth: true
+                        spacing: 0
 
-                        Text {
-                            text: wired.connected ? "󰈀" : "󰈂"
-                            color: wired.connected ? Theme.colors.info : Theme.colors.muted
-                            font.family: Typo.family
-                            font.pixelSize: Typo.size.large
+                        // rola a lista até mostrar a rede aberta (e o formulário) inteira
+                        function reveal() {
+                            Qt.callLater(() => {
+                                const bottom = wifi.y + wifi.height;
+                                const maxY = Math.max(0, wifiScroll.contentHeight - wifiScroll.height);
+                                if (bottom > wifiScroll.contentY + wifiScroll.height)
+                                    wifiScroll.contentY = Math.min(maxY, bottom - wifiScroll.height);
+                                if (wifi.y < wifiScroll.contentY)
+                                    wifiScroll.contentY = wifi.y;
+                            });
+                        }
+                        onIsExpandedChanged: if (isExpanded) reveal()
+                        onShowFormChanged: if (showForm) reveal()
+                        onHeightChanged: if (isExpanded) reveal()
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 44
+                            radius: Sizes.radius.normal
+                            color: wifi.n.inUse ? Theme.selected
+                                 : rowMouse.containsMouse || wifi.isExpanded ? Theme.hover
+                                 : "transparent"
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 12
+                                spacing: 12
+
+                                Text {
+                                    text: root.net.signalIcon(wifi.n.signal)
+                                    color: wifi.n.inUse ? Theme.colors.info : Theme.colors.text
+                                    font.family: Typo.family
+                                    font.pixelSize: Typo.size.large
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 1
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: wifi.n.ssid
+                                        elide: Text.ElideRight
+                                        color: Theme.colors.text
+                                        font.family: Typo.family
+                                        font.pixelSize: Typo.size.normal - 1
+                                        font.weight: wifi.n.inUse ? Typo.weight.semibold : Typo.weight.regular
+                                    }
+
+                                    Text {
+                                        text: wifi.busy ? "conectando…"
+                                            : wifi.n.inUse ? "conectada"
+                                            : wifi.n.known ? "salva  ·  " + root.securityLabel(wifi.n)
+                                            : root.securityLabel(wifi.n)
+                                        color: wifi.busy ? Theme.colors.warning : Theme.colors.muted
+                                        font.family: Typo.family
+                                        font.pixelSize: Typo.size.small - 1
+                                    }
+                                }
+
+                                Text {
+                                    visible: wifi.n.secured
+                                    text: wifi.n.enterprise ? "󰒃" : "󰌾"
+                                    color: Theme.colors.muted
+                                    font.family: Typo.family
+                                    font.pixelSize: Typo.size.normal
+                                }
+                            }
+
+                            MouseArea {
+                                id: rowMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                enabled: !wifi.busy
+                                onClicked: root.onRowClicked(wifi.n)
+                            }
                         }
 
+                        // detalhes: ações ou formulário
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 1
+                            Layout.leftMargin: 12
+                            Layout.rightMargin: 12
+                            Layout.topMargin: 6
+                            Layout.bottomMargin: 8
+                            visible: wifi.isExpanded || wifi.failed
+                            spacing: 8
 
-                            Text {
+                            PanelError {
+                                visible: wifi.failed
+                                text: root.net.errorText
+                            }
+
+                            RowLayout {
+                                visible: wifi.isExpanded && !wifi.showForm && (wifi.n.inUse || wifi.n.known)
+                                spacing: 6
+
+                                PanelButton {
+                                    text: wifi.n.inUse ? "Desconectar" : "Conectar"
+                                    accent: wifi.n.inUse ? Theme.colors.muted : Theme.colors.primary
+                                    onClicked: {
+                                        if (wifi.n.inUse)
+                                            root.net.disconnectWifi();
+                                        else
+                                            root.net.connectKnown(wifi.n.ssid);
+                                    }
+                                }
+
+                                PanelButton {
+                                    visible: wifi.n.secured
+                                    text: "Trocar senha"
+                                    accent: Theme.colors.muted
+                                    onClicked: root.openForm(wifi.n.ssid)
+                                }
+
+                                PanelButton {
+                                    text: "Esquecer"
+                                    accent: Theme.colors.error
+                                    onClicked: {
+                                        root.net.forget(wifi.n.ssid);
+                                        root.expanded = "";
+                                    }
+                                }
+                            }
+
+                            CredentialsForm {
+                                visible: wifi.showForm
                                 Layout.fillWidth: true
-                                text: wired.connected ? wired.modelData.connection : "Desconectado"
-                                elide: Text.ElideRight
-                                color: Theme.colors.text
-                                font.family: Typo.family
-                                font.pixelSize: Typo.size.normal - 1
-                                font.weight: Typo.weight.semibold
+                                panel: root
+                                enterprise: wifi.n.enterprise
+                                onSubmitted: root.submit(wifi.n.ssid, wifi.n.enterprise, false)
+                                onCancelled: root.toggle(wifi.n.ssid)
                             }
-
-                            Text {
-                                text: wired.modelData.device + "  ·  "
-                                    + (wired.connected ? "conectado" : wired.unplugged ? "cabo desconectado" : wired.modelData.state)
-                                color: Theme.colors.muted
-                                font.family: Typo.family
-                                font.pixelSize: Typo.size.small - 1
-                            }
-                        }
-
-                        PanelButton {
-                            visible: !wired.unplugged
-                            text: wired.connected ? "Desconectar" : "Conectar"
-                            accent: wired.connected ? Theme.colors.muted : Theme.colors.primary
-                            onClicked: root.net.setWiredConnected(wired.modelData.device, !wired.connected)
                         }
                     }
                 }
             }
         }
 
-        // ---- Wi-Fi ------------------------------------------------------------------
-
+        // rede oculta
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 6
-
-            RowLayout {
-                Layout.fillWidth: true
-
-                PanelTitle {
-                    Layout.fillWidth: true
-                    text: "WI-FI"
-                }
-
-                PanelSwitch {
-                    visible: root.net.wifiDevice !== null
-                    checked: root.net.wifiEnabled
-                    onToggled: root.net.setWifiEnabled(!root.net.wifiEnabled)
-                }
-            }
+            visible: root.net.wifiDevice !== null && root.net.wifiEnabled
+            spacing: 8
 
             Text {
-                visible: root.net.wifiDevice === null
-                text: "Nenhuma placa Wi-Fi encontrada"
-                color: Theme.colors.muted
+                text: root.expanded === root.hiddenKey ? "Rede oculta" : "Conectar a uma rede oculta…"
+                color: hiddenMouse.containsMouse ? Theme.colors.text : Theme.colors.muted
                 font.family: Typo.family
                 font.pixelSize: Typo.size.small
-            }
+                font.underline: hiddenMouse.containsMouse
 
-            Text {
-                visible: root.net.wifiDevice !== null && !root.net.wifiEnabled
-                text: "Wi-Fi desligado"
-                color: Theme.colors.muted
-                font.family: Typo.family
-                font.pixelSize: Typo.size.small
-            }
-
-            Text {
-                visible: root.net.wifiDevice !== null && root.net.wifiEnabled && root.net.wifiNetworks.length === 0
-                text: root.net.scanning ? "Procurando redes…" : "Nenhuma rede encontrada"
-                color: Theme.colors.muted
-                font.family: Typo.family
-                font.pixelSize: Typo.size.small
-            }
-
-            // lista de redes
-            Flickable {
-                id: wifiScroll
-
-                Layout.fillWidth: true
-                visible: root.net.wifiDevice !== null && root.net.wifiEnabled && root.net.wifiNetworks.length > 0
-                implicitHeight: Math.min(wifiColumn.implicitHeight, 560)
-                contentHeight: wifiColumn.implicitHeight
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-
-                ColumnLayout {
-                    id: wifiColumn
-
-                    width: wifiScroll.width
-                    spacing: 2
-
-                    Repeater {
-                        model: root.net.wifiNetworks
-
-                        delegate: ColumnLayout {
-                            id: wifi
-
-                            required property var modelData
-                            readonly property var n: modelData
-                            readonly property bool isExpanded: root.expanded === n.ssid
-                            readonly property bool showForm: root.formFor === n.ssid
-                            readonly property bool busy: root.net.busySsid === n.ssid
-                            readonly property bool failed: root.net.errorSsid === n.ssid
-
-                            Layout.fillWidth: true
-                            spacing: 0
-
-                            // rola a lista até mostrar a rede aberta (e o formulário) inteira
-                            function reveal() {
-                                Qt.callLater(() => {
-                                    const bottom = wifi.y + wifi.height;
-                                    const maxY = Math.max(0, wifiScroll.contentHeight - wifiScroll.height);
-                                    if (bottom > wifiScroll.contentY + wifiScroll.height)
-                                        wifiScroll.contentY = Math.min(maxY, bottom - wifiScroll.height);
-                                    if (wifi.y < wifiScroll.contentY)
-                                        wifiScroll.contentY = wifi.y;
-                                });
-                            }
-                            onIsExpandedChanged: if (isExpanded) reveal()
-                            onShowFormChanged: if (showForm) reveal()
-                            onHeightChanged: if (isExpanded) reveal()
-
-                            // linha da rede
-                            Rectangle {
-                                Layout.fillWidth: true
-                                implicitHeight: 44
-                                radius: Sizes.radius.normal
-                                color: wifi.n.inUse ? Theme.selected
-                                     : rowMouse.containsMouse || wifi.isExpanded ? Theme.hover
-                                     : "transparent"
-
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 12
-                                    anchors.rightMargin: 12
-                                    spacing: 12
-
-                                    Text {
-                                        text: root.net.signalIcon(wifi.n.signal)
-                                        color: wifi.n.inUse ? Theme.colors.info : Theme.colors.text
-                                        font.family: Typo.family
-                                        font.pixelSize: Typo.size.large
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 1
-
-                                        Text {
-                                            Layout.fillWidth: true
-                                            text: wifi.n.ssid
-                                            elide: Text.ElideRight
-                                            color: Theme.colors.text
-                                            font.family: Typo.family
-                                            font.pixelSize: Typo.size.normal - 1
-                                            font.weight: wifi.n.inUse ? Typo.weight.semibold : Typo.weight.regular
-                                        }
-
-                                        Text {
-                                            text: wifi.busy ? "conectando…"
-                                                : wifi.n.inUse ? "conectada"
-                                                : wifi.n.known ? "salva  ·  " + root.securityLabel(wifi.n)
-                                                : root.securityLabel(wifi.n)
-                                            color: wifi.busy ? Theme.colors.warning : Theme.colors.muted
-                                            font.family: Typo.family
-                                            font.pixelSize: Typo.size.small - 1
-                                        }
-                                    }
-
-                                    Text {
-                                        visible: wifi.n.secured
-                                        text: wifi.n.enterprise ? "󰒃" : "󰌾"
-                                        color: Theme.colors.muted
-                                        font.family: Typo.family
-                                        font.pixelSize: Typo.size.normal
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: rowMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    enabled: !wifi.busy
-                                    onClicked: root.onRowClicked(wifi.n)
-                                }
-                            }
-
-                            // detalhes: ações ou formulário
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                Layout.leftMargin: 12
-                                Layout.rightMargin: 12
-                                Layout.topMargin: 6
-                                Layout.bottomMargin: 8
-                                visible: wifi.isExpanded || wifi.failed
-                                spacing: 8
-
-                                PanelError {
-                                    visible: wifi.failed
-                                    text: root.net.errorText
-                                }
-
-                                // ações de rede salva / conectada
-                                RowLayout {
-                                    visible: wifi.isExpanded && !wifi.showForm && (wifi.n.inUse || wifi.n.known)
-                                    spacing: 6
-
-                                    PanelButton {
-                                        text: wifi.n.inUse ? "Desconectar" : "Conectar"
-                                        accent: wifi.n.inUse ? Theme.colors.muted : Theme.colors.primary
-                                        onClicked: {
-                                            if (wifi.n.inUse)
-                                                root.net.disconnectWifi();
-                                            else
-                                                root.net.connectKnown(wifi.n.ssid);
-                                        }
-                                    }
-
-                                    PanelButton {
-                                        visible: wifi.n.secured
-                                        text: "Trocar senha"
-                                        accent: Theme.colors.muted
-                                        onClicked: root.openForm(wifi.n.ssid)
-                                    }
-
-                                    PanelButton {
-                                        text: "Esquecer"
-                                        accent: Theme.colors.error
-                                        onClicked: {
-                                            root.net.forget(wifi.n.ssid);
-                                            root.expanded = "";
-                                        }
-                                    }
-                                }
-
-                                // formulário de credenciais
-                                CredentialsForm {
-                                    visible: wifi.showForm
-                                    Layout.fillWidth: true
-                                    panel: root
-                                    enterprise: wifi.n.enterprise
-                                    onSubmitted: root.submit(wifi.n.ssid, wifi.n.enterprise, false)
-                                    onCancelled: root.toggle(wifi.n.ssid)
-                                }
-                            }
-                        }
-                    }
+                MouseArea {
+                    id: hiddenMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.toggle(root.hiddenKey)
                 }
             }
 
-            // rede oculta
             ColumnLayout {
                 Layout.fillWidth: true
-                visible: root.net.wifiDevice !== null && root.net.wifiEnabled
+                visible: root.expanded === root.hiddenKey
                 spacing: 8
 
-                Text {
-                    text: root.expanded === root.hiddenKey ? "Rede oculta" : "Conectar a uma rede oculta…"
-                    color: hiddenMouse.containsMouse ? Theme.colors.text : Theme.colors.muted
-                    font.family: Typo.family
-                    font.pixelSize: Typo.size.small
-                    font.underline: hiddenMouse.containsMouse
-
-                    MouseArea {
-                        id: hiddenMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.toggle(root.hiddenKey)
-                    }
+                PanelField {
+                    Layout.fillWidth: true
+                    label: "Nome da rede (SSID)"
+                    value: root.fHiddenSsid
+                    onEdited: v => root.fHiddenSsid = v
                 }
 
-                ColumnLayout {
+                PanelChips {
+                    label: "Segurança"
+                    options: [
+                        { value: "open", label: "Aberta" },
+                        { value: "psk", label: "Senha" },
+                        { value: "eap", label: "Corporativa" }
+                    ]
+                    value: root.fHiddenSecurity
+                    onPicked: v => root.fHiddenSecurity = v
+                }
+
+                PanelError {
+                    visible: root.net.errorSsid !== "" && root.net.errorSsid === root.fHiddenSsid.trim()
+                    text: root.net.errorText
+                }
+
+                CredentialsForm {
                     Layout.fillWidth: true
-                    visible: root.expanded === root.hiddenKey
-                    spacing: 8
-
-                    PanelField {
-                        Layout.fillWidth: true
-                        label: "Nome da rede (SSID)"
-                        value: root.fHiddenSsid
-                        onEdited: v => root.fHiddenSsid = v
-                    }
-
-                    PanelChips {
-                        label: "Segurança"
-                        options: [
-                            { value: "open", label: "Aberta" },
-                            { value: "psk", label: "Senha" },
-                            { value: "eap", label: "Corporativa" }
-                        ]
-                        value: root.fHiddenSecurity
-                        onPicked: v => root.fHiddenSecurity = v
-                    }
-
-                    PanelError {
-                        visible: root.net.errorSsid !== "" && root.net.errorSsid === root.fHiddenSsid.trim()
-                        text: root.net.errorText
-                    }
-
-                    CredentialsForm {
-                        Layout.fillWidth: true
-                        panel: root
-                        enterprise: root.fHiddenSecurity === "eap"
-                        needsPassword: root.fHiddenSecurity !== "open"
-                        extraValid: root.fHiddenSsid.trim() !== ""
-                        onSubmitted: root.submit(root.fHiddenSsid.trim(), root.fHiddenSecurity === "eap", true)
-                        onCancelled: root.toggle(root.hiddenKey)
-                    }
+                    panel: root
+                    enterprise: root.fHiddenSecurity === "eap"
+                    needsPassword: root.fHiddenSecurity !== "open"
+                    extraValid: root.fHiddenSsid.trim() !== ""
+                    onSubmitted: root.submit(root.fHiddenSsid.trim(), root.fHiddenSecurity === "eap", true)
+                    onCancelled: root.toggle(root.hiddenKey)
                 }
             }
         }
     }
 
     // ---- componentes ------------------------------------------------------------
-
-
-
-
-
-
-
 
     // formulário de credenciais (senha comum ou corporativa). Os valores ficam
     // no painel (panel.f*), para sobreviverem a atualizações da lista.
@@ -636,7 +605,6 @@ Rectangle {
             }
         }
 
-        // opções da rede corporativa
         ColumnLayout {
             Layout.fillWidth: true
             visible: form.enterprise

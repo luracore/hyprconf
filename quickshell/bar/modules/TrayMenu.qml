@@ -62,7 +62,7 @@ PopupWindow {
 
   anchor.item: anchorItem
   anchor.rect.x: 0
-  anchor.rect.y: anchorItem ? Sizes.bar.height - anchorItem.mapToItem(null, 0, 0).y + 4 : 0
+  anchor.rect.y: anchorItem ? Sizes.bar.height - anchorItem.mapToItem(null, 0, 0).y + Sizes.bar.padding : 0
   anchor.rect.width: anchorItem ? anchorItem.width : 1
   anchor.rect.height: 1
   anchor.edges: Edges.Top | Edges.Right

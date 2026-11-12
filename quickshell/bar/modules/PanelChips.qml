@@ -10,8 +10,9 @@ ColumnLayout {
     id: chips
 
     property string label
-    property var options: []        // [{ value, label }]
+    property var options: []
     property string value
+    property color accent: Theme.colors.primary
     signal picked(string value)
 
     spacing: 4
@@ -23,7 +24,6 @@ ColumnLayout {
         font.pixelSize: Typo.size.small - 1
     }
 
-    // quebra a linha quando as opções não cabem
     Flow {
         Layout.fillWidth: true
         spacing: 6
@@ -40,16 +40,16 @@ ColumnLayout {
                 width: chipText.implicitWidth + 20
                 height: 28
                 radius: Sizes.radius.normal
-                color: selected ? Qt.alpha(Theme.colors.primary, 0.2)
+                color: selected ? Qt.alpha(chips.accent, 0.2)
                      : chipMouse.containsMouse ? Theme.hover : Theme.colors.surface
                 border.width: 1
-                border.color: selected ? Theme.colors.primary : "transparent"
+                border.color: selected ? chips.accent : "transparent"
 
                 Text {
                     id: chipText
                     anchors.centerIn: parent
                     text: chip.modelData.label
-                    color: chip.selected ? Theme.colors.primary : Theme.colors.text
+                    color: chip.selected ? chips.accent : Theme.colors.text
                     font.family: Typo.family
                     font.pixelSize: Typo.size.small
                 }
