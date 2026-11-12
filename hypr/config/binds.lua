@@ -2,15 +2,18 @@
 -- APPLICATIONS
 -- =========================================
 
-hl.bind("SUPER + RETURN", hl.dsp.exec_cmd("foot"))
-hl.bind("SUPER + E", hl.dsp.exec_cmd("thunar"))
+-- terminal e explorador: os padrões de ~/hyprconf/defaults.conf
+local run = "$HOME/hyprconf/apps/hyprconf-run"
+
+hl.bind("SUPER + RETURN", hl.dsp.exec_cmd(run .. " terminal"))
+hl.bind("SUPER + E", hl.dsp.exec_cmd(run .. " files"))
 hl.bind("SUPER + SPACE", hl.dsp.exec_cmd(
   "quickshell ipc --path $HOME/hyprconf/quickshell/launcher call launcher toggle"
 ))
 hl.bind("SUPER + M", hl.dsp.exec_cmd(
   "quickshell --path $HOME/hyprconf/quickshell/wallpaper-picker/shell.qml"
 ))
-hl.bind("SUPER + A", hl.dsp.exec_cmd("foot -e opencode"))
+hl.bind("SUPER + A", hl.dsp.exec_cmd(run .. " terminal -e opencode"))
 
 
 -- =========================================

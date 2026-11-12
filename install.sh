@@ -185,4 +185,4 @@ echo
 echo "Hyprconf instalado. Próximos passos:"
 echo "  - saia e entre de novo no Hyprland (variáveis de ambiente, como a do qt6ct);"
 echo "  - abra o nvim uma vez: ele baixa os plugins e o Mason instala os LSPs;"
-echo "  - SUPER + M abre o seletor de wallpaper e tema."
+echo "  - SUPER + SPACE abre o lançador; o app Configurações leva a todo o resto."

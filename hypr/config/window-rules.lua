@@ -36,13 +36,13 @@ hl.window_rule({
   center = true,
 })
 
--- Blur atrás da tela de energia e do lançador
+-- Blur atrás da tela de energia, do lançador e das Configurações
 -- (quickshell/bar/modules/PowerMenu.qml e quickshell/launcher/Launcher.qml)
 
 hl.layer_rule({
   name = "blur-bar-overlays",
   match = {
-    namespace = "^qs-(power|launcher)$",
+    namespace = "^qs-(power|launcher|settings)$",
   },
   blur = true,
 })
