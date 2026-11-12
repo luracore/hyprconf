@@ -84,21 +84,24 @@ hl.bind(
 -- WORKSPACES
 -- =========================================
 
-for i = 1, 10 do
-  local key = i % 10
-
+for i = 1, 9 do
   -- Switch workspace
   hl.bind(
-    "SUPER + " .. key,
+    "SUPER + " .. i,
     hl.dsp.focus({ workspace = i })
   )
 
   -- Move window to workspace
   hl.bind(
-    "SUPER + SHIFT + " .. key,
+    "SUPER + SHIFT + " .. i,
     hl.dsp.window.move({ workspace = i })
   )
 end
+
+-- O 0 é o workspace mágico: uma camada que abre e fecha por cima do
+-- workspace atual, boa para deixar algo à mão (música, chat, terminal)
+hl.bind("SUPER + 0",         hl.dsp.workspace.toggle_special("magic"))
+hl.bind("SUPER + SHIFT + 0", hl.dsp.window.move({ workspace = "special:magic" }))
 
 
 -- =========================================
