@@ -1,0 +1,664 @@
+#!/usr/bin/env bash
+# Pacotes: instalar (repositórios oficiais e AUR), remover e atualizar
+# pacotes, e organizar em grupos.
+#
+# Abas (Alt+1…5, ←/→ ou clique trocam; Ctrl+H mostra os atalhos da aba):
+#   Pacman        pacotes dos repositórios oficiais (✓ = instalado)
+#   AUR           pacotes do AUR, instalados pelo yay
+#   Instalados    os seus: avulsos, em grupos e sobrando (órfãos)
+#   Grupos        os seus metapacotes; Enter entra num grupo
+#   Atualizações  Enter atualiza os oficiais; Alt+Enter, os do AUR
+#
+# Os pacotes do hyprconf não aparecem em Instalados: eles são gerenciados
+# pelo PKGBUILD do metapacote (packages/hyprconf-deps).
+#
+# Subcomandos internos (usados pelo fzf): --list, --preview, --tab, --key
+
+set -uo pipefail
+
+SELF=$(readlink -f "$0")
+source "$(dirname "$SELF")/lib/common.sh"
+
+STATE=${HYPRCONF_PKG_STATE:-}
+PREVIEW_NORMAL='right,45%,border-left,wrap'
+
+screen() { cat "$STATE/screen" 2>/dev/null || echo all; }
+set_screen() { echo "$1" > "$STATE/screen"; }
+
+# aba de onde a Ajuda foi aberta
+origin() { cat "$STATE/prev" 2>/dev/null || echo all; }
+
+# ---- listas ---------------------------------------------------------------------
+
+list_all() {
+    LC_ALL=C pacman -Sl | awk -v ok="$C_OK" -v dim="$C_DIM" -v reset="$C_RESET" '{
+        mark = ($4 ~ /installed/) ? ok "✓" reset : " "
+        printf "%-30s %s %s%-16s %s%s\n", $2, mark, dim, $3, $1, reset
+    }'
+}
+
+# AUR: a lista completa demora uns segundos; é baixada em segundo plano assim
+# que o app abre e fica guardada durante a sessão
+fetch_aur() {
+    command -v yay >/dev/null || return 0
+    local tmp; tmp=$(mktemp "$STATE/aur.XXXXXX")
+    LC_ALL=C yay -Sl aur 2>/dev/null | awk '{ print $2 }' > "$tmp" && mv -f "$tmp" "$STATE/aur.list"
+}
+
+list_aur() {
+    command -v yay >/dev/null || return 0
+    [[ -s $STATE/aur.list ]] || fetch_aur
+    # marca os instalados (pacman -Qm: os de fora dos repositórios oficiais)
+    awk -v ok="$C_OK" -v dim="$C_DIM" -v reset="$C_RESET" '
+        NR == FNR { installed[$1] = $2; next }
+        ($1 in installed) { printf "%-30s %s✓%s %s%s%s\n", $1, ok, reset, dim, installed[$1], reset; next }
+        { print }' <(pacman -Qm) "$STATE/aur.list"
+}
+
+list_groups() {
+    local g n missing status
+    while read -r g; do
+        n=$(group_packages "$g" | wc -l)
+        missing=$(group_missing "$g" | wc -l)
+        status=""
+        if ! group_meta_installed "$g"; then
+            status="${C_WARN}não aplicado${C_RESET}"
+        elif (( missing > 0 )); then
+            status="${C_WARN}falta instalar $missing${C_RESET}"
+        fi
+        printf '%-24s %s%d pacote(s)%s  %s\n' "$g" "$C_DIM" "$n" "$C_RESET" "$status"
+    done < <(groups_list)
+}
+
+list_group() {
+    local name=$1 p version
+    while read -r p; do
+        version=$(pacman -Q "$p" 2>/dev/null | cut -d' ' -f2)
+        if [[ -n $version ]]; then
+            printf '%-30s %s%s%s\n' "$p" "$C_DIM" "$version" "$C_RESET"
+        else
+            printf '%-30s %s[falta instalar]%s\n' "$p" "$C_WARN" "$C_RESET"
+        fi
+    done < <(group_packages "$name")
+}
+
+list_updates() {
+    # checkupdates usa uma cópia do banco de dados: não mexe no sistema
+    checkupdates 2>/dev/null > "$STATE/updates"
+    # do AUR (consulta o AUR pela internet)
+    : > "$STATE/updates.aur"
+    command -v yay >/dev/null && LC_ALL=C yay -Qua 2>/dev/null > "$STATE/updates.aur"
+    awk -v dim="$C_DIM" -v ok="$C_OK" -v acc="$C_ACCENT" -v reset="$C_RESET" '
+        FNR == 1 { aur = (FILENAME ~ /aur$/) }
+        NF >= 4 {
+            printf "%-26s %s%-14s%s → %s%-14s%s %s\n", $1, dim, $2, reset, ok, $4, reset, (aur ? acc "[AUR]" reset : "")
+        }' "$STATE/updates" "$STATE/updates.aur"
+}
+
+list() {
+    local scr out
+    scr=$(screen)
+    case $scr in
+        all) out=$(list_all) ;;
+        aur) out=$(list_aur) ;;
+        installed) out=$(list_installed all) ;;
+        groups) out=$(list_groups) ;;
+        group:*) out=$(list_group "${scr#group:}") ;;
+        updates) out=$(list_updates) ;;
+        help) help_lines; return ;;
+    esac
+    # lista vazia: uma linha explicando (as ações ignoram essa linha)
+    if [[ -n $out ]]; then
+        printf '%s\n' "$out"
+    else
+        printf '%s— %s%s\n' "$C_DIM" "$(empty_message "$scr")" "$C_RESET"
+    fi
+}
+
+# ---- prévia ---------------------------------------------------------------------
+
+preview() {
+    local item=$1
+    [[ $item == "—" ]] && return
+    case $(screen) in
+        all)
+            pacman -Si "$item" 2>/dev/null | paint
+            if pacman -Qq "$item" >/dev/null 2>&1; then
+                printf '\n%s✓ instalado%s (%s)\n' "$C_OK" "$C_RESET" "$(pacman -Q "$item" | cut -d' ' -f2)"
+            fi
+            local g; g=$(group_of "$item")
+            [[ -n $g ]] && printf '%sno grupo "%s"%s\n' "$C_MAGENTA" "$g" "$C_RESET"
+            ;;
+        aur)
+            printf '%sAUR: pacote enviado pela comunidade. O yay mostra o PKGBUILD para revisar antes de instalar.%s\n\n' "$C_WARN" "$C_RESET"
+            yay -Si --aur "$item" 2>/dev/null | paint
+            if pacman -Qq "$item" >/dev/null 2>&1; then
+                printf '\n%s✓ instalado%s (%s)\n' "$C_OK" "$C_RESET" "$(pacman -Q "$item" | cut -d' ' -f2)"
+            fi
+            local g; g=$(group_of "$item")
+            [[ -n $g ]] && printf '%sno grupo "%s"%s\n' "$C_MAGENTA" "$g" "$C_RESET"
+            ;;
+        installed)
+            preview_installed "$item"
+            ;;
+        group:*)
+            if pacman -Qq "$item" >/dev/null 2>&1; then
+                preview_installed "$item"
+            else
+                printf '%sAinda não instalado: Alt+Enter instala o que falta no grupo.%s\n\n' "$C_WARN" "$C_RESET"
+                pacman -Si "$item" 2>/dev/null | paint || yay -Si --aur "$item" 2>/dev/null | paint
+            fi
+            ;;
+        groups)
+            printf '%sGrupo "%s"%s  %s(%s)%s\n\n' "$C_BOLD" "$item" "$C_RESET" "$C_DIM" "$GROUPS_DIR/$item" "$C_RESET"
+            local p desc
+            while read -r p; do
+                desc=$(pacman -Qi "$p" 2>/dev/null | awk -F': ' '/^(Descrição|Description)/ { print $2; exit }')
+                [[ -z $desc ]] && desc="${C_WARN}(falta instalar)${C_RESET}"
+                printf '  %-30s %s\n' "$p" "$desc"
+            done < <(group_packages "$item")
+            ;;
+        updates)
+            local line
+            line=$(grep -h -m1 "^$item " "$STATE/updates" "$STATE/updates.aur" 2>/dev/null | head -1)
+            [[ -n $line ]] && printf '%s%s%s  %s → %s%s%s\n\n' "$C_BOLD" "$item" "$C_RESET" \
+                "$(cut -d' ' -f2 <<< "$line")" "$C_OK" "$(cut -d' ' -f4 <<< "$line")" "$C_RESET"
+            pacman -Si "$item" 2>/dev/null | paint || yay -Si --aur "$item" 2>/dev/null | paint
+            ;;
+    esac
+}
+
+# ---- abas ------------------------------------------------------------------------
+
+# abas, na ordem; "group:*" conta como Grupos
+TABS=(all aur installed groups updates)
+
+tab_of() {
+    case $1 in group:*) echo groups ;; *) echo "$1" ;; esac
+}
+
+tab_label() {
+    case $1 in
+        all) echo "Pacman" ;;
+        aur) echo "AUR" ;;
+        installed) echo "Instalados" ;;
+        groups) echo "Grupos" ;;
+        updates) echo "Atualizações" ;;
+    esac
+}
+
+# cabeçalho com as abas: a atual sublinhada e na cor de destaque
+tabs_header() {
+    local current out="" t
+    current=$(tab_of "$1")
+    for t in "${TABS[@]}"; do
+        if [[ $t == "$current" ]]; then
+            out+="${C_BOLD}${C_ACCENT}"$'\e[4m'"$(tab_label "$t")${C_RESET}   "
+        else
+            out+="${C_DIM}$(tab_label "$t")${C_RESET}   "
+        fi
+    done
+    printf '%s' "$out"
+}
+
+# aba vizinha: step = -1 (anterior) ou 1 (próxima), dando a volta
+tab_step() {
+    local current i n=${#TABS[@]}
+    current=$(tab_of "$1")
+    for i in "${!TABS[@]}"; do
+        [[ ${TABS[$i]} == "$current" ]] && { echo "${TABS[$(( (i + $2 + n) % n ))]}"; return; }
+    done
+    echo all
+}
+
+# aba pelo nome clicado
+tab_by_label() {
+    local t
+    for t in "${TABS[@]}"; do
+        [[ $(tab_label "$t") == "$1" ]] && { echo "$t"; return; }
+    done
+}
+
+prompt_for() {
+    case $1 in
+        all) echo "󰍉  " ;;
+        aur) echo "󰣇  " ;;
+        installed) echo "󰏗  " ;;
+        groups) echo "󰉋  " ;;
+        group:*) echo "󰉋 ${1#group:}  " ;;
+        updates) echo "󰚰  " ;;
+        help) echo "" ;;
+    esac
+}
+
+ghost_for() {
+    echo "Digite aqui"
+}
+
+empty_message() {
+    case $1 in
+        groups) echo "Nenhum grupo ainda: em Pacman ou AUR, Alt+Enter instala num grupo novo." ;;
+        aur) command -v yay >/dev/null && echo "Não foi possível listar o AUR (sem internet?)." || echo "Falta o yay para usar o AUR." ;;
+        updates) echo "Tudo atualizado." ;;
+        installed) echo "Nenhum pacote seu (além dos do hyprconf)." ;;
+        *) echo "Nada aqui." ;;
+    esac
+}
+
+# ---- ajuda (Ctrl+H) ---------------------------------------------------------------
+
+# atalhos gerais e os da aba de onde a ajuda foi aberta, em tabelas centralizadas
+help_lines() {
+    local from; from=$(origin)
+    local general=(
+        "Alt+1 … Alt+5|Pacman · AUR · Instalados · Grupos · Atualizações"
+        "← / →|aba anterior / próxima"
+        "↑ / ↓|pacote anterior / próximo"
+        "Alt+H/J/K/L|o mesmo, no estilo vim"
+        "Tab|seleciona vários"
+        "Esc|sai"
+    )
+    local here=() title
+    case $from in
+        all|aur)
+            [[ $from == aur ]] && title="AUR" || title="Pacman"
+            here=("Enter|instala (se já tiver, mostra em Instalados)" "Alt+Enter|instala num grupo"
+                  "Ctrl+G|atribui a um grupo, sem instalar") ;;
+        installed)
+            title="Instalados"
+            here=("Ctrl+R|remove o pacote" "Ctrl+G|atribui a um grupo" "Ctrl+L|limpa os órfãos") ;;
+        updates)
+            title="Atualizações"
+            here=("Enter|atualiza os pacotes oficiais (pacman)"
+                  "Alt+Enter|atualiza os do AUR (com os oficiais em dia)") ;;
+        groups)
+            title="Grupos"
+            here=("Enter|entra no grupo") ;;
+        group:*)
+            title="Grupo \"${from#group:}\""
+            here=("Alt+Enter|instala o que falta no grupo"
+                  "Ctrl+R|remove o pacote" "Ctrl+G|tira do grupo"
+                  "Ctrl+X|desfaz o grupo (os pacotes ficam)" "Ctrl+D|apaga o grupo e os pacotes") ;;
+    esac
+
+    # largura das colunas: a maior de todas as linhas (as tabelas alinham)
+    local kw=0 dw=0 row k d
+    for row in "${general[@]}" "${here[@]}"; do
+        k=${row%%|*} d=${row#*|}
+        (( ${#k} > kw )) && kw=${#k}
+        (( ${#d} > dw )) && dw=${#d}
+    done
+
+    # centraliza na janela
+    local rows cols
+    read -r rows cols < <(stty size 2>/dev/null </dev/tty || echo "40 120")
+    local height=$(( ${#general[@]} + ${#here[@]} + 8 ))
+    local top=$(( (rows - height) / 2 - 3 )) left=$(( (cols - kw - dw - 7) / 2 - 2 ))
+    (( top < 0 )) && top=0
+    (( left < 0 )) && left=0
+    local pad; pad=$(printf '%*s' "$left" '')
+
+    local line_k line_d
+    line_k=$(printf '─%.0s' $(seq $((kw + 2))))
+    line_d=$(printf '─%.0s' $(seq $((dw + 2))))
+
+    table() {   # título, linhas "atalho|ação"
+        local name=$1; shift
+        printf '%s%s%s%s\n' "$pad" "$C_BOLD$C_ACCENT" "$name" "$C_RESET"
+        printf '%s%s╭%s┬%s╮%s\n' "$pad" "$C_DIM" "$line_k" "$line_d" "$C_RESET"
+        local r
+        for r in "$@"; do
+            k=${r%%|*} d=${r#*|}
+            # preenche contando caracteres (o printf conta bytes e desalinha acentos)
+            printf '%s%s│%s %s%s%*s%s %s│%s %s%*s %s│%s\n' "$pad" \
+                "$C_DIM" "$C_RESET" "$C_ACCENT" "$k" $((kw - ${#k})) "" "$C_RESET" \
+                "$C_DIM" "$C_RESET" "$d" $((dw - ${#d})) "" "$C_DIM" "$C_RESET"
+        done
+        printf '%s%s╰%s┴%s╯%s\n' "$pad" "$C_DIM" "$line_k" "$line_d" "$C_RESET"
+    }
+
+    local i
+    for (( i = 0; i < top; i++ )); do printf '\n'; done
+    table "Geral" "${general[@]}"; printf '\n'
+    table "$title" "${here[@]}"; printf '\n'
+    printf '%s%sEsc volta%s\n' "$pad" "$C_DIM" "$C_RESET"
+}
+
+# ---- navegação dentro do fzf ------------------------------------------------------
+# Trocar de aba não fecha o fzf: ele chama "--tab"/"--key" e aplica as ações
+# impressas. Assim não há intervalo em que uma tecla apertada rápido (Alt+L
+# chega como Esc + "l") vire um Esc de verdade.
+
+# ações do fzf que mostram uma tela (aba, grupo ou ajuda)
+show_actions() {
+    local target=$1
+    set_screen "$target"
+
+    local header
+    if [[ $target == help ]]; then header=$(tabs_header "$(origin)"); else header=$(tabs_header "$target"); fi
+    printf 'change-header(%s)+change-prompt(%s)+change-ghost(%s)+clear-query+reload(%s --list)+first' \
+        "$header" "$(prompt_for "$target")" "$(ghost_for "$target")" "$SELF"
+    printf '+change-preview-window(%s)' "$PREVIEW_NORMAL"
+    if [[ $target == help ]]; then
+        printf '+hide-input+hide-preview+change-pointer( )'
+    else
+        printf '+show-input+show-preview+change-pointer(▌)'
+    fi
+}
+
+# --tab prev|next|label:<nome>|<aba>
+tab_cmd() {
+    local scr base target
+    scr=$(screen)
+    base=$scr
+    [[ $scr == help ]] && base=$(origin)   # na ajuda, as setas andam a partir da aba de origem
+    case $1 in
+        prev) target=$(tab_step "$base" -1) ;;
+        next) target=$(tab_step "$base" 1) ;;
+        label:*) target=$(tab_by_label "${1#label:}") ;;
+        *) target=$1 ;;
+    esac
+    [[ -n $target ]] && show_actions "$target"
+}
+
+# teclas de ação que valem em cada tela (as outras são ignoradas)
+action_valid() {
+    case "$1:$2" in
+        all:enter|all:alt-enter|all:ctrl-g) return 0 ;;
+        aur:enter|aur:alt-enter|aur:ctrl-g) return 0 ;;
+        installed:ctrl-r|installed:ctrl-g|installed:ctrl-l) return 0 ;;
+        updates:enter|updates:alt-enter) return 0 ;;
+        group:*:alt-enter|group:*:ctrl-r|group:*:ctrl-g|group:*:ctrl-x|group:*:ctrl-d) return 0 ;;
+    esac
+    return 1
+}
+
+accept_with() {
+    printf 'execute-silent(echo %s > %s/key)+accept' "$1" "$STATE"
+}
+
+# --key <tecla> [itens]
+key_cmd() {
+    local key=$1; shift
+    local scr; scr=$(screen)
+    case $key in
+        up|down)
+            # na ajuda as setas rolam o texto
+            [[ $scr == help ]] && printf 'offset-%s' "$key" || printf '%s' "$key" ;;
+        esc)
+            [[ $scr == help ]] && show_actions "$(origin)" || printf 'abort' ;;
+        ctrl-h)
+            if [[ $scr == help ]]; then
+                show_actions "$(origin)"
+            else
+                echo "$scr" > "$STATE/prev"
+                show_actions help
+            fi ;;
+        enter)
+            case $scr in
+                all|aur|updates) accept_with enter ;;
+                groups) [[ -n ${1:-} && -d $GROUPS_DIR/$1 ]] && show_actions "group:$1" ;;
+            esac ;;
+        *)
+            action_valid "$scr" "$key" && accept_with "$key" ;;
+    esac
+}
+
+# ---- ações -----------------------------------------------------------------------
+
+install_packages() {
+    title "Instalando: $*"
+    if [[ $(screen) == aur ]]; then
+        yay -S --needed "$@"
+    else
+        sudo pacman -S --needed "$@"
+    fi
+}
+
+# Enter em Pacman/AUR: instala o que falta; um pacote só, já instalado,
+# abre Instalados filtrado nele (devolve 1 para voltar direto à lista)
+search_enter() {
+    if (( $# == 1 )) && pacman -Qq "$1" >/dev/null 2>&1; then
+        if setup_packages | grep -qxF "$1"; then
+            warn "\"$1\" já está instalado: é uma dependência do hyprconf."
+            info "Ele é gerenciado pelo PKGBUILD do metapacote (packages/hyprconf-deps)."
+            return 0
+        fi
+        set_screen installed
+        printf '%s' "$1" > "$STATE/query"
+        return 1
+    fi
+    local missing=() pkg
+    for pkg in "$@"; do
+        pacman -Qq "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
+    done
+    if (( ${#missing[@]} == 0 )); then
+        ok "Já estão todos instalados: ${*}"
+        return 0
+    fi
+    install_packages "${missing[@]}"
+}
+
+# coloca no grupo, instalando o que faltar, numa transação só (uma senha)
+put_in_group() {
+    local group
+    group=$(group_pick) || return
+    title "Grupo \"$group\": $*"
+    group_add "$group" "$@" && ok "Pronto."
+}
+
+# atribui a um grupo sem instalar (instala depois, dentro do grupo, com Alt+Enter)
+assign_to_group() {
+    local group
+    group=$(group_pick) || return
+    group_assign "$group" "$@" || return
+    ok "Atribuído ao grupo \"$group\": $*"
+    info "Para instalar: aba Grupos, entre no grupo e aperte Alt+Enter."
+}
+
+apply_group() {
+    local name=$1
+    local missing
+    mapfile -t missing < <(group_missing "$name")
+    if (( ${#missing[@]} > 0 )); then
+        title "Grupo \"$name\": instalando ${missing[*]}"
+    else
+        title "Aplicando o grupo \"$name\""
+    fi
+    group_apply "$name" && ok "Pronto."
+}
+
+# notícias do Arch publicadas depois da última atualização completa
+arch_news() {
+    local last
+    last=$(grep -a 'starting full system upgrade' /var/log/pacman.log 2>/dev/null | tail -1 | grep -oE '^\[[^]]+\]' | tr -d '[]')
+    curl -fsS --max-time 8 https://archlinux.org/feeds/news/ 2>/dev/null |
+        LAST="$last" node -e '
+            let xml = "";
+            process.stdin.on("data", d => xml += d).on("end", () => {
+                const since = process.env.LAST ? new Date(process.env.LAST) : new Date(0);
+                for (const item of xml.split("<item>").slice(1)) {
+                    const get = tag => (item.match(new RegExp("<" + tag + ">([\\s\\S]*?)</" + tag + ">")) || [])[1] || "";
+                    const date = new Date(get("pubDate"));
+                    if (date > since)
+                        console.log(date.toLocaleDateString("pt-BR") + "  " + get("title") + "\n            " + get("link"));
+                }
+            });'
+}
+
+update_system() {
+
+    title "Notícias do Arch desde a última atualização"
+    local news
+    news=$(arch_news)
+    if [[ -n $news ]]; then
+        warn "$news"
+        printf '\n'
+        info "Algumas notícias pedem um passo manual antes ou depois de atualizar."
+        confirm "Continuar com a atualização?" || return
+    else
+        info "Nenhuma notícia nova."
+    fi
+
+    title "Atualizando os pacotes oficiais"
+    sudo pacman -Syu || return
+
+    title "Depois da atualização"
+    local nothing=1
+    if [[ ! -d /usr/lib/modules/$(uname -r) ]]; then
+        warn "O kernel foi atualizado: reinicie para usar o novo."
+        nothing=0
+    fi
+    local pacnew
+    pacnew=$(pacdiff -o 2>/dev/null)
+    if [[ -n $pacnew ]]; then
+        warn "Configurações novas para revisar (.pacnew):"
+        printf '  %s\n' $pacnew
+        info "  Para comparar e mesclar: sudo DIFFPROG='nvim -d' pacdiff"
+        nothing=0
+    fi
+    local orphans
+    orphans=$(pacman -Qdtq | wc -l)
+    if (( orphans > 0 )); then
+        warn "$orphans pacote(s) sobrando: veja na aba Instalados (Ctrl+L limpa)."
+        nothing=0
+    fi
+    if [[ -s $STATE/updates.aur ]]; then
+        info "Há atualizações do AUR: Alt+Enter atualiza agora que os oficiais estão em dia."
+        nothing=0
+    fi
+    (( nothing )) && ok "Tudo certo."
+}
+
+# AUR: só com os oficiais em dia (os pacotes do AUR compilam contra as
+# bibliotecas do sistema)
+update_aur() {
+    if [[ -s $STATE/updates ]]; then
+        warn "Há atualizações oficiais pendentes: atualize os oficiais primeiro (Enter)."
+        info "Os pacotes do AUR são compilados contra as bibliotecas do sistema, que precisam estar atualizadas."
+        return
+    fi
+    if [[ ! -s $STATE/updates.aur ]]; then
+        ok "Nada para atualizar no AUR."
+        return
+    fi
+    title "Atualizando os pacotes do AUR"
+    info "O yay mostra o que mudou em cada PKGBUILD antes de compilar."
+    yay -Sua
+}
+
+# trata a tecla de ação apertada na tela atual
+handle() {
+    local key=$1; shift
+    local items=("$@")
+    local scr; scr=$(screen)
+
+    case "$scr:$key" in
+        all:enter|aur:enter) (( ${#items[@]} )) || return 1; search_enter "${items[@]}" || return 1 ;;
+        all:alt-enter|aur:alt-enter) (( ${#items[@]} )) && put_in_group "${items[@]}" ;;
+        all:ctrl-g|aur:ctrl-g) (( ${#items[@]} )) && assign_to_group "${items[@]}" ;;
+        installed:ctrl-r) (( ${#items[@]} )) && remove_packages "${items[@]}" ;;
+        installed:ctrl-g) (( ${#items[@]} )) && put_in_group "${items[@]}" ;;
+        installed:ctrl-l) clean_orphans ;;
+        updates:enter)
+            if [[ -s $STATE/updates ]]; then update_system; else ok "Os pacotes oficiais estão em dia."; fi ;;
+        updates:alt-enter) update_aur ;;
+        group:*:alt-enter) apply_group "${scr#group:}" ;;
+        group:*:ctrl-r) (( ${#items[@]} )) && remove_packages "${items[@]}"
+            [[ -d $GROUPS_DIR/${scr#group:} ]] || set_screen groups ;;
+        group:*:ctrl-g)
+            (( ${#items[@]} )) || return 1
+            local name=${scr#group:}
+            title "Tirando do grupo \"$name\": ${items[*]}"
+            group_drop "$name" "${items[@]}" && ok "Pronto: ficaram como avulsos."
+            [[ -d $GROUPS_DIR/$name ]] || set_screen groups ;;
+        group:*:ctrl-x)
+            title "Desfazendo o grupo \"${scr#group:}\" (os pacotes continuam instalados)"
+            group_dissolve "${scr#group:}" && ok "Pronto: os pacotes viraram avulsos."
+            set_screen groups ;;
+        group:*:ctrl-d)
+            title "Apagando o grupo \"${scr#group:}\" e os pacotes dele"
+            group_delete "${scr#group:}"
+            set_screen groups ;;
+        *) return 1 ;;
+    esac
+    return 0
+}
+
+main() {
+    require fzf:fzf checkupdates:pacman-contrib pacdiff:pacman-contrib node:nodejs curl:curl
+
+    STATE=$(mktemp -d -t hyprconf-pacotes.XXXXXX)
+    export HYPRCONF_PKG_STATE=$STATE
+    # limpa também quando a janela é fechada (sinal), não só na saída normal
+    trap 'rm -rf "$STATE"' EXIT
+    trap 'exit 1' INT TERM HUP
+    set_screen all
+    fetch_aur &
+
+    local opts
+    mapfile -t opts < <(fzf_base_opts)
+
+    # tudo passa pelo script (--tab / --key), sem fechar o fzf
+    local nav=(
+        --bind="left:transform:$SELF --tab prev"
+        --bind="right:transform:$SELF --tab next"
+        --bind="alt-h:transform:$SELF --tab prev"
+        --bind="alt-l:transform:$SELF --tab next"
+        --bind="alt-1:transform:$SELF --tab all"
+        --bind="alt-2:transform:$SELF --tab aur"
+        --bind="alt-3:transform:$SELF --tab installed"
+        --bind="alt-4:transform:$SELF --tab groups"
+        --bind="alt-5:transform:$SELF --tab updates"
+        --bind="click-header:transform:$SELF --tab \"label:\$FZF_CLICK_HEADER_WORD\""
+        --bind="up:transform:$SELF --key up"
+        --bind="down:transform:$SELF --key down"
+        --bind="alt-k:transform:$SELF --key up"
+        --bind="alt-j:transform:$SELF --key down"
+        --bind="esc:transform:$SELF --key esc"
+        --bind="ctrl-h:transform:$SELF --key ctrl-h"
+        --bind="enter:transform:$SELF --key enter {1}"
+    )
+    local k
+    for k in alt-enter ctrl-g ctrl-r ctrl-l ctrl-x ctrl-d; do
+        nav+=(--bind="$k:transform:$SELF --key $k")
+    done
+
+    while true; do
+        local scr; scr=$(screen)
+        local query=""
+        if [[ -f $STATE/query ]]; then
+            query=$(cat "$STATE/query")
+            rm -f "$STATE/query"
+        fi
+        rm -f "$STATE/key"
+
+        local out
+        out=$("$SELF" --list | fzf "${opts[@]}" --multi \
+            --prompt="$(prompt_for "$scr")" \
+            --header="$(tabs_header "$scr")" --header-first \
+            --ghost="$(ghost_for "$scr")" \
+            --query="$query" \
+            --preview="$SELF --preview {1}" \
+            "${nav[@]}") || break
+
+        [[ -f $STATE/key ]] || continue
+        local key items
+        key=$(cat "$STATE/key")
+        mapfile -t items < <(awk 'NF && $1 != "—" { print $1 }' <<< "$out")
+
+        clear
+        handle "$key" "${items[@]}" || { clear; continue; }
+        fetch_aur &   # refaz as marcas de instalado
+        pause || break
+    done
+}
+
+case "${1:-}" in
+    --list) list ;;
+    --fetch-aur) fetch_aur ;;
+    --preview) preview "$2" ;;
+    --tab) tab_cmd "$2" ;;
+    --key) shift; key_cmd "$@" ;;
+    *) main ;;
+esac

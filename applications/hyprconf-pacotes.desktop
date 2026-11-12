@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Pacotes
+GenericName=Instalar, remover e atualizar pacotes
+Comment=Pacotes dos repositórios oficiais e do AUR, grupos e atualizações
+Icon=system-software-install
+Exec=sh -c 'exec foot --app-id=hyprconf-pacotes --title=Pacotes -o colors-dark.alpha=1 "$HOME/hyprconf/apps/hyprconf-pacotes"'
+Terminal=false
+Categories=System;PackageManager;
+Keywords=pacote;instalar;remover;atualizar;pacman;aur;yay;package;install;update;

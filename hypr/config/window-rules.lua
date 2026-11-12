@@ -24,15 +24,15 @@ hl.window_rule({
   float = true,
 })
 
--- Apps de pacotes (apps/hyprconf-*): flutuando e centralizados
+-- App Pacotes (apps/hyprconf-pacotes): flutuando e centralizado
 
 hl.window_rule({
-  name = "package-apps",
+  name = "package-app",
   match = {
-    class = "^hyprconf-(pacman|aur|remover)$",
+    class = "^hyprconf-pacotes$",
   },
   float = true,
-  size = "1100 760",
+  size = "1300 780",
   center = true,
 })
 
