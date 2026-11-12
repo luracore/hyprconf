@@ -4,6 +4,9 @@
 !/Wallpapers/gato2.png
 !/Wallpapers/gato3.png
 
+# monitores salvos pelo painel da barra: cada máquina tem os seus
+/hypr/config/monitor-painel.lua
+
 # tema ativo: escolha local (o install.sh sorteia um se faltar)
 /Themes/current
 

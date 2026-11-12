@@ -7,6 +7,15 @@ import "../config/Typo.js" as Typo
 import qs.config
 
 PanelWindow {
+    id: barWindow
+
+    // o shell.qml: escolhe em qual monitor a barra fica
+    property var shell: null
+
+    function setPreferredOutput(name) {
+        shell.setPreferredOutput(name);
+    }
+
     anchors.top: true
     anchors.left: true
     anchors.right: true
@@ -24,8 +33,9 @@ PanelWindow {
             spacing: Sizes.module.gap
 
             DistroButton { powerMenu: power }
-            Workspaces {}
+            // o cava antes dos workspaces: não anda quando um workspace abre ou fecha
             Cava {}
+            Workspaces {}
         }
 
         Clock {
@@ -58,7 +68,7 @@ PanelWindow {
             Network {}
             Bluetooth {}
             Volume { compact: rightRow.compact }
-            Brightness { compact: rightRow.compact }
+            Brightness { compact: rightRow.compact; bar: barWindow }
             System { compact: rightRow.compact }
 
             BarButton {

@@ -14,7 +14,7 @@ fica à parte, em `quickshell/launcher/`, porque não depende da barra.
 
 ```text
 bar/
-├── shell.qml                 # só carrega o Bar
+├── shell.qml                 # uma barra, no monitor escolhido no painel de monitores
 ├── cava.conf                 # config do cava (visualizador)
 ├── config -> ../common       # Theme.qml (singleton "Theme"), ThemeColors.js,
 │                             # Sizes.js, Typo.js; compartilhado com o lançador
@@ -29,13 +29,15 @@ bar/
     ├── Bluetooth.qml (+ BluetoothPanel.qml)
     ├── Volume.qml (+ AudioPanel.qml)
     ├── System.qml (+ SystemPanel.qml)     # CPU, RAM, temperatura, bateria, perfil
-    ├── Brightness.qml        # backlight (brightnessctl) ou DDC/CI (ddcutil)
+    ├── Brightness.qml (+ DisplayPanel.qml)   # brilho e painel de monitores
+    ├── Displays.qml          # estado dos monitores: brilho, resolução, modo noturno
+    ├── BrightnessControl.qml # brilho de um display: brightnessctl ou ddcutil
     ├── Notifications.qml
     │
     ├── PowerMenu.qml         # tela de energia (tela cheia, SUPER + SHIFT + P)
     │
     ├── Panel*.qml            # peças dos painéis: PanelButton, PanelField,
-    │                         # PanelChips, PanelSwitch, PanelIconButton,
+    │                         # PanelChips, PanelSwitch, PanelSlider, PanelIconButton,
     │                         # PanelTitle, PanelError
     └── CommandRunner.qml     # roda comandos e devolve código/stdout/stderr
 ```
@@ -78,7 +80,7 @@ quickshell ipc --path ~/hyprconf/quickshell/bar call <alvo> <função> [args]
 | `network` | `togglePanel`, `rescan` |
 | `bluetooth` | `togglePanel` |
 | `volume` | `togglePanel`, `up`, `down`, `mute`, `set <0-100>` |
-| `brightness` | `up`, `down`, `set <0-100>` |
+| `brightness` | `togglePanel`, `up`, `down`, `set <0-100>` |
 | `system` | `togglePanel` |
 | `notifications` | `toggle`, `open`, `close`, `clear`, `toggleDnd` |
 | `bar` | `toggleCalendar`, `nextMonth`, `previousMonth`, `selectOffset <dias>` |
