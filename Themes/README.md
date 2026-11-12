@@ -12,7 +12,8 @@ ln -sfn TokyoNight.json ~/hyprconf/Themes/current
 ```
 
 A barra percebe a troca sozinha; o `apply-theme.js` aplica no foot, Neovim,
-GTK e Qt (veja o README principal).
+GTK, Qt, na tela de bloqueio (hyprlock) e nos ícones (as pastas do Papirus
+ganham a cor primária).
 
 ## Criar um tema
 

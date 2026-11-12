@@ -1,4 +1,4 @@
-//@ pragma IconTheme Adwaita
+//@ pragma IconTheme Hyprconf
 // Configurações: atalhos para onde se mexe no hyprconf (pastas, arquivos de
 // configuração e apps). Pastas abrem no explorador e arquivos no editor
 // padrão (~/hyprconf/defaults.conf, via apps/hyprconf-run).

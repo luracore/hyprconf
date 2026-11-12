@@ -10,8 +10,11 @@
 //   gtk      ~/.local/share/themes/Hyprconf           (tema baseado no adw-gtk3)
 //            + ~/.config/gtk-4.0/gtk.css para apps libadwaita
 //   fzf      ~/.local/state/hyprconf/theme/fzf.opts   (apps de pacotes)
+//   hyprlock ~/.local/state/hyprconf/theme/hyprlock.conf (incluído pelo hyprlock.conf)
 //   qt       ~/.local/state/hyprconf/theme/qt6ct.conf (paleta do qt6ct)
 //            + cores do KDE em ~/.config/kdeglobals (apps KDE)
+//   ícones   ~/.local/share/icons/Hyprconf (Papirus Dark com as pastas na
+//            cor primária do tema), para GTK, Qt e Quickshell
 //
 // Uso: apply-theme.js [caminho/do/tema.json]   (padrão: Themes/current)
 // Com APPLY_THEME_DRY_RUN=1 só gera os arquivos: não mexe nos terminais
@@ -31,6 +34,9 @@ const STATE = path.join(HOME, ".local/state/hyprconf/theme");
 const GTK_THEME_NAME = "Hyprconf";
 const GTK_THEME_DIR = path.join(HOME, ".local/share/themes", GTK_THEME_NAME);
 const ADW_GTK3 = "/usr/share/themes/adw-gtk3-dark";
+const ICON_THEME_NAME = "Hyprconf";
+const ICON_THEME_DIR = path.join(HOME, ".local/share/icons", ICON_THEME_NAME);
+const PAPIRUS = "/usr/share/icons/Papirus";
 const DRY_RUN = process.env.APPLY_THEME_DRY_RUN === "1";
 
 function warn(msg) {
@@ -206,6 +212,24 @@ function applyFoot(c) {
 }
 
 // ---- fzf (apps de pacotes) -----------------------------------------------------
+
+// Variáveis de cor para o hyprlock.conf (vale no próximo bloqueio).
+function applyHyprlock(c) {
+    const rgb = hex => `rgb(${hex.replace("#", "")})`;
+    const vars = {
+        background: c.background,
+        surface: c.surface,
+        text: c.text,
+        muted: c.muted,
+        primary: c.primary,
+        success: c.success,
+        warning: c.warning,
+        error: c.error,
+    };
+    write(path.join(STATE, "hyprlock.conf"),
+        "# Gerado por hyprconf/Themes/apply-theme.js — não edite.\n"
+        + Object.entries(vars).map(([k, v]) => `$${k} = ${rgb(v)}\n`).join(""));
+}
 
 function applyFzf(c) {
     // fundo transparente (-1): usa o do terminal, que já segue o tema
@@ -390,7 +414,7 @@ function applyQt(c) {
     iniSet(conf, "Appearance", "color_scheme_path", path.join(STATE, "qt6ct.conf"));
     iniSet(conf, "Appearance", "custom_palette", "true");
     iniSetDefault(conf, "Appearance", "style", "Fusion");
-    iniSetDefault(conf, "Appearance", "icon_theme", "breeze-dark");
+    iniSet(conf, "Appearance", "icon_theme", ICON_THEME_NAME);
     writeIni(confFile, conf);
 
     // Cores KDE (KColorScheme), usadas por apps KDE.
@@ -427,7 +451,92 @@ function applyQt(c) {
             iniSet(kde, section, key, rgbCsv(value));
     }
     iniSet(kde, "General", "ColorScheme", GTK_THEME_NAME);
+    iniSet(kde, "Icons", "Theme", ICON_THEME_NAME);
     writeIni(kdeFile, kde);
+}
+
+// ---- ícones ------------------------------------------------------------------
+
+// Tema de ícones "Hyprconf": herda tudo do Papirus Dark e só troca as pastas
+// azuis (o padrão do Papirus) por cópias recoloridas com a cor primária. Os
+// outros ícones ficam com as cores do Papirus.
+function applyIcons(c) {
+    if (!fs.existsSync(path.join(PAPIRUS, "index.theme"))) {
+        warn("papirus-icon-theme não está instalado; os ícones não seguem o tema "
+            + "(sudo pacman -S papirus-icon-theme)");
+        return;
+    }
+
+    // as três cores da pasta azul do Papirus: frente, fundo e o símbolo
+    const colors = {
+        "#5294e2": c.primary,
+        "#4877b1": mix(c.primary, "#000000", 0.2),
+        "#1d344f": mix(c.primary, "#000000", 0.65),
+    };
+    const recolor = svg => svg.replace(/#(5294e2|4877b1|1d344f)\b/gi, hex => colors[hex.toLowerCase()]);
+
+    // tema novo do zero: um tema velho não deixa ícones para trás
+    fs.rmSync(ICON_THEME_DIR, { recursive: true, force: true });
+
+    const sizes = ["16x16", "22x22", "24x24", "32x32", "48x48", "64x64"];
+    for (const size of sizes) {
+        const source = fs.realpathSync(path.join(PAPIRUS, size, "places"));
+        const target = path.join(ICON_THEME_DIR, size, "places");
+        fs.mkdirSync(target, { recursive: true });
+        for (const name of fs.readdirSync(source)) {
+            let real;
+            try {
+                real = fs.realpathSync(path.join(source, name));
+            } catch (error) {
+                continue;   // link quebrado
+            }
+            // folder-blue-*, user-blue-* (e não as folder-bluegrey-*)
+            if (!/^(folder|user)-blue[-.]/.test(path.basename(real)))
+                continue;
+            fs.writeFileSync(path.join(target, name), recolor(fs.readFileSync(real, "utf8")));
+        }
+        // escala 2: os mesmos SVGs (como no Papirus)
+        fs.symlinkSync(size, path.join(ICON_THEME_DIR, `${size.split("x")[0]}x${size.split("x")[0]}@2x`));
+    }
+    // tamanhos grandes usam os SVGs de 48 e 64 (como no Papirus)
+    fs.symlinkSync("48x48", path.join(ICON_THEME_DIR, "96x96"));
+    fs.symlinkSync("64x64", path.join(ICON_THEME_DIR, "128x128"));
+
+    // as seções das pastas places copiadas do index.theme do Papirus
+    const papirusIndex = fs.readFileSync(path.join(PAPIRUS, "index.theme"), "utf8");
+    const dirs = [], scaled = [], sections = [];
+    for (const size of [...sizes, "96x96", "128x128"]) {
+        for (const dir of [`${size}/places`, `${size.split("x")[0]}x${size.split("x")[0]}@2x/places`]) {
+            const match = papirusIndex.match(new RegExp(`^\\[${dir.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\][^\\[]*`, "m"));
+            if (!match)
+                continue;
+            (dir.includes("@2x") ? scaled : dirs).push(dir);
+            sections.push(match[0].trim());
+        }
+    }
+    write(path.join(ICON_THEME_DIR, "index.theme"),
+        `[Icon Theme]\nName=${ICON_THEME_NAME}\nComment=Papirus Dark com as pastas na cor do tema (gerado por hyprconf)\n`
+        + "Inherits=Papirus-Dark,hicolor\n"
+        + `Directories=${dirs.join(",")}\nScaledDirectories=${scaled.join(",")}\n\n`
+        + sections.join("\n\n") + "\n");
+
+    const settingsFile = path.join(CONFIG, "gtk-3.0/settings.ini");
+    const settings = readIni(settingsFile);
+    iniSet(settings, "Settings", "gtk-icon-theme-name", ICON_THEME_NAME);
+    writeIni(settingsFile, settings);
+
+    if (DRY_RUN)
+        return;
+
+    // Apps GTK abertos só recarregam os ícones quando o nome muda: troca para o
+    // Adwaita e volta (mesmo esquema do tema GTK).
+    const current = (gsettings("get", "org.gnome.desktop.interface", "icon-theme").stdout || "")
+        .trim().replace(/^'|'$/g, "");
+    if (current === ICON_THEME_NAME) {
+        gsettings("set", "org.gnome.desktop.interface", "icon-theme", "Adwaita");
+        spawnSync("sleep", ["0.2"]);
+    }
+    gsettings("set", "org.gnome.desktop.interface", "icon-theme", ICON_THEME_NAME);
 }
 
 // ---- main --------------------------------------------------------------------
@@ -444,7 +553,7 @@ function main() {
 
     const colors = ThemeColors.resolve(theme, null, warn);
     let failed = false;
-    for (const [name, step] of [["foot", applyFoot], ["fzf", applyFzf], ["neovim", applyNvim], ["gtk", applyGtk], ["qt", applyQt]]) {
+    for (const [name, step] of [["foot", applyFoot], ["fzf", applyFzf], ["hyprlock", applyHyprlock], ["neovim", applyNvim], ["gtk", applyGtk], ["qt", applyQt], ["ícones", applyIcons]]) {
         try {
             step(colors);
         } catch (error) {  // um programa com problema não trava os outros
