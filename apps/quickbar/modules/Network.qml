@@ -2,9 +2,6 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-import "../config/Sizes.js" as Sizes
-import qs.config
-
 // Rede (NetworkManager, via nmcli): status na barra; clique abre o painel com
 // cabo, Wi-Fi (senha comum e corporativa/802.1X) e rede oculta.
 //

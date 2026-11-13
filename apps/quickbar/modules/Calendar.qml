@@ -69,11 +69,6 @@ PanelSurface {
         selectedDay = null;
     }
 
-    function goToToday() {
-        monthOffset = 0;
-        selectedDay = null;
-    }
-
     function selectDay(value) {
         selectedDay = sameDay(value, today) ? null : value;
     }
@@ -207,7 +202,7 @@ PanelSurface {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.goToToday()
+                onClicked: root.reset()
             }
         }
 

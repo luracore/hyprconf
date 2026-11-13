@@ -11,11 +11,10 @@ Singleton {
 
   readonly property string themePath: Quickshell.shellPath("../../Themes/current")
 
-  // Destino atual do symlink Themes/current. O FileView sozinho não percebe a
-  // troca do symlink (o inotify fica no arquivo antigo), então comparamos o
-  // destino periodicamente e recarregamos quando ele muda.
-  property string linkTarget: ""
-
+  // O FileView percebe edições no tema atual, mas não a troca do symlink
+  // Themes/current (o inotify fica no arquivo antigo): quem troca o tema
+  // (Themes/converters/main.js) chama o IPC "theme reloadTheme" de cada
+  // Quickshell aberto.
   property FileView fileView: FileView {
     id: fileView
 
@@ -53,38 +52,6 @@ Singleton {
   // funcionar tanto em temas escuros quanto claros.
   readonly property color hover: Qt.alpha(colors.text, 0.08)
   readonly property color selected: Qt.alpha(colors.text, 0.16)
-
-  Process {
-    id: linkProcess
-
-    command: ["readlink", "-f", root.themePath]
-
-    stdout: StdioCollector {
-      onStreamFinished: {
-        const target = text.trim()
-
-        if (target.length === 0 || target === root.linkTarget)
-        return
-
-        const previous = root.linkTarget
-        root.linkTarget = target
-
-        if (previous.length > 0)
-        root.reload()
-      }
-    }
-  }
-
-  Timer {
-    interval: 1000
-    running: true
-    repeat: true
-
-    onTriggered: {
-      if (!linkProcess.running)
-      linkProcess.running = true
-    }
-  }
 
   function reload(): void {
     fileView.reload()

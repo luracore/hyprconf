@@ -11,9 +11,10 @@ ln -sfn TokyoNight.json ~/hyprconf/Themes/current
 ~/hyprconf/Themes/converters/main.js
 ```
 
-A barra percebe a troca sozinha; o `converters/main.js` aplica no foot, Neovim,
-GTK, Qt, na tela de bloqueio (hyprlock) e nos ícones (as pastas do Papirus
-ganham a cor primária).
+O `converters/main.js` aplica no foot, Neovim, GTK, Qt, na tela de bloqueio
+(hyprlock) e nos ícones (as pastas do Papirus ganham a cor primária), e avisa a
+barra e os outros apps do Quickshell abertos. Só trocar o link não basta: rode
+o `main.js` depois.
 
 ## Usar o tema em outros programas
 

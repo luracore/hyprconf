@@ -1,10 +1,6 @@
-import Quickshell
 import Quickshell.Io
 import Quickshell.Services.UPower
 import QtQuick
-
-import "../config/Sizes.js" as Sizes
-import qs.config
 
 // Sistema: CPU, RAM, temperatura e bateria num módulo só. A barra mostra o
 // que for mais urgente; o clique abre o painel com tudo e o perfil de energia.
@@ -29,23 +25,22 @@ BarButton {
     property real lastIdle: -1
     property real lastTotal: -1
 
-    function update(text) {
-        const lines = text.split("\n");
+    // /proc/stat: "cpu user nice system idle iowait irq softirq steal"
+    function parseStat(text) {
+        const f = text.slice(0, text.indexOf("\n")).trim().split(/\s+/);
+        if (f[0] !== "cpu" || f.length < 9)
+            return;
+        let total = 0;
+        for (let i = 1; i <= 8; i++)
+            total += Number(f[i]);
+        const idle = Number(f[4]) + Number(f[5]);
+        if (lastTotal >= 0 && total > lastTotal)
+            cpu = 100 * (1 - (idle - lastIdle) / (total - lastTotal));
+        lastTotal = total;
+        lastIdle = idle;
+    }
 
-        // /proc/stat: "cpu user nice system idle iowait irq softirq steal"
-        const f = lines[0].trim().split(/\s+/);
-        if (f[0] === "cpu" && f.length >= 9) {
-            let total = 0;
-            for (let i = 1; i <= 8; i++)
-                total += Number(f[i]);
-            const idle = Number(f[4]) + Number(f[5]);
-            if (lastTotal >= 0 && total > lastTotal)
-                cpu = 100 * (1 - (idle - lastIdle) / (total - lastTotal));
-            lastTotal = total;
-            lastIdle = idle;
-        }
-
-        // /proc/meminfo
+    function parseMem(text) {
         const memTotal = Number((text.match(/MemTotal:\s+(\d+)/) || [])[1]);
         const memAvailable = Number((text.match(/MemAvailable:\s+(\d+)/) || [])[1]);
         if (memTotal > 0) {
@@ -53,14 +48,13 @@ BarButton {
             ramUsedKiB = memTotal - memAvailable;
             ram = 100 * ramUsedKiB / memTotal;
         }
+    }
 
-        // sensor: última linha, em miligraus
-        if (tempPath !== "") {
-            const last = lines.filter(l => l.trim() !== "").pop();
-            const milli = Number(last);
-            if (!isNaN(milli) && milli > 0)
-                temp = milli / 1000;
-        }
+    // o sensor dá a temperatura em miligraus
+    function parseTemp(text) {
+        const milli = Number(text.trim());
+        if (!isNaN(milli) && milli > 0)
+            temp = milli / 1000;
     }
 
     CommandRunner { id: commands }
@@ -89,14 +83,20 @@ BarButton {
         });
     }
 
+    // lidos direto (sem abrir um processo a cada leitura)
+    FileView { id: statFile; path: "/proc/stat"; onLoaded: root.parseStat(text()) }
+    FileView { id: memFile; path: "/proc/meminfo"; onLoaded: root.parseMem(text()) }
+    FileView { id: tempFile; path: root.tempPath; onLoaded: root.parseTemp(text()) }
+
     Timer {
         interval: 2000
         running: true
         repeat: true
-        triggeredOnStart: true
         onTriggered: {
-            const files = ["/proc/stat", "/proc/meminfo"].concat(root.tempPath ? [root.tempPath] : []);
-            commands.run(["cat"].concat(files), (code, out) => root.update(out));
+            statFile.reload();
+            memFile.reload();
+            if (root.tempPath !== "")
+                tempFile.reload();
         }
     }
 

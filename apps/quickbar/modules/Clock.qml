@@ -2,10 +2,6 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-import "../config/Sizes.js" as Sizes
-import "../config/Typo.js" as Typo
-import qs.config
-
 BarButton {
     id: root
 

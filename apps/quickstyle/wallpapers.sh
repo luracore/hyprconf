@@ -10,7 +10,7 @@ mkdir -p "$THUMB_DIR"
 # Remove miniaturas órfãs e as do formato antigo (quadradas, *.png).
 find "$THUMB_DIR" -maxdepth 1 -type f -print0 |
 while IFS= read -r -d '' thumb; do
-    file="$(basename "$thumb")"
+    file="${thumb##*/}"
 
     if [[ "$file" != *.jpg || ! -f "$WALLPAPER_DIR/${file%.jpg}" ]]; then
         rm -f -- "$thumb"
@@ -22,7 +22,7 @@ find "$WALLPAPER_DIR" -maxdepth 1 -type f \
        -o -iname '*.png' -o -iname '*.webp' \) \
     -print0 | sort -z |
 while IFS= read -r -d '' file; do
-    thumb="$THUMB_DIR/$(basename "$file").jpg"
+    thumb="$THUMB_DIR/${file##*/}.jpg"
 
     if [[ ! -s "$thumb" || "$file" -nt "$thumb" ]]; then
         magick -quiet "$file" \

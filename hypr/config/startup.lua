@@ -1,5 +1,4 @@
 hl.on("hyprland.start", function()
-  -- Polkit
   hl.exec_cmd("systemctl --user start hyprpolkitagent")
 
   -- Wallpaper daemon
@@ -21,6 +20,5 @@ hl.on("hyprland.start", function()
   -- App launcher (fica rodando; SUPER + SPACE abre por IPC)
   hl.exec_cmd("quickshell --path $HOME/hyprconf/apps/quicklauncher")
 
-  -- Idle manager
   hl.exec_cmd("hypridle")
 end)

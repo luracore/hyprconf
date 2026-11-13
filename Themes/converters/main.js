@@ -23,6 +23,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { spawn } = require("child_process");
 const { write } = require("./lib");
 
 const REPO = path.resolve(__dirname, "../..");
@@ -138,6 +139,15 @@ function runConverter(conv, colors, tools) {
         conv.apply(colors, tools);
 }
 
+// A barra, o lançador e os outros apps leem o tema por Themes/current, mas não
+// percebem a troca do symlink: cada Quickshell aberto é avisado pelo IPC.
+// Em segundo plano, para quem aplica o tema não esperar.
+function reloadQuickshell() {
+    const script = `quickshell list --all 2>/dev/null | awk '/^Instance/ { sub(":", "", $2); print $2 }' |
+        while read -r id; do quickshell ipc --id "$id" call theme reloadTheme 2>/dev/null; done`;
+    spawn("sh", ["-c", script], { detached: true, stdio: "ignore" }).unref();
+}
+
 // ---- main --------------------------------------------------------------------
 
 function main() {
@@ -170,6 +180,8 @@ function main() {
     }
 
     let failed = false;
+    if (!DRY_RUN)
+        reloadQuickshell();
     const steps = [
         ["fzf", () => applyFzf(colors)],
         ["hyprlock", () => applyHyprlock(colors)],

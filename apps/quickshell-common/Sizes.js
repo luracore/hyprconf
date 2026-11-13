@@ -5,12 +5,7 @@ const bar = {
     padding: 8
 }
 
-const spacing = {
-    normal: 12
-}
-
 const radius = {
-    small: 4,
     normal: 6
 }
 
@@ -21,8 +16,4 @@ const module = {
     labelPadding: 10,
     gap: 8,
     groupPadding: 3
-}
-
-const item = {
-    size: 28
 }

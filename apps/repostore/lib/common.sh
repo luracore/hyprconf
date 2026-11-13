@@ -40,7 +40,7 @@ confirm() {
     [[ -z $answer || $answer =~ ^[sSyY] ]]
 }
 
-# opções do fzf comuns aos apps, com as cores geradas pelo tema
+# opções base do fzf, com as cores geradas pelo tema
 # (Themes/converters/main.js -> ~/.local/share/hyprconf/theme/fzf.opts)
 fzf_base_opts() {
     local opts=(
@@ -110,12 +110,23 @@ group_packages() {
     bash -c 'source "$1"; printf "%s\n" "${depends[@]}"' _ "$file" | grep -v '^$'
 }
 
-# "pacote<TAB>grupo" de todos os grupos
+# "pacote<TAB>grupo" de todos os grupos. Um bash só lê todos os PKGBUILDs (é
+# chamado a cada prévia); cada um num subshell, para não herdar o depends do
+# anterior.
 groups_membership() {
-    local group
+    local group args=()
     while read -r group; do
-        group_packages "$group" | sed "s/\$/\t$group/"
+        if [[ $group == "$SETUP_META" ]]; then
+            args+=("$group" "$SETUP_PKGBUILD")
+        else
+            args+=("$group" "$GROUPS_DIR/$group/PKGBUILD")
+        fi
     done < <(groups_list)
+    (( ${#args[@]} )) || return 0
+    bash -c 'while (( $# )); do
+        [[ -f $2 ]] && ( source "$2"; for p in "${depends[@]}"; do [[ -n $p ]] && printf "%s\t%s\n" "$p" "$1"; done )
+        shift 2
+    done' _ "${args[@]}"
 }
 
 # grupo de um pacote (vazio se não estiver em nenhum)
@@ -123,7 +134,6 @@ group_of() {
     groups_membership | awk -F'\t' -v p="$1" '$1 == p { print $2; exit }'
 }
 
-# escreve o PKGBUILD do grupo com a lista de pacotes
 group_write() {
     local name=$1; shift
     group_valid "$name" || { err "Nome de grupo inválido: \"$name\""; return 1; }
@@ -159,19 +169,39 @@ root_run() {
 
 # o metapacote do grupo está instalado? (um grupo só atribuído ainda não está)
 group_meta_installed() {
-    if [[ $1 == "$SETUP_META" ]]; then
-        pacman -Qq "$SETUP_META" >/dev/null 2>&1
-    else
-        pacman -Qq "grupo-$1" >/dev/null 2>&1
-    fi
+    local meta="grupo-$1"
+    [[ $1 == "$SETUP_META" ]] && meta=$SETUP_META
+    pacman -Qq "$meta" >/dev/null 2>&1
 }
 
-# pacotes do grupo que ainda não estão instalados
-group_missing() {
+# Dos pacotes dados, os que não estão instalados / os que estão (na ordem
+# dada), numa chamada só ao pacman. O -T, como o -Q, também aceita um nome que
+# um pacote instalado provê (ex.: "sh" -> bash); por isso não dá para comparar
+# com a lista do pacman -Qq.
+pkgs_missing() {
+    (( $# )) || return 0
+    pacman -T "$@"
+    return 0
+}
+
+pkgs_installed() {
+    (( $# )) || return 0
+    local -A missing
     local p
-    while read -r p; do
-        pacman -Qq "$p" >/dev/null 2>&1 || echo "$p"
-    done < <(group_packages "$1")
+    while read -r p; do missing[$p]=1; done < <(pacman -T "$@")
+    for p in "$@"; do [[ -n ${missing[$p]:-} ]] || printf '%s\n' "$p"; done
+}
+
+group_missing() {
+    local pkgs
+    mapfile -t pkgs < <(group_packages "$1")
+    pkgs_missing "${pkgs[@]}"
+}
+
+group_installed() {
+    local pkgs
+    mapfile -t pkgs < <(group_packages "$1")
+    pkgs_installed "${pkgs[@]}"
 }
 
 # atribui pacotes a um grupo, só no PKGBUILD (sem instalar, sem senha)
@@ -210,7 +240,7 @@ group_apply() {
     return $status
 }
 
-# atribui e aplica (Alt+Enter na aba Repositórios). Se você recusar no pacman,
+# atribui e aplica (Alt+Enter no Pacman e no AUR). Se você recusar no pacman,
 # o grupo volta a ser o que era.
 group_add() {
     local name=$1; shift
@@ -227,10 +257,9 @@ group_add() {
 # Se o grupo ficar vazio, ele é desfeito.
 group_drop() {
     local name=$1; shift
-    local rest pkg installed=()
+    local rest pkg installed
     mapfile -t rest < <(group_packages "$name" | grep -vxF -f <(printf '%s\n' "$@"))
-    local p
-    for p in "$@"; do pacman -Qq "$p" >/dev/null 2>&1 && installed+=("$p"); done
+    mapfile -t installed < <(pkgs_installed "$@")
 
     if ! group_meta_installed "$name"; then
         # grupo ainda não aplicado: só o PKGBUILD muda
@@ -258,8 +287,8 @@ group_dissolve() {
         rm -rf "${GROUPS_DIR:?}/$name"
         return
     fi
-    local pkgs=() p
-    while read -r p; do pacman -Qq "$p" >/dev/null 2>&1 && pkgs+=("$p"); done < <(group_packages "$name")
+    local pkgs
+    mapfile -t pkgs < <(group_installed "$name")
     root_run 'g=$1; shift; (( $# )) && pacman -D --asexplicit "$@" >/dev/null; pacman -R --noconfirm "$g" >/dev/null' \
         "grupo-$name" "${pkgs[@]}" && rm -rf "${GROUPS_DIR:?}/$name"
 }
@@ -272,8 +301,8 @@ group_delete() {
         return
     fi
     # grupo não aplicado: remove os pacotes dele que estiverem instalados
-    local pkgs=() p
-    while read -r p; do pacman -Qq "$p" >/dev/null 2>&1 && pkgs+=("$p"); done < <(group_packages "$name")
+    local pkgs
+    mapfile -t pkgs < <(group_installed "$name")
     if (( ${#pkgs[@]} > 0 )); then
         sudo pacman -Rns "${pkgs[@]}" || return 1
     fi
@@ -322,11 +351,9 @@ setup_packages() {
 # ou "all" (os dois, com a marca [AUR])
 list_installed() {
     local scope=${1:-all}
-    local aur
-    aur=$(pacman -Qqm)
-
-    local -A group setup version
+    local -A group setup version aur
     local p g v
+    while read -r p; do aur[$p]=1; done < <(pacman -Qqm)
     while IFS=$'\t' read -r p g; do group[$p]=$g; done < <(groups_membership)
     while read -r p; do setup[$p]=1; done < <(setup_packages)
     while read -r p v; do version[$p]=$v; done < <(pacman -Q)
@@ -339,7 +366,7 @@ list_installed() {
     } | awk -F'\t' '!seen[$1]++' | while IFS=$'\t' read -r p kind; do
         [[ -z $p || $p == grupo-* || $p == "$SETUP_META" || -n ${setup[$p]:-} ]] && continue
         local is_aur=0
-        grep -qxF "$p" <<< "$aur" && is_aur=1
+        [[ -n ${aur[$p]:-} ]] && is_aur=1
         [[ $scope == aur && $is_aur == 0 ]] && continue
         [[ $scope == repo && $is_aur == 1 ]] && continue
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#
 # install.sh — aplica as configurações do Hyprconf.
 
 set -euo pipefail
@@ -116,9 +115,10 @@ link_config pacman/makepkg.conf
 DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}"
 mkdir -p "$DATA_DIR/applications"
 for desktop in "$REPO_DIR"/applications/*.desktop; do
-  ln -sfn "$desktop" "$DATA_DIR/applications/$(basename -- "$desktop")"
-  CREATED_LINKS+=("$DATA_DIR/applications/$(basename -- "$desktop")")
-  echo "    link:   $DATA_DIR/applications/$(basename -- "$desktop")"
+  link="$DATA_DIR/applications/$(basename -- "$desktop")"
+  ln -sfn "$desktop" "$link"
+  CREATED_LINKS+=("$link")
+  echo "    link:   $link"
 done
 
 echo "==> Ligando GTK, Qt, apps KDE e ícones ao tema"
@@ -173,7 +173,6 @@ done < <(find "$CONFIG_DIR" "$DATA_DIR/applications" -maxdepth 3 -type l -print0
 
 echo "==> Configurando o Thunar"
 
-# Thunar como gerenciador de arquivos padrão (se ele foi instalado)
 if ! command -v thunar >/dev/null; then
   echo "    Thunar não instalado; o explorador padrão fica como está"
 elif xdg-mime default thunar.desktop inode/directory; then

@@ -46,7 +46,7 @@ function blueIcons() {
             let real;
             try {
                 real = fs.realpathSync(path.join(dir, name));
-            } catch (error) {
+            } catch {
                 continue;   // link quebrado
             }
             // folder-blue-*, user-blue-* (e não as folder-bluegrey-*)
@@ -73,7 +73,18 @@ function build(c, { mix, warn }) {
         "#4877b1": mix(c.primary, "#000000", 0.2),
         "#1d344f": mix(c.primary, "#000000", 0.65),
     };
-    const recolor = svg => svg.replace(/#(5294e2|4877b1|1d344f)\b/gi, hex => colors[hex.toLowerCase()]);
+    // os tamanhos repetem muitos SVGs (links para o mesmo arquivo): cada um é
+    // lido e recolorido uma vez só
+    const recolored = new Map();
+    const recolor = real => {
+        let svg = recolored.get(real);
+        if (svg === undefined) {
+            svg = fs.readFileSync(real, "utf8")
+                .replace(/#(5294e2|4877b1|1d344f)\b/gi, hex => colors[hex.toLowerCase()]);
+            recolored.set(real, svg);
+        }
+        return svg;
+    };
 
     const sources = blueIcons();
 
@@ -85,7 +96,7 @@ function build(c, { mix, warn }) {
         const target = path.join(ICON_THEME_DIR, size, "places");
         fs.mkdirSync(target, { recursive: true });
         for (const [name, real] of sources[size])
-            fs.writeFileSync(path.join(target, name), recolor(fs.readFileSync(real, "utf8")));
+            fs.writeFileSync(path.join(target, name), recolor(real));
         // escala 2: os mesmos SVGs (como no Papirus)
         const n = size.split("x")[0];
         fs.symlinkSync(size, path.join(ICON_THEME_DIR, `${n}x${n}@2x`));

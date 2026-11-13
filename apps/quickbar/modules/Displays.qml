@@ -29,6 +29,7 @@ Item {
 
     // confirmação pendente
     property var previous: null    // spec para voltar
+    property var next: null        // spec aplicado, salvo se confirmar
     property int countdown: 0
     readonly property bool pending: previous !== null
 
@@ -199,8 +200,6 @@ Item {
         countdown = 10;
         commands.run(["hyprctl", "eval", luaOf(after)], () => refreshSoon());
     }
-
-    property var next: null
 
     function keep() {
         if (!pending)

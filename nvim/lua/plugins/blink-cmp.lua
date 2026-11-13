@@ -13,7 +13,7 @@ return {
       ['<S-Tab>'] = { 'select_prev', 'fallback_to_mappings' },
       ['<Tab>'] = { 'select_next', 'fallback_to_mappings' },
 
-      ['<C-k'] = { 'scroll_documentation_up', 'fallback' },
+      ['<C-k>'] = { 'scroll_documentation_up', 'fallback' },
       ['<C-j>'] = { 'scroll_documentation_down', 'fallback' },
     },
 

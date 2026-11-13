@@ -13,17 +13,19 @@ fica à parte, em `apps/quicklauncher/`, porque não depende da barra.
 ## Organização
 
 ```text
-bar/
+quickbar/
 ├── shell.qml                 # uma barra, no monitor escolhido no painel de monitores
 ├── cava.conf                 # config do cava (visualizador)
-├── config -> ../common       # Theme.qml (singleton "Theme"), Colors.js,
-│                             # Sizes.js, Typo.js; compartilhado com o lançador
+├── config -> ../quickshell-common  # Theme.qml (singleton "Theme"), Colors.js,
+│                                   # Sizes.js, Typo.js; compartilhado com o lançador
 └── modules/
     ├── Bar.qml               # a janela da barra: monta os módulos
     ├── BarButton.qml         # botão padrão dos módulos ([ícone][valor])
+    ├── BarPopup.qml          # janela dos painéis, ancorada no módulo
     │
     ├── DistroButton.qml      # ícone da distro -> PowerMenu
-    ├── Workspaces.qml, Cava.qml, Clock.qml (+ Calendar.qml)
+    ├── Workspaces.qml, Clock.qml (+ Calendar.qml)
+    ├── Cava.qml (+ MediaPanel.qml)   # visualizador e player (MPRIS)
     ├── Tray.qml (+ TrayMenu.qml)
     ├── Network.qml (+ NetworkPanel.qml)
     ├── Bluetooth.qml (+ BluetoothPanel.qml)
@@ -34,20 +36,20 @@ bar/
     ├── BrightnessControl.qml # brilho de um display: brightnessctl ou ddcutil
     ├── Notifications.qml
     │
-    ├── PowerMenu.qml         # tela de energia (tela cheia, SUPER + SHIFT + P)
+    ├── PowerMenu.qml         # tela de energia (tela cheia, SUPER + P)
     │
-    ├── Panel*.qml            # peças dos painéis: PanelButton, PanelField,
-    │                         # PanelChips, PanelSwitch, PanelSlider, PanelIconButton,
-    │                         # PanelTitle, PanelError
+    ├── Panel*.qml            # peças dos painéis: PanelSurface (moldura), PanelButton,
+    │                         # PanelField, PanelChips, PanelSwitch, PanelSlider,
+    │                         # PanelIconButton, PanelTitle, PanelDivider, PanelError
     └── CommandRunner.qml     # roda comandos e devolve código/stdout/stderr
 ```
 
 ## Padrões
 
-**Módulo com painel** (Volume, Network, Bluetooth, System, Clock): o módulo é um
+**Módulo com painel** (Volume, Network, Bluetooth, System, Brightness, Cava, Clock): o módulo é um
 `BarButton` que guarda o estado e as ações; o painel (`*Panel.qml`) só
 desenha, recebendo o módulo numa propriedade (`net`, `bt`). O painel abre num
-`PopupWindow` ancorado no botão, e um `HyprlandFocusGrab` fecha ao clicar
+`BarPopup` (um `PopupWindow` ancorado no botão), e um `HyprlandFocusGrab` fecha ao clicar
 fora (com um `Timer` que tenta de novo, porque o grab às vezes falha na
 primeira tentativa).
 
@@ -79,6 +81,7 @@ quickshell ipc --path ~/hyprconf/apps/quickbar call <alvo> <função> [args]
 | `power` | `toggle`, `open`, `close` |
 | `network` | `togglePanel`, `rescan` |
 | `bluetooth` | `togglePanel` |
+| `media` | `togglePanel`, `playPause`, `next`, `previous` |
 | `volume` | `togglePanel`, `up`, `down`, `mute`, `set <0-100>` |
 | `brightness` | `togglePanel`, `up`, `down`, `set <0-100>` |
 | `system` | `togglePanel` |
@@ -102,7 +105,7 @@ subcomando do próprio `quickshell ipc`, e a chamada não chega na função.
   ```
 
 - **Imports:** o Quickshell só importa arquivos de dentro da pasta da
-  instância; o que é compartilhado entra por symlink (`config -> ../common`,
+  instância; o que é compartilhado entra por symlink (`config -> ../quickshell-common`,
   e dentro dele `Colors.js -> Themes/Colors.js`).
 - **Nomes de propriedade:** nada que comece com `on` + maiúscula (ex.:
   `onPrimary`): o QML trata como handler de sinal.

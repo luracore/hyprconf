@@ -1,5 +1,3 @@
--- Fix XWayland Drags
-
 hl.window_rule({
   name = "fix-xwayland-drags",
   match = {
@@ -12,8 +10,6 @@ hl.window_rule({
   },
   no_focus = true,
 })
-
--- Move Hyprland Run
 
 hl.window_rule({
   name = "move-hyprland-run",
@@ -37,7 +33,8 @@ hl.window_rule({
 })
 
 -- Blur atrás da tela de energia, do lançador e do HyprSettings
--- (apps/quickbar/modules/PowerMenu.qml e apps/quicklauncher/Launcher.qml)
+-- (apps/quickbar/modules/PowerMenu.qml, apps/quicklauncher/Launcher.qml e
+-- apps/hyprsettings/shell.qml)
 
 hl.layer_rule({
   name = "blur-bar-overlays",

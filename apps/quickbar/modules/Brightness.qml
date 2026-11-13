@@ -1,11 +1,5 @@
-import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import QtQuick
-
-import "../config/Sizes.js" as Sizes
-
-import qs.config
 
 // Brilho da tela principal (a do notebook, se houver; senão, o primeiro
 // monitor com DDC/CI). Sem brilho controlável, fica só o ícone.

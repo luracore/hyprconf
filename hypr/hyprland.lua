@@ -2,7 +2,9 @@ require("./config/env")
 require("./config/startup")
 require("./config/monitor")
 -- monitores salvos pelo painel da barra (só existe depois de salvar algo lá)
-if io.open(os.getenv("HOME") .. "/hyprconf/hypr/config/monitor-painel.lua") then
+local painel = io.open(os.getenv("HOME") .. "/hyprconf/hypr/config/monitor-painel.lua")
+if painel then
+  painel:close()
   require("./config/monitor-painel")
 end
 require("./config/appearance")

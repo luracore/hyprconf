@@ -15,8 +15,6 @@ hl.config({
   },
 })
 
--- Gestures
-
 hl.gesture({
   fingers = 3,
   direction = "horizontal",

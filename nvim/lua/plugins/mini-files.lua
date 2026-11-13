@@ -133,10 +133,8 @@ return {
 
     MiniFiles.setup({
       content = {
-        filter = nil,
         prefix = MiniFiles.default_prefix,
         highlight = git_highlight,
-        sort = nil,
       },
 
       mappings = {
@@ -144,8 +142,6 @@ return {
 
         go_in_plus = "l",
         go_out_plus = "h",
-        --go_in = "l",
-        --go_out = "h",
 
         mark_goto = "m",
         mark_set = "M",
@@ -174,18 +170,20 @@ return {
       },
     })
 
+    local function refresh_git()
+      update_git_status()
+
+      MiniFiles.refresh({
+        content = {
+          prefix = MiniFiles.default_prefix,
+          highlight = git_highlight,
+        },
+      })
+    end
+
     vim.api.nvim_create_autocmd("User", {
       pattern = "MiniFilesExplorerOpen",
-      callback = function()
-        update_git_status()
-
-        MiniFiles.refresh({
-          content = {
-            prefix = MiniFiles.default_prefix,
-            highlight = git_highlight,
-          },
-        })
-      end,
+      callback = refresh_git,
     })
 
     vim.api.nvim_create_autocmd("User", {
@@ -197,16 +195,7 @@ return {
         "MiniFilesActionMove",
       },
       callback = function()
-        vim.defer_fn(function()
-          update_git_status()
-
-          MiniFiles.refresh({
-            content = {
-              prefix = MiniFiles.default_prefix,
-              highlight = git_highlight,
-            },
-          })
-        end, 100)
+        vim.defer_fn(refresh_git, 100)
       end,
     })
   end,

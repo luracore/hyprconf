@@ -1,8 +1,5 @@
 import QtQuick
-import QtQuick.Layouts
 
-import "../config/Sizes.js" as Sizes
-import "../config/Typo.js" as Typo
 import qs.config
 
 // Chave liga/desliga.

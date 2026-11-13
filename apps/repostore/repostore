@@ -16,7 +16,8 @@
 # Os pacotes do hyprconf não aparecem em Instalados: eles são gerenciados
 # pelo PKGBUILD do metapacote (packages/hyprconf-deps; veja em Grupos).
 #
-# Subcomandos internos (usados pelo fzf): --list, --preview, --tab, --mode, --key
+# Subcomandos internos (usados pelo fzf): --list, --preview, --tab, --mode, --key,
+# --on-load e --loading
 
 set -uo pipefail
 
@@ -151,16 +152,40 @@ list_groups() {
     done
 }
 
-list_group() {
-    local name=$1 p version
-    while read -r p; do
-        version=$(pacman -Q "$p" 2>/dev/null | cut -d' ' -f2)
-        if [[ -n $version ]]; then
-            printf '%-30s %s%s%s\n' "$p" "$C_DIM" "$version" "$C_RESET"
+# Uma linha por pacote dado, na ordem: a versão ou a descrição dele, ou vazia
+# se não estiver instalado. Uma chamada só ao pacman; as linhas casam pela
+# posição, porque um nome que um pacote provê sai com o nome do pacote
+# (ex.: "sh" -> bash).
+pkgs_field() {   # version | description, pacotes...
+    local field=$1; shift
+    local -A missing
+    local p installed=() values=() i=0
+    while read -r p; do missing[$p]=1; done < <(pkgs_missing "$@")
+    for p in "$@"; do [[ -n ${missing[$p]:-} ]] || installed+=("$p"); done
+    if (( ${#installed[@]} )); then
+        if [[ $field == version ]]; then
+            mapfile -t values < <(pacman -Q "${installed[@]}" 2>/dev/null | cut -d' ' -f2)
         else
-            printf '%-30s %s[falta instalar]%s\n' "$p" "$C_WARN" "$C_RESET"
+            mapfile -t values < <(pacman -Qi "${installed[@]}" 2>/dev/null |
+                awk -F': ' '/^(Descrição|Description)/ { print $2 }')
         fi
-    done < <(group_packages "$name")
+    fi
+    for p in "$@"; do
+        if [[ -n ${missing[$p]:-} ]]; then echo; else printf '%s\n' "${values[i++]:-}"; fi
+    done
+}
+
+list_group() {
+    local pkgs versions i
+    mapfile -t pkgs < <(group_packages "$1")
+    mapfile -t versions < <(pkgs_field version "${pkgs[@]}")
+    for i in "${!pkgs[@]}"; do
+        if [[ -n ${versions[i]:-} ]]; then
+            printf '%-30s %s%s%s\n' "${pkgs[i]}" "$C_DIM" "${versions[i]}" "$C_RESET"
+        else
+            printf '%-30s %s[falta instalar]%s\n' "${pkgs[i]}" "$C_WARN" "$C_RESET"
+        fi
+    done
 }
 
 list() {
@@ -227,9 +252,10 @@ preview() {
             preview_update "$item" "$STATE/updates.aur"
             yay -Si --aur "$item" 2>/dev/null | paint ;;
         flatpak:*)
-            if flatpak info --user "$item" >/dev/null 2>&1; then
+            local details
+            if details=$(flatpak info --user "$item" 2>/dev/null); then
                 printf '%s✓ instalado%s\n\n' "$C_OK" "$C_RESET"
-                flatpak info --user "$item" 2>/dev/null | paint
+                printf '%s\n' "$details" | paint
             else
                 flatpak remote-info --user flathub "$item" 2>/dev/null | paint
             fi ;;
@@ -247,12 +273,14 @@ preview() {
             else
                 printf '%sGrupo "%s"%s  %s(%s)%s\n\n' "$C_BOLD" "$item" "$C_RESET" "$C_DIM" "$GROUPS_DIR/$item" "$C_RESET"
             fi
-            local p desc
-            while read -r p; do
-                desc=$(pacman -Qi "$p" 2>/dev/null | awk -F': ' '/^(Descrição|Description)/ { print $2; exit }')
+            local pkgs descs desc i
+            mapfile -t pkgs < <(group_packages "$item")
+            mapfile -t descs < <(pkgs_field description "${pkgs[@]}")
+            for i in "${!pkgs[@]}"; do
+                desc=${descs[i]:-}
                 [[ -z $desc ]] && desc="${C_WARN}(falta instalar)${C_RESET}"
-                printf '  %-30s %s\n' "$p" "$desc"
-            done < <(group_packages "$item") ;;
+                printf '  %-30s %s\n' "${pkgs[i]}" "$desc"
+            done ;;
     esac
 }
 
@@ -433,7 +461,6 @@ help_lines() {
         (( ${#d} > dw )) && dw=${#d}
     done
 
-    # centraliza na janela
     local rows cols
     read -r rows cols < <(stty size 2>/dev/null </dev/tty || echo "40 120")
     local height=$(( ${#general[@]} + ${#here[@]} + 8 ))
@@ -593,7 +620,7 @@ key_cmd() {
 
 # ---- ações -----------------------------------------------------------------------
 
-# Enter em Todos (Pacman/AUR): instala o que falta; um pacote só, já instalado,
+# Enter no Pacman e no AUR: instala o que falta; um pacote só, já instalado,
 # abre Instalados filtrado nele (devolve 1 para voltar direto à lista)
 search_enter() {
     local src=$1; shift
@@ -607,10 +634,8 @@ search_enter() {
         printf '%s' "$1" > "$STATE/query"
         return 1
     fi
-    local missing=() pkg
-    for pkg in "$@"; do
-        pacman -Qq "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
-    done
+    local missing
+    mapfile -t missing < <(pkgs_missing "$@")
     if (( ${#missing[@]} == 0 )); then
         ok "Já estão todos instalados: ${*}"
         return 0
@@ -625,20 +650,22 @@ search_enter() {
 
 # só os instalados da lista (avisa dos outros)
 only_installed() {
+    local -A missing
     local p
+    while read -r p; do missing[$p]=1; done < <(pkgs_missing "$@")
     for p in "$@"; do
-        if pacman -Qq "$p" >/dev/null 2>&1; then echo "$p"; else info "\"$p\" não está instalado." >&2; fi
+        if [[ -z ${missing[$p]:-} ]]; then echo "$p"; else info "\"$p\" não está instalado." >&2; fi
     done
 }
 
 # Ctrl+G: os instalados entram no grupo na hora; os outros só são atribuídos
 # (instale depois, dentro do grupo, com Alt+Enter)
 to_group() {
-    local p
-    for p in "$@"; do
-        pacman -Qq "$p" >/dev/null 2>&1 || { assign_to_group "$@"; return; }
-    done
-    put_in_group "$@"
+    if [[ -n $(pkgs_missing "$@") ]]; then
+        assign_to_group "$@"
+    else
+        put_in_group "$@"
+    fi
 }
 
 # coloca no grupo, instalando o que faltar, numa transação só (uma senha)
@@ -752,7 +779,7 @@ update_aur() {
     yay -Sua
 }
 
-# Enter em Flatpak › Todos: instala o que falta; um app só, já instalado, abre
+# Enter no Flatpak: instala o que falta; um app só, já instalado, abre
 # Instalados filtrado nele
 flatpak_enter() {
     if (( $# == 1 )) && flatpak info --user "$1" >/dev/null 2>&1; then
@@ -772,7 +799,6 @@ flatpak_enter() {
     flatpak install --user flathub "${missing[@]}"
 }
 
-# trata a tecla de ação apertada na tela atual
 handle() {
     local key=$1; shift
     local items=("$@")

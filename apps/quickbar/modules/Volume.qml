@@ -1,11 +1,6 @@
-import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import QtQuick
-
-import "../config/Sizes.js" as Sizes
-
-import qs.config
 
 // Volume da saída padrão (PipeWire)
 // clique: painel de áudio · clique do meio: mudo · scroll: ±5%

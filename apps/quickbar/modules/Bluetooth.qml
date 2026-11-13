@@ -1,10 +1,6 @@
-import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Io
 import QtQuick
-
-import "../config/Sizes.js" as Sizes
-import qs.config
 
 // Bluetooth (BlueZ): status na barra; clique abre o painel com os
 // dispositivos pareados, a busca por novos e a qualidade do áudio.

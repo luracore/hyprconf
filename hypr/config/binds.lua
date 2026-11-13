@@ -60,7 +60,6 @@ hl.bind("SUPER + SHIFT + J", hl.dsp.window.move({ direction = "down" }))
 
 hl.bind("SUPER + W", hl.dsp.window.close())
 
--- Toggle split
 hl.bind("SUPER + D", hl.dsp.layout("togglesplit"))
 
 
@@ -68,7 +67,6 @@ hl.bind("SUPER + D", hl.dsp.layout("togglesplit"))
 -- WINDOW STATES
 -- =========================================
 
--- Maximized
 hl.bind(
   "SUPER + F",
   hl.dsp.window.fullscreen({
@@ -77,7 +75,6 @@ hl.bind(
   })
 )
 
--- Fullscreen
 hl.bind(
   "SUPER + SHIFT + F",
   hl.dsp.window.fullscreen({
@@ -92,13 +89,11 @@ hl.bind(
 -- =========================================
 
 for i = 1, 9 do
-  -- Switch workspace
   hl.bind(
     "SUPER + " .. i,
     hl.dsp.focus({ workspace = i })
   )
 
-  -- Move window to workspace
   hl.bind(
     "SUPER + SHIFT + " .. i,
     hl.dsp.window.move({ workspace = i })

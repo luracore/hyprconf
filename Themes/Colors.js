@@ -13,7 +13,6 @@
 //            da paleta e cada papel.
 
 const NEUTRALS = ["background", "surface", "overlay", "outline", "muted", "text"]
-const PALETTE = ["red", "orange", "yellow", "green", "cyan", "blue", "magenta"]
 
 // Tema usado para as cores obrigatórias que faltarem (ou se o arquivo falhar).
 const FALLBACK = {
@@ -87,7 +86,7 @@ function valid(v) {
 }
 
 function pick(section, key, fallback, warn) {
-    const v = section ? section[key] : undefined
+    const v = section[key]
     if (v === undefined)
         return fallback
     if (!valid(v)) {
