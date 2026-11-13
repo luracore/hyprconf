@@ -16,10 +16,10 @@ hl.on("hyprland.start", function()
   ]])
 
   -- Panel
-  hl.exec_cmd("quickshell --path $HOME/hyprconf/quickshell/bar")
+  hl.exec_cmd("quickshell --path $HOME/hyprconf/apps/quickbar")
 
   -- App launcher (fica rodando; SUPER + SPACE abre por IPC)
-  hl.exec_cmd("quickshell --path $HOME/hyprconf/quickshell/launcher")
+  hl.exec_cmd("quickshell --path $HOME/hyprconf/apps/quicklauncher")
 
   -- Idle manager
   hl.exec_cmd("hypridle")

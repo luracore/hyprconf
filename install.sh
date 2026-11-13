@@ -18,6 +18,15 @@ if [[ "$REPO_DIR" != "$HOME/hyprconf" ]]; then
   exit 1
 fi
 
+echo "==> Senha do sudo (pedida uma vez, para a instalação toda)"
+
+sudo -v
+# renova a autorização em segundo plano até o install terminar, para a senha
+# não ser pedida de novo no meio (o makepkg e o pacman também usam o sudo)
+( while kill -0 "$$" 2>/dev/null; do sudo -n -v 2>/dev/null; sleep 50; done ) &
+SUDO_KEEPALIVE=$!
+trap 'kill "$SUDO_KEEPALIVE" 2>/dev/null' EXIT
+
 echo "==> Instalando as dependências (metapacote hyprconf-deps)"
 
 # O metapacote depende de tudo que o setup usa (packages/hyprconf-deps/PKGBUILD).
@@ -45,55 +54,22 @@ if (( ${#explicit[@]} > 0 )); then
   sudo pacman -D --asdeps "${explicit[@]}" >/dev/null
 fi
 
-echo "==> Apps sugeridos"
+echo "==> Programas padrão"
 
-# packages/apps.txt: os programas do defaults.conf (navegador, explorador,
-# editor). Entram como pacotes explícitos, então dá para trocar ou remover
-# depois pelo app Pacotes. A pergunta é feita uma vez só: rodar o install.sh
-# de novo não reinstala o que foi removido.
-APPS_FILE="$REPO_DIR/packages/apps.txt"
-APPS_MARK="$HOME/.local/state/hyprconf/apps-oferecidos"
-mapfile -t apps < <(grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' "$APPS_FILE")
+# Os programas do defaults.conf: terminal, explorador, editor (com o que a
+# config do Neovim usa: LSPs, Telescope, treesitter), navegador e o opencode
+# (SUPER + A). Entram como pacotes seus (explícitos), fora do metapacote: dá
+# para trocar ou remover pelo RepoStore.
+DEFAULT_APPS=(foot thunar thunar-archive-plugin tumbler file-roller
+  neovim npm unzip ripgrep tree-sitter-cli gcc clang firefox opencode)
+sudo pacman -S --needed "${DEFAULT_APPS[@]}"
 
-# instalações antigas tinham esses apps no metapacote (como dependência):
-# viram explícitos, senão ficariam sobrando e sairiam na limpeza de órfãos
-mapfile -t app_pkgs < <(printf '%s\n' "${apps[@]}" | cut -d'|' -f2 | tr -s ' ' '\n' | grep -v '^$')
-mapfile -t app_deps < <(pacman -Qqd "${app_pkgs[@]}" 2>/dev/null)
+# Versões antigas tinham alguns no metapacote (como dependência): o --needed
+# não muda isso, então eles viram explícitos aqui, senão sairiam como sobra na
+# limpeza de órfãos.
+mapfile -t app_deps < <(pacman -Qqd "${DEFAULT_APPS[@]}" 2>/dev/null)
 if (( ${#app_deps[@]} > 0 )); then
   sudo pacman -D --asexplicit "${app_deps[@]}" >/dev/null
-fi
-
-# só os apps com algum pacote faltando, no formato do fzf:
-# "nome   para quê<TAB>pacotes"
-missing=()
-for app in "${apps[@]}"; do
-  IFS='|' read -r name pkgs desc <<< "$app"
-  read -ra pkg_list <<< "$pkgs"
-  if ! pacman -Qq "${pkg_list[@]}" >/dev/null 2>&1; then
-    missing+=("$(printf '%-10s %s\t%s' "$(echo $name)" "$(echo $desc)" "$(echo $pkgs)")")
-  fi
-done
-
-if [[ -e $APPS_MARK ]]; then
-  echo "    já oferecidos antes (a lista fica em packages/apps.txt)"
-elif (( ${#missing[@]} == 0 )); then
-  echo "    todos já instalados"
-  mkdir -p "$(dirname -- "$APPS_MARK")" && touch "$APPS_MARK"
-elif [[ ! -t 0 ]]; then
-  echo "    sem terminal para perguntar; a lista fica em packages/apps.txt"
-else
-  chosen=$(printf '%s\n' "${missing[@]}" | fzf --multi --bind 'load:select-all' \
-    --delimiter=$'\t' --with-nth=1 --layout=reverse --height=~10 --border=rounded \
-    --no-input --pointer='›' --marker='✓ ' --gutter=' ' --no-info \
-    --border-label=' Apps sugeridos ' \
-    --header='Tab marca ou desmarca · Enter instala os marcados · Esc pula' || true)
-  if [[ -n $chosen ]]; then
-    mapfile -t to_install < <(cut -f2 <<< "$chosen" | tr -s ' ' '\n' | grep -v '^$')
-    sudo pacman -S --needed "${to_install[@]}"
-  else
-    echo "    nenhum app instalado (a lista fica em packages/apps.txt)"
-  fi
-  mkdir -p "$(dirname -- "$APPS_MARK")" && touch "$APPS_MARK"
 fi
 
 echo "==> Criando links simbólicos em $CONFIG_DIR"
@@ -134,7 +110,6 @@ link_config() {
 link_config hypr
 link_config foot
 link_config nvim
-link_config Thunar/uca.xml
 link_config pacman/makepkg.conf
 
 # atalhos dos apps do hyprconf (aparecem no lançador)
@@ -144,6 +119,38 @@ for desktop in "$REPO_DIR"/applications/*.desktop; do
   ln -sfn "$desktop" "$DATA_DIR/applications/$(basename -- "$desktop")"
   CREATED_LINKS+=("$DATA_DIR/applications/$(basename -- "$desktop")")
   echo "    link:   $DATA_DIR/applications/$(basename -- "$desktop")"
+done
+
+echo "==> Ligando GTK, Qt, apps KDE e ícones ao tema"
+
+# Cada conversor (Themes/converters/<programa>/) pode trazer:
+#   home/      arquivos que apontam o programa para o tema, no caminho deles a
+#              partir do $HOME (@HOME@ vira a sua pasta pessoal)
+#   dconf.ini  chaves do gsettings
+# Os dois são aplicados sempre, por cima do que existir.
+for conv in "$REPO_DIR"/Themes/converters/*/; do
+  conv="${conv%/}"
+  name="$(basename -- "$conv")"
+
+  if [[ -d "$conv/home" ]]; then
+    while IFS= read -r -d '' src; do
+      rel="${src#"$conv/home/"}"
+      mkdir -p "$(dirname -- "$HOME/$rel")"
+      sed "s|@HOME@|$HOME|g" "$src" > "$HOME/$rel"
+      echo "    $name: ~/$rel"
+    done < <(find "$conv/home" -type f -print0 | sort -z)
+  fi
+
+  if [[ -f "$conv/dconf.ini" ]] && command -v dconf >/dev/null; then
+    section=""
+    while IFS= read -r line; do
+      case "$line" in
+        \[*\]) section="${line#[}"; section="${section%]}" ;;
+        *=*) dconf write "/$section/${line%%=*}" "${line#*=}" &&
+               echo "    $name: gsettings ${line%%=*} = ${line#*=}" ;;
+      esac
+    done < <(grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' "$conv/dconf.ini")
+  fi
 done
 
 echo "==> Limpando restos de versões antigas"
@@ -219,10 +226,10 @@ else
   fi
 fi
 
-echo "==> Aplicando o tema no foot, Neovim, GTK e Qt"
+echo "==> Aplicando o tema"
 
 if [[ -e "$THEME_LINK" ]]; then
-  node "$REPO_DIR/Themes/apply-theme.js" ||
+  node "$REPO_DIR/Themes/converters/main.js" ||
     echo "    aviso: não foi possível aplicar o tema (veja as mensagens acima)" >&2
 fi
 
@@ -269,4 +276,4 @@ echo "Hyprconf instalado. Próximos passos:"
 echo "  - saia e entre de novo no Hyprland: a barra, o lançador e as variáveis de"
 echo "    ambiente (como a do qt6ct) só pegam tudo o que foi instalado numa sessão nova;"
 echo "  - abra o nvim uma vez: ele baixa os plugins e o Mason instala os LSPs;"
-echo "  - SUPER + SPACE abre o lançador; o app Configurações leva a todo o resto."
+echo "  - SUPER + SPACE abre o lançador; o HyprSettings leva a todo o resto."

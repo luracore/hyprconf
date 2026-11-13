@@ -10,9 +10,8 @@
 #
 # Só pacotes dos repositórios oficiais: o pacman não instala o AUR.
 #
-# Só o que o setup precisa para funcionar. Os apps que ele sugere (navegador,
-# explorador, editor) ficam em packages/apps.txt: o install.sh oferece
-# instalar na primeira vez, e depois cada um pode trocar ou remover.
+# Só o que o setup precisa. Os programas do defaults.conf (terminal,
+# explorador, editor, navegador) o install.sh instala como pacotes seus.
 
 pkgname=hyprconf-deps
 pkgver=1
@@ -36,10 +35,9 @@ depends=(
     cava              # visualizador de áudio da barra
     curl
     jq                # lista de temas do seletor (themes.sh)
-    nodejs            # Themes/apply-theme.js
+    nodejs            # Themes/converters/main.js
 
-    # Terminal (o app Pacotes abre nele) e discos/admin:// para os exploradores
-    foot
+    # discos e admin:// nos exploradores de arquivos
     gvfs
 
     # Tema nos apps GTK e Qt; ícones Papirus (as pastas seguem o tema)
@@ -65,7 +63,7 @@ depends=(
     hyprsunset        # modo noturno (painel de monitores)
     brightnessctl     # brilho da tela do notebook
 
-    # Apps de pacotes (Pacman, AUR, Remover)
+    # RepoStore
     fzf
     pacman-contrib    # checkupdates (ver atualizações) e pacdiff (.pacnew)
 

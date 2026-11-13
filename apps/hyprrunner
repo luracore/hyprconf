@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# hyprrunner: abre um programa padrão de ~/hyprconf/defaults.conf, com argumentos.
+#   hyprrunner terminal
+#   hyprrunner editor ~/hyprconf/hypr/config/binds.lua
+# Lê o arquivo a cada uso: trocar um padrão vale na hora.
+
+conf="$HOME/hyprconf/defaults.conf"
+name=${1:?uso: hyprrunner <programa> [argumentos]}
+shift
+
+cmd=$(awk -F= -v key="$name" '
+    /^[[:space:]]*(#|$)/ { next }
+    { k = $1; gsub(/^[[:space:]]+|[[:space:]]+$/, "", k) }
+    k == key { sub(/^[^=]*=[[:space:]]*/, ""); sub(/[[:space:]]+$/, ""); print; exit }
+' "$conf")
+
+if [[ -z $cmd ]]; then
+    notify-send "hyprconf" "\"$name\" não está em defaults.conf" 2>/dev/null
+    echo "hyprrunner: \"$name\" não está em $conf" >&2
+    exit 1
+fi
+
+# o programa (a primeira palavra do comando) precisa estar instalado: chamado
+# por um atalho, sem isso nada aconteceria e ninguém saberia por quê
+prog=${cmd%%[[:space:]]*}
+if ! command -v "$prog" >/dev/null && [[ ! -x ${prog/#\~/$HOME} ]]; then
+    notify-send "hyprconf" "\"$prog\" não está instalado (\"$name\" em defaults.conf)" 2>/dev/null
+    echo "hyprrunner: \"$prog\" não está instalado (\"$name\" em $conf)" >&2
+    exit 1
+fi
+
+# o comando pode ter argumentos próprios (ex.: "foot -e nvim")
+exec sh -c "$cmd \"\$@\"" hyprrunner "$@"

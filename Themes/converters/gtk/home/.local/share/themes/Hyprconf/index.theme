@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Hyprconf
+Comment=Tema do hyprconf (adw-gtk3 com as cores do tema ativo)
+
+[X-GNOME-Metatheme]
+GtkTheme=Hyprconf

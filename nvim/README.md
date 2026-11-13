@@ -1,20 +1,23 @@
 # Neovim
 
 Configuração do Neovim (lazy.nvim, LSP via Mason, Telescope, treesitter,
-blink.cmp), com o colorscheme seguindo o tema do hyprconf.
-
-## Instalação
-
-Esta configuração faz parte do [hyprconf](../README.md): o `install.sh` cria o
-link `~/.config/nvim -> ~/hyprconf/nvim`.
+blink.cmp). Faz parte do [hyprconf](../README.md): o `install.sh` liga
+`~/.config/nvim` a esta pasta.
 
 ## Tema
 
-O colorscheme `hyprconf` (`colors/hyprconf.lua`) segue o tema escolhido em
-`~/hyprconf/Themes/current`. A paleta é gerada pelo `Themes/apply-theme.js` em
-`~/.local/state/hyprconf/theme/nvim.lua` e aplicada com o
-[mini.base16](https://github.com/echasnovski/mini.base16). Instâncias abertas
-recarregam sozinhas quando o tema muda.
+O colorscheme é `colors/current.lua` (fora do git), o tema ativo. O hyprconf
+escreve nele o tema do sistema a cada troca de tema. Para usar o tema que vem
+pronto, sem o hyprconf:
+
+```bash
+ln -sfn tokyonight.lua ~/.config/nvim/colors/current.lua
+```
+
+Sem o `current.lua`, o Neovim fica com as cores padrão e avisa.
+
+Quando o `current.lua` muda, as instâncias abertas recarregam sozinhas
+(`lua/colorscheme.lua`).
 
 ---
 

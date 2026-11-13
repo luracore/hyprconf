@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=HyprSettings
+GenericName=Configurações do hyprconf
+Comment=Wallpapers, temas, atalhos, programas padrão, pacotes e mais
+Icon=preferences-system
+Exec=sh -c "exec quickshell --path ~/hyprconf/apps/hyprsettings"
+Terminal=false
+Categories=Settings;
+Keywords=configurações;ajustes;settings;wallpaper;tema;atalhos;padrão;hyprland;

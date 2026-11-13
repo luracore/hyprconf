@@ -91,25 +91,18 @@ return {
       return nil
     end
 
-    vim.api.nvim_set_hl(0, "MiniFilesGitModified", {
-      link = "DiagnosticWarn",
-    })
+    -- cores do status git; refeitas a cada troca de colorscheme (ele limpa
+    -- todos os grupos de highlight)
+    local function set_git_highlights()
+      vim.api.nvim_set_hl(0, "MiniFilesGitModified", { link = "DiagnosticWarn" })
+      vim.api.nvim_set_hl(0, "MiniFilesGitAdded", { link = "DiagnosticInfo" })
+      vim.api.nvim_set_hl(0, "MiniFilesGitDeleted", { link = "DiagnosticError" })
+      vim.api.nvim_set_hl(0, "MiniFilesGitUntracked", { link = "DiagnosticOk" })
+      vim.api.nvim_set_hl(0, "MiniFilesGitRenamed", { link = "DiagnosticHint" })
+    end
 
-    vim.api.nvim_set_hl(0, "MiniFilesGitAdded", {
-      link = "DiagnosticInfo",
-    })
-
-    vim.api.nvim_set_hl(0, "MiniFilesGitDeleted", {
-      link = "DiagnosticError",
-    })
-
-    vim.api.nvim_set_hl(0, "MiniFilesGitUntracked", {
-      link = "DiagnosticOk",
-    })
-
-    vim.api.nvim_set_hl(0, "MiniFilesGitRenamed", {
-      link = "DiagnosticHint",
-    })
+    set_git_highlights()
+    vim.api.nvim_create_autocmd("ColorScheme", { callback = set_git_highlights })
 
     local function get_git_highlight(status)
       if status == "??" then

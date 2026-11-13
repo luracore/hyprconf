@@ -1,0 +1,4 @@
+[Icon Theme]
+Name=Hyprconf
+Comment=Papirus Dark com as pastas na cor do tema (gerado por hyprconf)
+Inherits=Papirus-Dark,hicolor

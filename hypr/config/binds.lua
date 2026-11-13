@@ -3,20 +3,20 @@
 -- =========================================
 
 -- terminal, explorador e navegador: os padrões de ~/hyprconf/defaults.conf
-local run = "$HOME/hyprconf/apps/hyprconf-run"
+local run = "$HOME/hyprconf/apps/hyprrunner"
 
 hl.bind("SUPER + RETURN", hl.dsp.exec_cmd(run .. " terminal"))
 hl.bind("SUPER + E", hl.dsp.exec_cmd(run .. " files"))
 hl.bind("SUPER + B", hl.dsp.exec_cmd(run .. " browser"))
 hl.bind("SUPER + SPACE", hl.dsp.exec_cmd(
-  "quickshell ipc --path $HOME/hyprconf/quickshell/launcher call launcher toggle"
+  "quickshell ipc --path $HOME/hyprconf/apps/quicklauncher call launcher toggle"
 ))
 hl.bind("SUPER + T", hl.dsp.exec_cmd(
-  "quickshell --path $HOME/hyprconf/quickshell/wallpaper-picker/shell.qml"
+  "quickshell --path $HOME/hyprconf/apps/quickstyle/shell.qml"
 ))
 hl.bind("SUPER + A", hl.dsp.exec_cmd(run .. " terminal -e opencode"))
 hl.bind("SUPER + M", hl.dsp.exec_cmd(
-  "quickshell ipc --path $HOME/hyprconf/quickshell/bar call media togglePanel"
+  "quickshell ipc --path $HOME/hyprconf/apps/quickbar call media togglePanel"
 ))
 
 
@@ -25,7 +25,7 @@ hl.bind("SUPER + M", hl.dsp.exec_cmd(
 -- =========================================
 
 hl.bind("SUPER + P", hl.dsp.exec_cmd(
-  "quickshell ipc --path $HOME/hyprconf/quickshell/bar call power toggle"
+  "quickshell ipc --path $HOME/hyprconf/apps/quickbar call power toggle"
 ))
 hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("hyprlock"))
 hl.bind("SUPER + SHIFT + Q", hl.dsp.exit())
@@ -130,5 +130,5 @@ hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = tr
 -- Brilho do monitor (DDC/CI, requer ddcutil)
 -- Passa pela barra (módulo Brightness), que mostra o valor na hora e grava
 -- no monitor com debounce, sem disparar vários ddcutil no barramento i2c.
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("quickshell ipc --path $HOME/hyprconf/quickshell/bar call brightness up"),   { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("quickshell ipc --path $HOME/hyprconf/quickshell/bar call brightness down"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("quickshell ipc --path $HOME/hyprconf/apps/quickbar call brightness up"),   { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("quickshell ipc --path $HOME/hyprconf/apps/quickbar call brightness down"), { locked = true, repeating = true })

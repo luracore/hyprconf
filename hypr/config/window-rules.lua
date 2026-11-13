@@ -24,20 +24,20 @@ hl.window_rule({
   float = true,
 })
 
--- App Pacotes (apps/hyprconf-pacotes): flutuando e centralizado
+-- RepoStore (apps/repostore/repostore): flutuando e centralizado
 
 hl.window_rule({
   name = "package-app",
   match = {
-    class = "^hyprconf-pacotes$",
+    class = "^repostore$",
   },
   float = true,
   size = "1300 780",
   center = true,
 })
 
--- Blur atrás da tela de energia, do lançador e das Configurações
--- (quickshell/bar/modules/PowerMenu.qml e quickshell/launcher/Launcher.qml)
+-- Blur atrás da tela de energia, do lançador e do HyprSettings
+-- (apps/quickbar/modules/PowerMenu.qml e apps/quicklauncher/Launcher.qml)
 
 hl.layer_rule({
   name = "blur-bar-overlays",
