@@ -2,5 +2,10 @@
   "theme": {
     "name": "system",
     "mode": "dark"
+  },
+  "attention": {
+    "notifications": false,
+    "sound": true,
+    "volume": 0.4
   }
 }
