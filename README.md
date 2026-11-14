@@ -6,6 +6,7 @@ com um tema de cores que vale para o sistema todo.
 
 ## Dependencias:
 
+```bash
 sudo pacman -S --needed \
     hyprland hyprlock hypridle hyprshot \
     hyprpolkitagent xdg-desktop-portal-hyprland \
@@ -15,26 +16,31 @@ sudo pacman -S --needed \
     librsvg xorg-xcursorgen \
     ttf-firacode-nerd noto-fonts noto-fonts-emoji noto-fonts-cjk \
     pipewire-pulse libpulse wireplumber playerctl \
-    networkmanager nm-connection-editor bluez bluez-utils \
+    networkmanager bluez bluez-utils \
     upower power-profiles-daemon ddcutil hyprsunset brightnessctl \
     fzf pacman-contrib git
+```
 
 ### Serviços
 
 Rede, Bluetooth, bateria e perfis de energia usados pela barra:
 
+```bash
 sudo systemctl enable --now \
     NetworkManager bluetooth upower power-profiles-daemon
+```
 
 ### Programas padrão
 
 Estes são os aplicativos utilizados ou recomendados pelo ambiente.
 Você pode substituí-los pelos de sua preferência:
 
+```bash
 sudo pacman -S --needed \
     foot thunar thunar-archive-plugin tumbler \
     file-roller neovim npm unzip ripgrep \
     tree-sitter-cli gcc clang firefox opencode
+```
 
 Para o Thunar abrir as pastas:
 
