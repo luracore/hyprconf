@@ -233,55 +233,36 @@ PanelWindow {
         Component.onCompleted: running = true
     }
 
-    Process {
-        id: applyProcess
-
-        property string wallpaper: ""
-        property string theme: ""
-
-        command: ["bash", "-c", `
-            wallpaper="$1"
-            theme="$2"
-
-            if [[ -n "$theme" ]]; then
-                ln -sfn "$theme" "$HOME/hyprconf/themes/current" || exit 1
-
-                # foot, neovim, GTK e Qt (a barra recarrega sozinha)
-                node "$HOME/hyprconf/themes/converters/main.js" ||
-                    echo "quickstyle: themes/converters/main.js falhou" >&2
-            fi
-
-            if [[ -n "$wallpaper" ]]; then
-                ln -sfn "$wallpaper" "$HOME/hyprconf/wallpapers/current" &&
-                awww img "$wallpaper" --resize crop --transition-type fade --transition-duration 1
-            fi
-        `, "quickstyle", wallpaper, theme]
-
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0)
-                Qt.quit();
-            else
-                console.error("quickstyle: falha ao aplicar (código", exitCode + ")");
-        }
-    }
-
+    // aplica fora do app, que fecha antes: assim a transição do awww aparece.
+    // O tema roda junto, sem atrasar o wallpaper.
     function apply() {
-        if (applyProcess.running)
-            return;
-
         const wallpaper = selectedWallpaper && selectedWallpaper.path !== currentWallpaper
             ? selectedWallpaper.path : "";
         const theme = selectedTheme && selectedTheme.path !== currentTheme
             ? selectedTheme.path : "";
 
-        if (wallpaper === "" && theme === "") {
-            Qt.quit();
-            return;
+        if (wallpaper !== "" || theme !== "") {
+            Quickshell.execDetached(["bash", "-c", `
+                if [[ -n "$2" ]]; then
+                    ln -sfn "$2" "$HOME/hyprconf/themes/current" &&
+                        node "$HOME/hyprconf/themes/converters/main.js" &
+                fi
+                if [[ -n "$1" ]]; then
+                    ln -sfn "$1" "$HOME/hyprconf/wallpapers/current"
+                    sleep 0.25
+                    awww img "$1" --resize crop --transition-type fade --transition-duration 1
+                fi
+                wait
+            `, "quickstyle", wallpaper, theme]);
         }
+        shown = false;
+        closeTimer.start();
+    }
 
-        applyProcess.wallpaper = wallpaper;
-        applyProcess.theme = theme;
-        applyProcess.running = true;
+    Timer {
+        id: closeTimer
+        interval: 250
+        onTriggered: Qt.quit()
     }
 
     function moveWallpaper(step) {
