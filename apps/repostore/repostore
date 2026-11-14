@@ -1,23 +1,7 @@
 #!/usr/bin/env bash
-# RepoStore: instalar, remover e atualizar pacotes (repositórios oficiais,
-# AUR e Flatpak) e organizar em grupos.
-#
-# Abas (Alt+1…4, ←/→ ou clique trocam; Ctrl+H mostra os atalhos da tela):
-#   Pacman    pacotes dos repositórios oficiais
-#   AUR       pacotes do AUR, pelo yay (só aparece com o yay instalado)
-#   Flatpak   apps do Flathub, só para o seu usuário (só aparece com o flatpak)
-#   Grupos    os seus metapacotes e o do hyprconf; Enter entra num grupo
-#
-# Pacman, AUR e Flatpak mostram tudo (✓ = instalado) ou, com Ctrl+S, só os
-# seus instalados (avulsos, em grupos e sobrando); as teclas são as mesmas
-# nos dois. Ctrl+U mostra as atualizações daquela fonte (Enter atualiza tudo)
-# e, apertado de novo, volta.
-#
-# Os pacotes do hyprconf não aparecem em Instalados: eles são gerenciados
-# pelo PKGBUILD do metapacote (packages/hyprconf-deps; veja em Grupos).
-#
-# Subcomandos internos (usados pelo fzf): --list, --preview, --tab, --mode, --key,
-# --on-load e --loading
+# RepoStore: pacotes dos repositórios oficiais, do AUR (yay) e do Flathub.
+# Abas: Alt+1…3, ←/→ ou clique. Ctrl+S alterna Todos/Instalados, Ctrl+U as
+# Atualizações (Enter atualiza tudo), Ctrl+H mostra os atalhos da tela.
 
 set -uo pipefail
 
@@ -29,7 +13,7 @@ PREVIEW_NORMAL='right,45%,border-left,wrap'
 FLATHUB_URL="https://dl.flathub.org/repo/flathub.flatpakrepo"
 
 # Telas: "<fonte>:<modo>" (pacman:all, aur:installed, flatpak:updates...),
-# "groups", "group:<nome>" e "help".
+# "help" e "<fonte>:missing" (falta o yay ou o flatpak).
 screen() { cat "$STATE/screen" 2>/dev/null || echo pacman:all; }
 set_screen() { echo "$1" > "$STATE/screen"; }
 
@@ -39,11 +23,19 @@ origin() { cat "$STATE/prev" 2>/dev/null || echo pacman:all; }
 has_yay() { command -v yay >/dev/null; }
 has_flatpak() { command -v flatpak >/dev/null; }
 
-# fonte e modo de uma tela de fonte ("" se não for uma)
+available() {
+    case $1 in
+        aur) has_yay ;;
+        flatpak) has_flatpak ;;
+        *) return 0 ;;
+    esac
+}
+
+# telas sem busca nem prévia
+is_text() { [[ $1 == help || $1 == *:missing ]]; }
+
 source_of() { case $1 in pacman:*|aur:*|flatpak:*) echo "${1%%:*}" ;; esac; }
 mode_of() { case $1 in pacman:*|aur:*|flatpak:*) echo "${1#*:}" ;; esac; }
-
-# ---- listas: Pacman --------------------------------------------------------------
 
 list_pacman() {
     LC_ALL=C pacman -Sl | awk -v ok="$C_OK" -v dim="$C_DIM" -v reset="$C_RESET" '{
@@ -64,8 +56,6 @@ format_updates() {
     }' "$1"
 }
 
-# ---- listas: AUR -----------------------------------------------------------------
-
 # A lista completa demora uns segundos: é baixada em segundo plano assim que o
 # app abre e fica guardada durante a sessão.
 fetch_aur() {
@@ -76,40 +66,24 @@ fetch_aur() {
 
 list_aur() {
     [[ -s $STATE/aur.list ]] || fetch_aur
-    # marca os instalados (pacman -Qm: os de fora dos repositórios oficiais)
-    # (FILENAME, e não NR == FNR: com a lista de instalados vazia, o NR == FNR
-    # valeria também para a segunda lista)
+    # FILENAME, e não NR == FNR: com o pacman -Qm vazio, NR == FNR valeria
+    # também para a aur.list
     awk -v ok="$C_OK" -v dim="$C_DIM" -v reset="$C_RESET" '
         FILENAME == ARGV[1] { installed[$1] = $2; next }
         ($1 in installed) { printf "%-30s %s✓%s %s%s%s\n", $1, ok, reset, dim, installed[$1], reset; next }
         { print }' <(pacman -Qm) "$STATE/aur.list"
 }
 
-# consulta o AUR pela internet
 list_aur_updates() {
     LC_ALL=C yay -Qua 2>/dev/null > "$STATE/updates.aur"
     format_updates "$STATE/updates.aur"
 }
 
-# ---- listas: Flatpak -------------------------------------------------------------
-# Tudo só para o seu usuário (--user): sem senha.
-
-# O Flathub no modo usuário e o tema do hyprconf nos apps (uma vez; repetir não
-# muda nada). Os apps libadwaita leem as cores pelo ~/.config/gtk-4.0/gtk.css,
-# que importa o colors.css do tema: os dois ficam visíveis, só para leitura. A
-# pasta inteira do tema não: o gtk.css do GTK3 importa o adw-gtk3 de
-# /usr/share/themes, que não existe dentro do Flatpak (o app acharia o tema e
-# abriria sem estilo). Os apps GTK3 ficam com o Adwaita escuro.
-flatpak_setup() {
-    flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL" &&
-        flatpak override --user \
-            --filesystem=xdg-config/gtk-4.0:ro \
-            --filesystem=xdg-data/themes/Hyprconf/colors.css:ro
-}
+# Flatpak sempre com --user: não pede senha.
 
 fetch_flatpak() {
     has_flatpak || return 0
-    flatpak_setup >/dev/null 2>&1
+    flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL" >/dev/null 2>&1
     local tmp; tmp=$(mktemp "$STATE/flatpak.XXXXXX")
     flatpak remote-ls --user flathub --app --columns=application,name,version 2>/dev/null > "$tmp" &&
         mv -f "$tmp" "$STATE/flatpak.list"
@@ -133,65 +107,36 @@ list_flatpak_updates() {
         awk -F'\t' -v ok="$C_OK" -v reset="$C_RESET" '{ printf "%-42s %s  → %s%s%s\n", $1, $2, ok, $3, reset }'
 }
 
-# ---- listas: Grupos --------------------------------------------------------------
-
-list_groups() {
-    local g n missing status
-    # o metapacote do hyprconf vem primeiro e só se vê (muda pelo PKGBUILD)
-    { [[ -f $SETUP_PKGBUILD ]] && echo "$SETUP_META"; groups_list; } | while read -r g; do
-        n=$(group_packages "$g" | wc -l)
-        missing=$(group_missing "$g" | wc -l)
-        status=""
-        if ! group_meta_installed "$g"; then
-            status="${C_WARN}não aplicado${C_RESET}"
-        elif (( missing > 0 )); then
-            status="${C_WARN}falta instalar $missing${C_RESET}"
-        fi
-        [[ $g == "$SETUP_META" ]] && status="${C_ACCENT}[hyprconf]${C_RESET} $status"
-        printf '%-24s %s%d pacote(s)%s  %s\n' "$g" "$C_DIM" "$n" "$C_RESET" "$status"
-    done
-}
-
-# Uma linha por pacote dado, na ordem: a versão ou a descrição dele, ou vazia
-# se não estiver instalado. Uma chamada só ao pacman; as linhas casam pela
-# posição, porque um nome que um pacote provê sai com o nome do pacote
-# (ex.: "sh" -> bash).
-pkgs_field() {   # version | description, pacotes...
-    local field=$1; shift
-    local -A missing
-    local p installed=() values=() i=0
-    while read -r p; do missing[$p]=1; done < <(pkgs_missing "$@")
-    for p in "$@"; do [[ -n ${missing[$p]:-} ]] || installed+=("$p"); done
-    if (( ${#installed[@]} )); then
-        if [[ $field == version ]]; then
-            mapfile -t values < <(pacman -Q "${installed[@]}" 2>/dev/null | cut -d' ' -f2)
-        else
-            mapfile -t values < <(pacman -Qi "${installed[@]}" 2>/dev/null |
-                awk -F': ' '/^(Descrição|Description)/ { print $2 }')
-        fi
-    fi
-    for p in "$@"; do
-        if [[ -n ${missing[$p]:-} ]]; then echo; else printf '%s\n' "${values[i++]:-}"; fi
-    done
-}
-
-list_group() {
-    local pkgs versions i
-    mapfile -t pkgs < <(group_packages "$1")
-    mapfile -t versions < <(pkgs_field version "${pkgs[@]}")
-    for i in "${!pkgs[@]}"; do
-        if [[ -n ${versions[i]:-} ]]; then
-            printf '%-30s %s%s%s\n' "${pkgs[i]}" "$C_DIM" "${versions[i]}" "$C_RESET"
-        else
-            printf '%-30s %s[falta instalar]%s\n' "${pkgs[i]}" "$C_WARN" "$C_RESET"
-        fi
-    done
+missing_lines() {
+    local b=$C_BOLD a=$C_ACCENT d=$C_DIM w=$C_WARN r=$C_RESET
+    printf '\n'
+    case $1 in
+        flatpak)
+            printf '  %sO flatpak não está instalado.%s\n\n' "$b" "$r"
+            printf '  Apps do Flathub, em sandbox e só para o seu usuário (sem senha).\n'
+            printf '  O RepoStore adiciona o Flathub sozinho.\n\n'
+            printf '  Para instalar, num terminal:\n\n'
+            printf '    %ssudo pacman -S flatpak%s\n\n' "$a" "$r"
+            printf '  %sDepois, troque de aba e volte. Os apps aparecem no lançador depois\n' "$d"
+            printf '  de sair e entrar de novo no Hyprland.%s\n' "$r" ;;
+        aur)
+            printf '  %sO yay não está instalado.%s\n\n' "$b" "$r"
+            printf '  O AUR tem pacotes enviados pela comunidade, fora dos repositórios\n'
+            printf '  oficiais. O RepoStore usa o yay para buscar, instalar e atualizar.\n\n'
+            printf '  %sO yay também vem do AUR: o makepkg roda o PKGBUILD dele.%s\n' "$w" "$r"
+            printf '  Para instalar, num terminal:\n\n'
+            printf '    %ssudo pacman -S --needed git base-devel%s\n' "$a" "$r"
+            printf '    %sgit clone https://aur.archlinux.org/yay-bin.git%s\n' "$a" "$r"
+            printf '    %scd yay-bin && makepkg -si%s\n\n' "$a" "$r"
+            printf '  %sDepois, troque de aba e volte.%s\n' "$d" "$r" ;;
+    esac
 }
 
 list() {
     local scr out
     scr=$(screen)
     case $scr in
+        *:missing) missing_lines "${scr%%:*}"; return ;;
         pacman:all) out=$(list_pacman) ;;
         pacman:installed) out=$(list_installed repo) ;;
         pacman:updates) out=$(list_pacman_updates) ;;
@@ -201,11 +146,9 @@ list() {
         flatpak:all) out=$(list_flatpak) ;;
         flatpak:installed) out=$(list_flatpak_installed) ;;
         flatpak:updates) out=$(list_flatpak_updates) ;;
-        groups) out=$(list_groups) ;;
-        group:*) out=$(list_group "${scr#group:}") ;;
         help) help_lines; return ;;
     esac
-    # lista vazia: uma linha explicando (as ações ignoram essa linha)
+    # lista vazia: uma linha "— …" (ações e prévia ignoram o "—")
     if [[ -n $out ]]; then
         printf '%s\n' "$out"
     else
@@ -213,36 +156,40 @@ list() {
     fi
 }
 
-# ---- prévia ---------------------------------------------------------------------
+# o que vem da internet é guardado durante a sessão: a prévia roda a cada
+# movimento do cursor
+cached() {
+    local file="$STATE/preview/$1"; shift
+    if [[ ! -s $file ]]; then
+        mkdir -p "$STATE/preview"
+        "$@" 2>/dev/null > "$file.tmp" && mv -f "$file.tmp" "$file"
+    fi
+    cat "$file" 2>/dev/null
+}
 
-# pacote do pacman ou do AUR: o que ele é, se está instalado e em que grupo
 preview_package() {
     local item=$1 src=$2
-    if pacman -Qq "$item" >/dev/null 2>&1; then
-        preview_installed "$item"
-        return
-    fi
+    preview_installed "$item" && return
     if [[ $src == aur ]]; then
         printf '%sAUR: pacote enviado pela comunidade. O yay mostra o PKGBUILD para revisar antes de instalar.%s\n\n' "$C_WARN" "$C_RESET"
-        yay -Si --aur "$item" 2>/dev/null | paint
+        cached "aur-$item" yay -Si --aur "$item" | paint
     else
         pacman -Si "$item" 2>/dev/null | paint
     fi
-    local g; g=$(group_of "$item")
-    [[ -n $g ]] && printf '\n%sno grupo "%s" (ainda não instalado)%s\n' "$C_MAGENTA" "$g" "$C_RESET"
 }
 
 preview_update() {
-    local item=$1 file=$2 line
-    line=$(grep -h -m1 "^$item " "$file" 2>/dev/null)
-    [[ -n $line ]] && printf '%s%s%s  %s → %s%s%s\n\n' "$C_BOLD" "$item" "$C_RESET" \
-        "$(cut -d' ' -f2 <<< "$line")" "$C_OK" "$(cut -d' ' -f4 <<< "$line")" "$C_RESET"
+    local item=$1 file=$2 old new
+    read -r _ old _ new < <(grep -h -m1 "^$item " "$file" 2>/dev/null) &&
+        printf '%s%s%s  %s → %s%s%s\n\n' "$C_BOLD" "$item" "$C_RESET" "$old" "$C_OK" "$new" "$C_RESET"
 }
 
 preview() {
-    local item=$1
+    local item=$1 scr
     [[ $item == "—" ]] && return
-    case $(screen) in
+    scr=$(screen)
+    is_text "$scr" && return
+    case $scr in
         pacman:all|pacman:installed) preview_package "$item" pacman ;;
         aur:all|aur:installed) preview_package "$item" aur ;;
         pacman:updates)
@@ -250,55 +197,24 @@ preview() {
             pacman -Si "$item" 2>/dev/null | paint ;;
         aur:updates)
             preview_update "$item" "$STATE/updates.aur"
-            yay -Si --aur "$item" 2>/dev/null | paint ;;
+            cached "aur-$item" yay -Si --aur "$item" | paint ;;
         flatpak:*)
             local details
             if details=$(flatpak info --user "$item" 2>/dev/null); then
                 printf '%s✓ instalado%s\n\n' "$C_OK" "$C_RESET"
                 printf '%s\n' "$details" | paint
             else
-                flatpak remote-info --user flathub "$item" 2>/dev/null | paint
+                cached "flatpak-$item" flatpak remote-info --user flathub "$item" | paint
             fi ;;
-        group:*)
-            if pacman -Qq "$item" >/dev/null 2>&1; then
-                preview_installed "$item"
-            else
-                printf '%sAinda não instalado: Alt+Enter instala o que falta no grupo.%s\n\n' "$C_WARN" "$C_RESET"
-                pacman -Si "$item" 2>/dev/null | paint || yay -Si --aur "$item" 2>/dev/null | paint
-            fi ;;
-        groups)
-            if [[ $item == "$SETUP_META" ]]; then
-                printf '%sO metapacote do hyprconf%s  %s(%s)%s\n' "$C_BOLD" "$C_RESET" "$C_DIM" "$SETUP_PKGBUILD" "$C_RESET"
-                printf '%sTudo o que o setup precisa. Só para ver: muda pelo PKGBUILD e o install.sh.%s\n\n' "$C_DIM" "$C_RESET"
-            else
-                printf '%sGrupo "%s"%s  %s(%s)%s\n\n' "$C_BOLD" "$item" "$C_RESET" "$C_DIM" "$GROUPS_DIR/$item" "$C_RESET"
-            fi
-            local pkgs descs desc i
-            mapfile -t pkgs < <(group_packages "$item")
-            mapfile -t descs < <(pkgs_field description "${pkgs[@]}")
-            for i in "${!pkgs[@]}"; do
-                desc=${descs[i]:-}
-                [[ -z $desc ]] && desc="${C_WARN}(falta instalar)${C_RESET}"
-                printf '  %-30s %s\n' "${pkgs[i]}" "$desc"
-            done ;;
     esac
 }
 
-# ---- abas e modos ----------------------------------------------------------------
-
-# abas, na ordem (AUR e Flatpak só com o yay e o flatpak instalados)
 tabs() {
-    echo pacman
-    has_yay && echo aur
-    has_flatpak && echo flatpak
-    echo groups
+    printf '%s\n' pacman aur flatpak
 }
 
 tab_of() {
-    case $1 in
-        group:*|groups) echo groups ;;
-        *) source_of "$1" ;;
-    esac
+    source_of "$1"
 }
 
 tab_label() {
@@ -306,11 +222,9 @@ tab_label() {
         pacman) echo "Pacman" ;;
         aur) echo "AUR" ;;
         flatpak) echo "Flatpak" ;;
-        groups) echo "Grupos" ;;
     esac
 }
 
-# cabeçalho com as abas: a atual sublinhada e na cor de destaque
 tabs_header() {
     local current out="" t
     current=$(tab_of "$1")
@@ -328,12 +242,13 @@ tabs_header() {
 # Instalados no AUR)
 screen_for_tab() {
     local tab=$1 mode
-    [[ $tab == groups ]] && { echo groups; return; }
+    available "$tab" || { echo "$tab:missing"; return; }
     mode=$(mode_of "$2")
+    [[ $mode == missing ]] && mode=all
     echo "$tab:${mode:-all}"
 }
 
-# aba vizinha: step = -1 (anterior) ou 1 (próxima), dando a volta
+# $2: -1 ou 1, dando a volta
 tab_step() {
     local list current i n
     mapfile -t list < <(tabs)
@@ -345,20 +260,18 @@ tab_step() {
     echo pacman:all
 }
 
-# Ctrl+S: Todos <-> Instalados (das Atualizações, vai para Todos)
 mode_toggle() {
     local src; src=$(source_of "$1")
-    [[ -n $src ]] || return
+    [[ -n $src && $1 != *:missing ]] || return
     case $(mode_of "$1") in
         all) echo "$src:installed" ;;
         *) echo "$src:all" ;;
     esac
 }
 
-# Ctrl+U: para as Atualizações; nelas, volta para onde estava
 mode_updates() {
     local src; src=$(source_of "$1")
-    [[ -n $src ]] || return
+    [[ -n $src && $1 != *:missing ]] || return
     if [[ $(mode_of "$1") == updates ]]; then
         echo "$src:$(cat "$STATE/before-updates" 2>/dev/null || echo all)"
     else
@@ -367,7 +280,6 @@ mode_updates() {
     fi
 }
 
-# aba pelo nome clicado
 screen_by_label() {
     local t
     while read -r t; do
@@ -380,9 +292,7 @@ prompt_for() {
         *:all) echo "󰍉  " ;;
         *:installed) echo "󰏗 instalados  " ;;
         *:updates) echo "󰚰 atualizações  " ;;
-        groups) echo "󰉋  " ;;
-        group:*) echo "󰉋 ${1#group:}  " ;;
-        help) echo "" ;;
+        help|*:missing) echo "" ;;
     esac
 }
 
@@ -392,19 +302,15 @@ ghost_for() {
 
 empty_message() {
     case $1 in
-        groups) echo "Nenhum grupo ainda: em Pacman ou AUR, Alt+Enter instala num grupo novo." ;;
         aur:all) echo "Não foi possível listar o AUR (sem internet?)." ;;
         flatpak:all) echo "Não foi possível listar o Flathub (sem internet?)." ;;
         *:updates) echo "Tudo atualizado." ;;
-        pacman:installed|aur:installed) echo "Nenhum pacote seu aqui (além dos do hyprconf)." ;;
+        pacman:installed|aur:installed) echo "Nenhum pacote seu aqui." ;;
         flatpak:installed) echo "Nenhum app Flatpak instalado." ;;
         *) echo "Nada aqui." ;;
     esac
 }
 
-# ---- ajuda (Ctrl+H) ---------------------------------------------------------------
-
-# atalhos gerais e os da tela de onde a ajuda foi aberta, em tabelas centralizadas
 help_lines() {
     local from; from=$(origin)
     local n; n=$(tabs | wc -l)
@@ -427,11 +333,10 @@ help_lines() {
         *:updates) title+=" › Atualizações" ;;
         *:installed) title+=" › Instalados" ;;
     esac
+    [[ $from == *:missing ]] && here=("—|instale pelos comandos da tela")
     case $from in
         pacman:all|pacman:installed|aur:all|aur:installed)
-            here=("Enter|instala" "Alt+Enter|instala num grupo" "Ctrl+R|remove"
-                  "Ctrl+G|põe num grupo (os não instalados entram sem instalar)"
-                  "Ctrl+L|limpa os órfãos") ;;
+            here=("Enter|instala" "Ctrl+R|remove" "Ctrl+L|limpa os órfãos") ;;
         flatpak:all|flatpak:installed)
             here=("Enter|instala" "Ctrl+R|remove" "Ctrl+L|limpa os runtimes sem uso") ;;
         pacman:updates)
@@ -440,20 +345,9 @@ help_lines() {
             here=("Enter|atualiza os do AUR (com os oficiais em dia)") ;;
         flatpak:updates)
             here=("Enter|atualiza os apps e runtimes do Flatpak") ;;
-        groups)
-            title="Grupos"
-            here=("Enter|entra no grupo") ;;
-        "group:$SETUP_META")
-            title="Metapacote do hyprconf"
-            here=("—|só para ver: muda pelo PKGBUILD (packages/hyprconf-deps)") ;;
-        group:*)
-            title="Grupo \"${from#group:}\""
-            here=("Alt+Enter|instala o que falta no grupo"
-                  "Ctrl+R|remove o pacote" "Ctrl+G|tira do grupo"
-                  "Ctrl+X|desfaz o grupo (os pacotes ficam)" "Ctrl+D|apaga o grupo e os pacotes") ;;
     esac
 
-    # largura das colunas: a maior de todas as linhas (as tabelas alinham)
+    # a mesma largura nas duas tabelas, para alinharem
     local kw=0 dw=0 row k d
     for row in "${general[@]}" "${here[@]}"; do
         k=${row%%|*} d=${row#*|}
@@ -495,13 +389,10 @@ help_lines() {
     printf '%s%sEsc volta%s\n' "$pad" "$C_DIM" "$C_RESET"
 }
 
-# ---- navegação dentro do fzf ------------------------------------------------------
 # Trocar de aba não fecha o fzf: ele chama "--tab"/"--mode"/"--key" e aplica as
 # ações impressas. Assim não há intervalo em que uma tecla apertada rápido
 # (Alt+L chega como Esc + "l") vire um Esc de verdade.
 
-# ações do fzf que mostram uma tela (aba, modo, grupo ou ajuda)
-#
 # A ajuda aparece na hora. As outras carregam em duas etapas: primeiro uma
 # linha "carregando…" (assim a tela anterior some na hora) e, quando ela
 # termina de entrar, o evento load (on_load) pede a lista de verdade e só então
@@ -515,23 +406,22 @@ show_actions() {
     printf 'change-header(%s)+change-prompt(%s)+change-ghost(%s)' \
         "$header" "$(prompt_for "$target")" "$(ghost_for "$target")"
     printf '+change-preview-window(%s)' "$PREVIEW_NORMAL"
-    if [[ $target == help ]]; then
+    if is_text "$target"; then
         rm -f "$STATE/pending"
-        # sem busca: o que for digitado não filtra o texto da ajuda
+        touch "$STATE/text"
         printf '+disable-search+clear-query+hide-input+hide-preview+change-pointer( )+reload(%s --list)+first' "$SELF"
     else
+        rm -f "$STATE/text"
         touch "$STATE/pending" "$STATE/clear"
         printf '+enable-search+clear-query+hide-input+hide-preview+change-pointer( )+reload(%s --loading)' "$SELF"
     fi
 }
 
-# evento load: a linha "carregando…" entrou (pede a lista) ou a lista entrou
-# (mostra a prévia e a busca)
 on_load() {
     if [[ -f $STATE/pending ]]; then
         rm -f "$STATE/pending"
         printf 'reload(%s --list)' "$SELF"
-    elif [[ $(screen) != help ]]; then
+    elif ! is_text "$(screen)"; then
         printf 'show-input+show-preview+change-pointer(▌)+first'
         # o show-input devolve a busca de antes do hide-input: a busca só
         # fica limpa se o clear-query vier depois dele
@@ -542,14 +432,12 @@ on_load() {
     fi
 }
 
-# a tela base para navegar: na ajuda, a de onde ela foi aberta
 nav_base() {
     local scr; scr=$(screen)
     [[ $scr == help ]] && scr=$(origin)
     echo "$scr"
 }
 
-# --tab prev|next|index:<n>|label:<nome>
 tab_cmd() {
     local base target
     base=$(nav_base)
@@ -562,7 +450,6 @@ tab_cmd() {
     [[ -n $target ]] && show_actions "$target"
 }
 
-# --mode toggle (Ctrl+S) | updates (Ctrl+U)
 mode_cmd() {
     local target
     case $1 in
@@ -572,16 +459,13 @@ mode_cmd() {
     [[ -n $target ]] && show_actions "$target"
 }
 
-# teclas de ação que valem em cada tela (as outras são ignoradas)
 action_valid() {
     case "$1:$2" in
         pacman:all:*|pacman:installed:*|aur:all:*|aur:installed:*)
-            case $2 in enter|alt-enter|ctrl-r|ctrl-g|ctrl-l) return 0 ;; esac ;;
+            case $2 in enter|ctrl-r|ctrl-l) return 0 ;; esac ;;
         flatpak:all:*|flatpak:installed:*)
             case $2 in enter|ctrl-r|ctrl-l) return 0 ;; esac ;;
         *:updates:enter) return 0 ;;
-        "group:$SETUP_META":*) return 1 ;;   # só para ver
-        group:*:alt-enter|group:*:ctrl-r|group:*:ctrl-g|group:*:ctrl-x|group:*:ctrl-d) return 0 ;;
     esac
     return 1
 }
@@ -590,14 +474,10 @@ accept_with() {
     printf 'execute-silent(echo %s > %s/key)+accept' "$1" "$STATE"
 }
 
-# --key <tecla> [itens]
 key_cmd() {
     local key=$1; shift
     local scr; scr=$(screen)
     case $key in
-        up|down)
-            # na ajuda as setas rolam o texto
-            [[ $scr == help ]] && printf 'offset-%s' "$key" || printf '%s' "$key" ;;
         esc)
             [[ $scr == help ]] && show_actions "$(origin)" || printf 'abort' ;;
         ctrl-h)
@@ -607,29 +487,16 @@ key_cmd() {
                 echo "$scr" > "$STATE/prev"
                 show_actions help
             fi ;;
-        enter)
-            if [[ $scr == groups ]]; then
-                [[ -n ${1:-} && ( -d $GROUPS_DIR/$1 || $1 == "$SETUP_META" ) ]] && show_actions "group:$1"
-            else
-                action_valid "$scr" enter && accept_with enter
-            fi ;;
         *)
             action_valid "$scr" "$key" && accept_with "$key" ;;
     esac
 }
 
-# ---- ações -----------------------------------------------------------------------
-
-# Enter no Pacman e no AUR: instala o que falta; um pacote só, já instalado,
-# abre Instalados filtrado nele (devolve 1 para voltar direto à lista)
+# Um pacote só, já instalado, abre Instalados filtrado nele (devolve 1 para
+# voltar direto à lista, sem o pause)
 search_enter() {
     local src=$1; shift
     if (( $# == 1 )) && pacman -Qq "$1" >/dev/null 2>&1; then
-        if setup_packages | grep -qxF "$1"; then
-            warn "\"$1\" já está instalado: é uma dependência do hyprconf."
-            info "Ele é gerenciado pelo PKGBUILD do metapacote (packages/hyprconf-deps)."
-            return 0
-        fi
         set_screen "$src:installed"
         printf '%s' "$1" > "$STATE/query"
         return 1
@@ -648,7 +515,6 @@ search_enter() {
     fi
 }
 
-# só os instalados da lista (avisa dos outros)
 only_installed() {
     local -A missing
     local p
@@ -656,45 +522,6 @@ only_installed() {
     for p in "$@"; do
         if [[ -z ${missing[$p]:-} ]]; then echo "$p"; else info "\"$p\" não está instalado." >&2; fi
     done
-}
-
-# Ctrl+G: os instalados entram no grupo na hora; os outros só são atribuídos
-# (instale depois, dentro do grupo, com Alt+Enter)
-to_group() {
-    if [[ -n $(pkgs_missing "$@") ]]; then
-        assign_to_group "$@"
-    else
-        put_in_group "$@"
-    fi
-}
-
-# coloca no grupo, instalando o que faltar, numa transação só (uma senha)
-put_in_group() {
-    local group
-    group=$(group_pick) || return
-    title "Grupo \"$group\": $*"
-    group_add "$group" "$@" && ok "Pronto."
-}
-
-# atribui a um grupo sem instalar (instala depois, dentro do grupo, com Alt+Enter)
-assign_to_group() {
-    local group
-    group=$(group_pick) || return
-    group_assign "$group" "$@" || return
-    ok "Atribuído ao grupo \"$group\": $*"
-    info "Para instalar: aba Grupos, entre no grupo e aperte Alt+Enter."
-}
-
-apply_group() {
-    local name=$1
-    local missing
-    mapfile -t missing < <(group_missing "$name")
-    if (( ${#missing[@]} > 0 )); then
-        title "Grupo \"$name\": instalando ${missing[*]}"
-    else
-        title "Aplicando o grupo \"$name\""
-    fi
-    group_apply "$name" && ok "Pronto."
 }
 
 # notícias do Arch publicadas depois da última atualização completa
@@ -779,8 +606,7 @@ update_aur() {
     yay -Sua
 }
 
-# Enter no Flatpak: instala o que falta; um app só, já instalado, abre
-# Instalados filtrado nele
+# devolve 1 como o search_enter
 flatpak_enter() {
     if (( $# == 1 )) && flatpak info --user "$1" >/dev/null 2>&1; then
         set_screen flatpak:installed
@@ -808,8 +634,6 @@ handle() {
         pacman:all:enter|pacman:installed:enter|aur:all:enter|aur:installed:enter)
             (( ${#items[@]} )) || return 1
             search_enter "$(source_of "$scr")" "${items[@]}" || return 1 ;;
-        pacman:*:alt-enter|aur:*:alt-enter) (( ${#items[@]} )) && put_in_group "${items[@]}" ;;
-        pacman:*:ctrl-g|aur:*:ctrl-g) (( ${#items[@]} )) && to_group "${items[@]}" ;;
         pacman:*:ctrl-r|aur:*:ctrl-r)
             local installed
             mapfile -t installed < <(only_installed "${items[@]}")
@@ -832,23 +656,6 @@ handle() {
         flatpak:updates:enter)
             title "Atualizando os apps e runtimes do Flatpak"
             flatpak update --user ;;
-        group:*:alt-enter) apply_group "${scr#group:}" ;;
-        group:*:ctrl-r) (( ${#items[@]} )) && remove_packages "${items[@]}"
-            [[ -d $GROUPS_DIR/${scr#group:} ]] || set_screen groups ;;
-        group:*:ctrl-g)
-            (( ${#items[@]} )) || return 1
-            local name=${scr#group:}
-            title "Tirando do grupo \"$name\": ${items[*]}"
-            group_drop "$name" "${items[@]}" && ok "Pronto: ficaram como avulsos."
-            [[ -d $GROUPS_DIR/$name ]] || set_screen groups ;;
-        group:*:ctrl-x)
-            title "Desfazendo o grupo \"${scr#group:}\" (os pacotes continuam instalados)"
-            group_dissolve "${scr#group:}" && ok "Pronto: os pacotes viraram avulsos."
-            set_screen groups ;;
-        group:*:ctrl-d)
-            title "Apagando o grupo \"${scr#group:}\" e os pacotes dele"
-            group_delete "${scr#group:}"
-            set_screen groups ;;
         *) return 1 ;;
     esac
     return 0
@@ -869,7 +676,6 @@ main() {
     local opts
     mapfile -t opts < <(fzf_base_opts)
 
-    # tudo passa pelo script (--tab / --mode / --key), sem fechar o fzf
     local nav=(
         --bind="left:transform:$SELF --tab prev"
         --bind="right:transform:$SELF --tab next"
@@ -878,20 +684,21 @@ main() {
         --bind="ctrl-s:transform:$SELF --mode toggle"
         --bind="ctrl-u:transform:$SELF --mode updates"
         --bind="click-header:transform:$SELF --tab \"label:\$FZF_CLICK_HEADER_WORD\""
-        --bind="up:transform:$SELF --key up"
-        --bind="down:transform:$SELF --key down"
-        --bind="alt-k:transform:$SELF --key up"
-        --bind="alt-j:transform:$SELF --key down"
+        # nas telas de texto as setas rolam; sem chamar o script a cada tecla
+        --bind="up:transform:[ -f '$STATE/text' ] && echo offset-up || echo up"
+        --bind="down:transform:[ -f '$STATE/text' ] && echo offset-down || echo down"
+        --bind="alt-k:transform:[ -f '$STATE/text' ] && echo offset-up || echo up"
+        --bind="alt-j:transform:[ -f '$STATE/text' ] && echo offset-down || echo down"
         --bind="esc:transform:$SELF --key esc"
         --bind="ctrl-h:transform:$SELF --key ctrl-h"
         --bind="enter:transform:$SELF --key enter {1}"
         --bind="load:transform:$SELF --on-load"
     )
     local k
-    for k in 1 2 3 4; do
+    for k in 1 2 3; do
         nav+=(--bind="alt-$k:transform:$SELF --tab index:$k")
     done
-    for k in alt-enter ctrl-g ctrl-r ctrl-l ctrl-x ctrl-d; do
+    for k in ctrl-r ctrl-l; do
         nav+=(--bind="$k:transform:$SELF --key $k")
     done
 
@@ -920,9 +727,6 @@ main() {
 
         clear
         handle "$key" "${items[@]}" || { clear; continue; }
-        # refaz as marcas de instalado
-        fetch_aur &
-        fetch_flatpak &
         pause || break
     done
 }

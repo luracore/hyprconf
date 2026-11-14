@@ -2,7 +2,7 @@
 Type=Application
 Name=RepoStore
 GenericName=Instalar, remover e atualizar pacotes
-Comment=Pacotes dos repositórios oficiais, do AUR e do Flatpak, grupos e atualizações
+Comment=Pacotes dos repositórios oficiais, do AUR e do Flatpak, e atualizações
 Icon=system-software-install
 Exec=sh -c "exec ~/hyprconf/apps/hyprrunner repostore"
 Terminal=false
