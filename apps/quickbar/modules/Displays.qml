@@ -33,7 +33,7 @@ Item {
     readonly property int nightMax: 6000
 
     readonly property string savedPath: Quickshell.env("HOME") + "/hyprconf/hypr/config/monitor-painel.lua"
-    readonly property string nightPath: Quickshell.env("HOME") + "/.local/state/hyprconf/nightlight"
+    readonly property string nightPath: Quickshell.shellPath("state/nightlight")
 
     CommandRunner { id: commands }
 
@@ -256,7 +256,7 @@ Item {
         savedFile.setText(lines.join("\n") + "\n");
     }
 
-    // ~/.local/state/hyprconf/nightlight: "on 4500" ou "off 4500"
+    // state/nightlight: "on 4500" ou "off 4500"
     FileView {
         id: nightFile
         path: root.nightPath
@@ -272,7 +272,7 @@ Item {
     }
 
     function saveNight() {
-        Quickshell.execDetached(["sh", "-c", 'mkdir -p "$(dirname "$1")" && echo "$2" > "$1"',
+        Quickshell.execDetached(["sh", "-c", 'echo "$2" > "$1"',
                                  "sh", nightPath, (nightOn ? "on " : "off ") + nightTemp]);
     }
 

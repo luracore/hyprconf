@@ -11,11 +11,11 @@ Scope {
     id: root
 
     property string preferredOutput: ""
-    readonly property string statePath: Quickshell.env("HOME") + "/.local/state/hyprconf/bar-monitor"
+    readonly property string statePath: Quickshell.shellPath("state/bar-monitor")
 
     function setPreferredOutput(name) {
         preferredOutput = name;
-        Quickshell.execDetached(["sh", "-c", 'mkdir -p "$(dirname "$1")" && echo "$2" > "$1"', "sh", statePath, name]);
+        Quickshell.execDetached(["sh", "-c", 'echo "$2" > "$1"', "sh", statePath, name]);
     }
 
     FileView {

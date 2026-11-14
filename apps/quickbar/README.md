@@ -65,7 +65,7 @@ camada `Overlay`, com foco de teclado exclusivo enquanto aberta. O blur atrás
 vem de uma `layer_rule` em `hypr/config/window-rules.lua` (namespaces
 `qs-power` e `qs-launcher`).
 
-**Estado salvo:** fica em `~/.local/state/hyprconf/`, nunca no repositório.
+**Estado salvo:** fica em `state/`, fora do git.
 
 ## IPC
 

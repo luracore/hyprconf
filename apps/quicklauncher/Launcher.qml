@@ -53,7 +53,7 @@ Scope {
     FileView {
         id: usageFile
 
-        path: Quickshell.env("HOME") + "/.local/state/hyprconf/launcher-usage.json"
+        path: Quickshell.shellPath("state/usage.json")
         blockLoading: true
 
         onLoaded: {
@@ -102,7 +102,7 @@ Scope {
     FileView {
         id: pinsFile
 
-        path: Quickshell.env("HOME") + "/.local/state/hyprconf/launcher-pins.json"
+        path: Quickshell.shellPath("state/pins.json")
         blockLoading: true
 
         onLoaded: {
