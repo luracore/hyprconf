@@ -91,6 +91,19 @@ for desktop in "${desktops[@]}"; do
   echo "    link:   $link -> $desktop"
 done
 
+echo "==> Aplicando as prioridades iniciais do lançador"
+
+LAUNCHER_STATE="$REPO_DIR/apps/quicklauncher/state"
+LAUNCHER_DEFAULTS="$LAUNCHER_STATE/defaults.json"
+LAUNCHER_PINS="$LAUNCHER_STATE/pins.json"
+
+mkdir -p "$LAUNCHER_STATE"
+
+if [[ ! -e "$LAUNCHER_PINS" && -f "$LAUNCHER_DEFAULTS" ]]; then
+  cp -- "$LAUNCHER_DEFAULTS" "$LAUNCHER_PINS"
+  echo "    criado: $LAUNCHER_PINS"
+fi
+
 if (( DEFAULTS )); then
   echo "==> Apontando GTK, ícones e cursor para o tema (gsettings)"
 
