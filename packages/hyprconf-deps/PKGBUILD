@@ -42,6 +42,9 @@ depends=(
 
     # Tema nos apps GTK e Qt; ícones Papirus (as pastas seguem o tema)
     qt6ct adw-gtk-theme papirus-icon-theme
+    # Cursor na cor do tema: o SVG vira PNG (rsvg-convert) e Xcursor para os
+    # apps XWayland e GTK3 (o hyprcursor-util vem com o Hyprland)
+    librsvg xorg-xcursorgen
 
     # Fontes: a do sistema, emoji e japonês/chinês/coreano (sem elas o texto
     # nessas línguas aparece como quadradinhos)

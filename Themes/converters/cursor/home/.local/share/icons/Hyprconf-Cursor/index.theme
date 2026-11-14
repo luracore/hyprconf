@@ -1,0 +1,4 @@
+[Icon Theme]
+Name=Hyprconf-Cursor
+Comment=Cursor nas cores do tema (gerado por hyprconf)
+Inherits=Adwaita

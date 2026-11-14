@@ -4,8 +4,8 @@
 // As cores são completadas pelo Themes/Colors.js, o mesmo arquivo que a
 // barra e o seletor usam, e então vão para:
 //
-//   converters/<programa>/  uma pasta por programa (foot, gtk, icons, kde,
-//                           nvim, qt); veja a seção "conversores" abaixo
+//   converters/<programa>/  uma pasta por programa (cursor, foot, gtk, icons,
+//                           kde, nvim, qt); veja a seção "conversores" abaixo
 //   fzf       ~/.local/share/hyprconf/theme/fzf.opts       (RepoStore)
 //   hyprlock  ~/.local/share/hyprconf/theme/hyprlock.conf  (hypr/hyprlock.conf)
 //

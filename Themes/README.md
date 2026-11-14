@@ -12,7 +12,8 @@ ln -sfn TokyoNight.json ~/hyprconf/Themes/current
 ```
 
 O `converters/main.js` aplica no foot, Neovim, GTK, Qt, na tela de bloqueio
-(hyprlock) e nos ícones (as pastas do Papirus ganham a cor primária), e avisa a
+(hyprlock), nos ícones (as pastas do Papirus ganham a cor primária) e no cursor
+(desenhado em SVG no próprio conversor), e avisa a
 barra e os outros apps do Quickshell abertos. Só trocar o link não basta: rode
 o `main.js` depois.
 
@@ -29,11 +30,12 @@ para quando não houver hyprconf).
 | foot | `~/.config/foot/current.ini` | `include=~/.config/foot/current.ini` no `foot.ini` |
 | Neovim | `~/.config/nvim/colors/current.lua` | `:colorscheme current` |
 
-GTK, Qt, apps KDE e ícones são do sistema, então o próprio conversor traz os
+GTK, Qt, apps KDE, ícones e cursor são do sistema, então o próprio conversor traz os
 arquivos que apontam para o current: a pasta `home/` dele (no caminho a partir
-do `$HOME`) e um `dconf.ini` para o gsettings. O `install.sh` copia só o que
-ainda não existir e escreve só as chaves do gsettings que ainda estão no padrão.
-Se você já tinha esses arquivos, compare com os prontos e ligue à mão.
+do `$HOME`) e um `dconf.ini` para o gsettings. O `install.sh` copia esses
+arquivos **por cima** do que existir e escreve todas as chaves do gsettings:
+ajustes seus neles são substituídos. Se você já tinha os seus, compare com os
+prontos e decida antes de rodar o install.
 
 | Toolkit | current | Arquivos prontos |
 | :--- | :--- | :--- |
@@ -41,6 +43,7 @@ Se você já tinha esses arquivos, compare com os prontos e ligue à mão.
 | Qt | `~/.config/qt6ct/colors/current.conf` | `qt6ct.conf`, `colors/tokyonight.conf` |
 | apps KDE | as cores dentro do `~/.config/kdeglobals` (não dá para apontar) | `kdeglobals` |
 | ícones | `~/.local/share/icons/Hyprconf/` | a pasta (herda do Papirus), gsettings |
+| cursor | `~/.local/share/icons/Hyprconf-Cursor/` | a pasta, gsettings; o `env.lua` do hypr aponta o Hyprland e o XWayland |
 
 Apagar a pasta de um conversor tira aquele programa do hyprconf: o tema não é
 mais gerado e o install não copia mais os arquivos dele.
