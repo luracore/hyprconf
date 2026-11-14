@@ -4,7 +4,6 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Botão de texto dos painéis da barra.
 Rectangle {
     id: button
 

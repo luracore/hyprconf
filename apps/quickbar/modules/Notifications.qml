@@ -10,12 +10,9 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Servidor de notificações: popups no canto e a central (o sino da barra),
-// com histórico e "não perturbe".
 Scope {
     id: root
 
-    // estado público (usado pelo botão na barra)
     property bool centerOpen: false
     property bool dnd: false
     readonly property int count: history.count
@@ -54,7 +51,6 @@ Scope {
                 time: Qt.formatDateTime(new Date(), "HH:mm")
             });
 
-            // com "não perturbe" só críticas viram popup
             if (root.dnd && n.urgency !== NotificationUrgency.Critical)
                 return;
 
@@ -72,7 +68,6 @@ Scope {
         function toggleDnd(): void { root.dnd = !root.dnd; }
     }
 
-    // ───────────────────────── popups ─────────────────────────
     PanelWindow {
         id: popups
         visible: !root.centerOpen && server.trackedNotifications.values.length > 0
@@ -111,14 +106,12 @@ Scope {
 
                     HoverHandler { id: hover }
 
-                    // some sozinha depois do timeout (pausa com o mouse em cima)
                     Timer {
                         running: !card.critical && !hover.hovered
                         interval: root.popupTimeout
                         onTriggered: card.modelData.expire()
                     }
 
-                    // clique: ação padrão se existir, senão fecha
                     MouseArea {
                         anchors.fill: parent
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -229,7 +222,6 @@ Scope {
         }
     }
 
-    // ───────────────────── centro de notificações ─────────────────────
     PanelWindow {
         id: center
         visible: root.centerOpen
@@ -245,7 +237,6 @@ Scope {
         implicitWidth: root.panelWidth
         implicitHeight: centerCol.implicitHeight + 24
 
-        // fecha ao clicar fora
         HyprlandFocusGrab {
             windows: [center]
             active: root.centerOpen

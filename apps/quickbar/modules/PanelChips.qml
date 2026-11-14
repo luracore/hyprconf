@@ -5,7 +5,7 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Escolha entre poucas opções: options = [{ value, label }].
+// options: [{ value, label }]
 ColumnLayout {
     id: chips
 

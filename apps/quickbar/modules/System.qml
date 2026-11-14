@@ -2,21 +2,14 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 import QtQuick
 
-// Sistema: CPU, RAM, temperatura e bateria num módulo só. A barra mostra o
-// que for mais urgente; o clique abre o painel com tudo e o perfil de energia.
-//
 // Prioridade (do mais urgente):
 //   bateria ≤ 15% descarregando > temperatura ≥ 90 °C > CPU ≥ 85% > RAM ≥ 90%
 //   > temperatura ≥ 80 °C > padrão (bateria no notebook, CPU no PC)
-// Cada alerta só some quando o valor cai um pouco abaixo do limite, para o
-// módulo não ficar pulando entre um e outro.
 BarButton {
     id: root
 
-    // ---- CPU, RAM e temperatura (lidos a cada 2 s) ------------------------------
-
-    property real cpu: 0               // %
-    property real ram: 0               // %
+    property real cpu: 0
+    property real ram: 0
     property real ramUsedKiB: 0
     property real ramTotalKiB: 0
     property real temp: -1             // °C, -1 = sem sensor
@@ -100,8 +93,6 @@ BarButton {
         }
     }
 
-    // ---- bateria (UPower) -------------------------------------------------------
-
     readonly property var battery: UPower.displayDevice
     readonly property bool hasBattery: UPower.devices.values.some(d => d.isLaptopBattery)
     // 0-100 (o UPower do Quickshell dá 0-1)
@@ -131,8 +122,6 @@ BarButton {
         const m = Math.round(seconds % 3600 / 60);
         return h > 0 ? h + "h " + String(m).padStart(2, "0") + "min" : m + "min";
     }
-
-    // ---- o que mostrar ------------------------------------------------------------
 
     // alertas com folga para desligar (histerese)
     property bool batteryLow: false
@@ -187,8 +176,6 @@ BarButton {
         if (m.button === Qt.LeftButton)
             root.togglePanel();
     }
-
-    // ---- painel -----------------------------------------------------------------
 
     function togglePanel() {
         popup.visible = !popup.visible;

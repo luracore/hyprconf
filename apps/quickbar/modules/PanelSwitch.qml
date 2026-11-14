@@ -2,7 +2,6 @@ import QtQuick
 
 import qs.config
 
-// Chave liga/desliga.
 Rectangle {
     id: toggleSwitch
 

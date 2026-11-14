@@ -9,11 +9,6 @@ import "../config/Colors.js" as Colors
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Visualizador de áudio: lê a saída raw do cava (cava.conf, na pasta da barra).
-// À esquerda, um bloco com o símbolo do app que está tocando; o bloco e as
-// barras seguem a cor da capa (MPRIS) ou, sem capa, a cor do tema.
-//
-// clique: painel do player (MediaPanel) · clique do meio: tocar/pausar
 Rectangle {
     id: root
 
@@ -33,8 +28,6 @@ Rectangle {
 
     property color shownColor: accentColor
     Behavior on shownColor { ColorAnimation { duration: 400 } }
-
-    // ---- mídia ----------------------------------------------------------
 
     // o escolhido no painel (enquanto existir e nenhum outro tocar no lugar
     // dele); senão, o primeiro tocando; senão, o primeiro da lista
@@ -116,7 +109,6 @@ Rectangle {
     border.width: bordered ? 1 : 0
     border.color: shownColor
 
-    // bloco do símbolo (mesmo formato do BarButton)
     Rectangle {
         id: iconBlock
 
@@ -172,7 +164,11 @@ Rectangle {
         command: ["cava", "-p", Quickshell.shellPath("cava.conf")]
 
         stdout: SplitParser {
+            property string last: ""
             onRead: line => {
+                if (line === last)
+                    return;
+                last = line;
                 const parts = line.split(";");
                 if (parts[parts.length - 1] === "")
                     parts.pop();
@@ -193,7 +189,6 @@ Rectangle {
         onTriggered: cava.running = true
     }
 
-    // ---- de onde vem o som --------------------------------------------------
     // Os fluxos de saída de áudio não pausados, pelo pactl: o PipeWire do
     // Quickshell não diz se um fluxo está pausado (o Spotify pausado, por
     // exemplo, continua com o fluxo aberto).
@@ -274,8 +269,6 @@ Rectangle {
         running: !subscribe.running
         onTriggered: subscribe.running = true
     }
-
-    // ---- clique e painel ---------------------------------------------------
 
     MouseArea {
         anchors.fill: parent

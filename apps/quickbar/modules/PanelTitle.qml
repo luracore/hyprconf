@@ -3,7 +3,6 @@ import QtQuick
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Título de seção dos painéis da barra (ex.: "WI-FI").
 Text {
     color: Theme.colors.muted
     font.family: Typo.family

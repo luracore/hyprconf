@@ -1,7 +1,6 @@
 import Quickshell.Io
 import QtQuick
 
-// Ícone da distro (lido de /etc/os-release). Clique abre a tela de energia.
 BarButton {
     id: root
 

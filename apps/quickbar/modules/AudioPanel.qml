@@ -8,15 +8,13 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Painel de áudio (aberto pelo módulo de volume): volume e dispositivo
-// padrão de saída e de entrada, e o volume de cada app tocando som.
 PanelSurface {
     id: root
 
     readonly property var devices: Pipewire.nodes.values.filter(n => !n.isStream && n.audio !== null)
     readonly property var sinks: devices.filter(n => n.isSink)
     readonly property var sources: devices.filter(n => !n.isSink)
-    // apps mandando som para uma saída (o cava só escuta: fica de fora)
+    // isSink deixa o cava de fora (ele só escuta)
     readonly property var apps: Pipewire.nodes.values.filter(n => n.isStream && n.isSink && n.audio !== null)
 
     // necessário para o PipeWire expor volume/mudo dos nós
@@ -50,7 +48,7 @@ PanelSurface {
 
     PanelDivider {}
 
-    // ---- volume de cada app (o WirePlumber guarda e reaplica depois) ----
+    // o WirePlumber guarda o volume de cada app e reaplica depois
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -73,15 +71,12 @@ PanelSurface {
         }
     }
 
-    // ---- linha de um app: ícone (clique = mudo), nome, slider e volume -------
-
     component AppRow: RowLayout {
         id: app
 
         required property PwNode modelData
         readonly property var props: modelData.properties ?? {}
         readonly property string name: props["application.name"] || modelData.description || modelData.name
-        // o que está tocando (título da música ou do vídeo), se for diferente do nome
         readonly property string media: (props["media.name"] ?? "") !== name ? (props["media.name"] ?? "") : ""
         readonly property bool ready: modelData.audio !== null
         readonly property bool muted: ready && modelData.audio.muted
@@ -154,8 +149,6 @@ PanelSurface {
             font.weight: Typo.weight.semibold
         }
     }
-
-    // ---- seção: título, slider do padrão e lista de dispositivos ---------
 
     component AudioSection: ColumnLayout {
         id: section

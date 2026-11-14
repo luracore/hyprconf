@@ -7,9 +7,6 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Painel do player (aberto pelo módulo do cava): capa, música, progresso,
-// controles e, com mais de um player, qual controlar. A cor é a mesma das
-// barras do cava (tirada da capa).
 PanelSurface {
     id: root
 
@@ -50,8 +47,6 @@ PanelSurface {
         font.pixelSize: Typo.size.small
     }
 
-    // ---- capa e música ---------------------------------------------------------
-
     RowLayout {
         Layout.fillWidth: true
         visible: root.player !== null
@@ -75,7 +70,6 @@ PanelSurface {
             Image {
                 id: cover
                 anchors.fill: parent
-                // a capa baixada pelo cava (local) ou a url do player
                 source: root.cava.artFile !== "" ? root.cava.artFile : (root.player?.trackArtUrl ?? "")
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
@@ -122,8 +116,6 @@ PanelSurface {
             }
         }
     }
-
-    // ---- progresso: clique ou arraste para pular (aplica ao soltar) ----------
 
     ColumnLayout {
         id: progress
@@ -172,8 +164,6 @@ PanelSurface {
         }
     }
 
-    // ---- controles ---------------------------------------------------------------
-
     RowLayout {
         Layout.alignment: Qt.AlignHCenter
         visible: root.player !== null
@@ -192,7 +182,6 @@ PanelSurface {
             onClicked: root.player.previous()
         }
 
-        // tocar/pausar: o botão principal
         Rectangle {
             implicitWidth: 48
             implicitHeight: 48
@@ -241,8 +230,6 @@ PanelSurface {
 
     PanelDivider { visible: root.player !== null }
 
-    // ---- player: de qual app é e, com mais de um, qual controlar ---------------
-
     RowLayout {
         Layout.fillWidth: true
         visible: root.player !== null
@@ -278,7 +265,7 @@ PanelSurface {
         onPicked: v => root.cava.choosePlayer(v)
     }
 
-    // botão redondo dos controles; "on" destaca (aleatório e repetir ligados)
+    // "on": aleatório/repetir ligados
     component ControlButton: Rectangle {
         id: control
 

@@ -5,8 +5,7 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Botão de módulo no estilo "block-prefix" do Wayle:
-// [ ícone ][ valor ]  -> bloco quadrado colorido + valor na mesma cor sobre surface
+// Estilo "block-prefix" do Wayle: [ ícone ][ valor ]
 Rectangle {
     id: root
 
@@ -28,7 +27,7 @@ Rectangle {
     property bool compact: false
     property bool showLabel: label !== "" && !compact
     property bool bordered: false
-    property bool active: false      // destaque (ex. popup aberto)
+    property bool active: false
     property bool clickable: true
 
     readonly property bool hovered: mouse.containsMouse

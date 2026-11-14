@@ -3,15 +3,9 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import QtQuick
 
-// Estado dos monitores, usado pelo módulo de brilho e pelo painel:
-//   - controles de brilho (um BrightnessControl por display controlável);
-//   - monitores do Hyprland (hyprctl monitors all -j);
-//   - mudanças de resolução, taxa, escala e posição: aplica na hora
-//     (hyprctl eval) e pede confirmação; sem confirmar em 10 s, volta.
-//     Confirmadas, vão para hypr/config/monitor-painel.lua;
-//   - modo noturno (hyprsunset).
-// Fica fora do painel: se o painel fechar no meio da confirmação, a contagem
-// continua e a configuração antiga volta sozinha.
+// Fica fora do painel: se ele fechar no meio da confirmação (10 s), a
+// contagem continua e a configuração antiga volta sozinha. Mudanças
+// confirmadas vão para hypr/config/monitor-painel.lua.
 Item {
     id: root
 
@@ -27,7 +21,6 @@ Item {
     property string geometryKey: ""
     property var saved: ({})       // output -> spec salvo no monitor-painel.lua
 
-    // confirmação pendente
     property var previous: null    // spec para voltar
     property var next: null        // spec aplicado, salvo se confirmar
     property int countdown: 0
@@ -53,8 +46,6 @@ Item {
                 nightFile.reload();
         });
     }
-
-    // ---- brilho ------------------------------------------------------------------
 
     Component {
         id: controlComponent
@@ -114,8 +105,6 @@ Item {
     function controlFor(name) {
         return controls.find(c => c.output === name || (c.output === "" && isInternal(name))) ?? null;
     }
-
-    // ---- monitores -------------------------------------------------------------------
 
     function refreshMonitors() {
         commands.run(["hyprctl", "monitors", "all", "-j"], (code, out) => {
@@ -266,8 +255,6 @@ Item {
             lines.push(luaOf(saved[output]));
         savedFile.setText(lines.join("\n") + "\n");
     }
-
-    // ---- modo noturno ------------------------------------------------------------------
 
     // ~/.local/state/hyprconf/nightlight: "on 4500" ou "off 4500"
     FileView {

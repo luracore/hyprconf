@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# hyprrunner: abre um programa padrão de ~/hyprconf/defaults.conf, com argumentos.
-#   hyprrunner terminal
-#   hyprrunner editor ~/hyprconf/hypr/config/binds.lua
-# Lê o arquivo a cada uso: trocar um padrão vale na hora.
+# Abre um programa padrão de ~/hyprconf/defaults.conf, ex.: hyprrunner editor arquivo
+# Relê o arquivo a cada uso: trocar um padrão vale na hora.
 
 conf="$HOME/hyprconf/defaults.conf"
 name=${1:?uso: hyprrunner <programa> [argumentos]}

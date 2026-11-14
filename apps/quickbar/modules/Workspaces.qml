@@ -6,7 +6,6 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// grupo de workspaces: um container "surface" com quadrados dentro
 Rectangle {
     id: root
 

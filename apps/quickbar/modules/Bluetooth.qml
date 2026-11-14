@@ -2,14 +2,8 @@ import Quickshell.Bluetooth
 import Quickshell.Io
 import QtQuick
 
-// Bluetooth (BlueZ): status na barra; clique abre o painel com os
-// dispositivos pareados, a busca por novos e a qualidade do áudio.
-//
-// Substitui o blueman:
-//  - dispositivos: Quickshell.Bluetooth (nativo);
-//  - agente de pareamento (confirmar código, PIN): "bluetoothctl --agent"
-//    rodando em segundo plano; os pedidos aparecem no painel;
-//  - perfil/codec de áudio: pactl.
+// Substitui o blueman: agente de pareamento pelo "bluetoothctl --agent"
+// em segundo plano (os pedidos aparecem no painel); perfil/codec pelo pactl.
 BarButton {
     id: root
 
@@ -18,7 +12,7 @@ BarButton {
     readonly property var devices: adapter ? adapter.devices.values : []
     readonly property var pairedDevices: devices.filter(d => d.paired)
             .sort((a, b) => (b.connected - a.connected) || deviceName(a).localeCompare(deviceName(b)))
-    // novos: só os que têm nome (o resto é ruído de BLE)
+    // os sem nome são ruído de BLE
     readonly property var newDevices: devices.filter(d => !d.paired && d.deviceName !== "")
     readonly property var connectedDevices: pairedDevices.filter(d => d.connected)
 
@@ -52,8 +46,6 @@ BarButton {
         return Math.round(d.battery <= 1 ? d.battery * 100 : d.battery);
     }
 
-    // ---- botão na barra -------------------------------------------------------
-
     visible: adapter !== null
 
     icon: !powered ? "󰂲" : connectedDevices.length > 0 ? "󰂱" : "󰂯"
@@ -66,8 +58,6 @@ BarButton {
             root.togglePanel();
     }
 
-    // ---- ações ------------------------------------------------------------------
-
     function setPowered(on) {
         if (adapter)
             adapter.enabled = on;
@@ -78,7 +68,7 @@ BarButton {
             adapter.discovering = on;
     }
 
-    property var pendingDevice: null   // dispositivo sendo pareado pelo painel
+    property var pendingDevice: null
     property string errorAddress: ""
     property string errorText: ""
 
@@ -119,7 +109,6 @@ BarButton {
         }
     }
 
-    // ---- agente de pareamento -----------------------------------------------------
     // O bluetoothctl registra um agente no BlueZ e pergunta pelo stdin; aqui a
     // saída dele é lida e os pedidos viram "prompt", respondido pelo painel.
     //
@@ -167,7 +156,7 @@ BarButton {
 
         agentBuffer = "";
         if (prompt && !popup.visible)
-            togglePanel();      // pedido de pareamento abre o painel
+            togglePanel();
     }
 
     Process {
@@ -195,8 +184,6 @@ BarButton {
         interval: 5000
         onTriggered: agent.running = true
     }
-
-    // ---- áudio: perfil/codec (pactl) ----------------------------------------------
 
     CommandRunner { id: commands }
 
@@ -251,8 +238,6 @@ BarButton {
         triggeredOnStart: true
         onTriggered: root.refreshCards()
     }
-
-    // ---- painel -----------------------------------------------------------------
 
     // a procura só começa pelo botão do painel: procurar dispositivos usa o
     // mesmo rádio do áudio e picota o som de um fone conectado

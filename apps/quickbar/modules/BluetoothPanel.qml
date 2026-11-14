@@ -6,9 +6,6 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Painel de Bluetooth (aberto pelo módulo Bluetooth): liga/desliga, pedidos
-// de pareamento, dispositivos pareados (conectar, esquecer, qualidade do
-// áudio) e dispositivos novos por perto.
 PanelSurface {
     id: root
 
@@ -63,7 +60,6 @@ PanelSurface {
         }
     }
 
-    // pedido de pareamento (agente)
     Rectangle {
         Layout.fillWidth: true
         visible: root.bt.prompt !== null
@@ -163,8 +159,6 @@ PanelSurface {
         font.pixelSize: Typo.size.small
     }
 
-    // ---- pareados -----------------------------------------------------------
-
     ColumnLayout {
         Layout.fillWidth: true
         visible: root.bt.powered
@@ -258,8 +252,6 @@ PanelSurface {
             }
         }
     }
-
-    // ---- novos ----------------------------------------------------------------
 
     ColumnLayout {
         Layout.fillWidth: true

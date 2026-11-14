@@ -106,7 +106,7 @@ subcomando do próprio `quickshell ipc`, e a chamada não chega na função.
 
 - **Imports:** o Quickshell só importa arquivos de dentro da pasta da
   instância; o que é compartilhado entra por symlink (`config -> ../quickshell-common`,
-  e dentro dele `Colors.js -> Themes/Colors.js`).
+  e dentro dele `Colors.js -> themes/Colors.js`).
 - **Nomes de propriedade:** nada que comece com `on` + maiúscula (ex.:
   `onPrimary`): o QML trata como handler de sinal.
 - **Componentes inline** (`component X: ...`) não enxergam os `id` do arquivo

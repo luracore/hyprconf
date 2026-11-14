@@ -4,10 +4,6 @@ import QtQuick
 
 import "../config/Sizes.js" as Sizes
 
-// Janela dos painéis da barra. Todos abrem do mesmo jeito: a Sizes.bar.padding
-// abaixo da barra, centralizados no módulo (ou, com align "start", alinhados
-// ao começo dele) e nunca a menos de Sizes.bar.padding das bordas da tela, a
-// mesma folga que a barra deixa nas pontas. Fecha ao clicar fora.
 PopupWindow {
     id: popup
 

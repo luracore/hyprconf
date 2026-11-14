@@ -5,14 +5,10 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Painel de rede (aberto pelo módulo Network): cabo, Wi-Fi e formulários de
-// conexão (senha comum, corporativa/802.1X e rede oculta).
 PanelSurface {
     id: root
 
     required property var net          // o módulo Network (estado + ações)
-
-    // ---- estado do painel -------------------------------------------------------
 
     property string expanded: ""       // ssid aberto na lista; "__hidden__" = rede oculta
     property string formFor: ""        // ssid com formulário de credenciais aberto
@@ -121,8 +117,6 @@ PanelSurface {
         return "WPA2";
     }
 
-    // ---- aparência --------------------------------------------------------------
-
     implicitWidth: 420
 
     closesOnEscape: false
@@ -159,7 +153,6 @@ PanelSurface {
         }
     }
 
-    // portal cativo (login de hotel, aeroporto…)
     Rectangle {
         Layout.fillWidth: true
         visible: root.net.connectivity === "portal" || root.net.connectivity === "limited"
@@ -195,8 +188,6 @@ PanelSurface {
             }
         }
     }
-
-    // ---- cabo -----------------------------------------------------------------
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -266,8 +257,6 @@ PanelSurface {
             }
         }
     }
-
-    // ---- Wi-Fi ------------------------------------------------------------------
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -344,7 +333,6 @@ PanelSurface {
                         Layout.fillWidth: true
                         spacing: 0
 
-                        // rola a lista até mostrar a rede aberta (e o formulário) inteira
                         function reveal() {
                             Qt.callLater(() => {
                                 const bottom = wifi.y + wifi.height;
@@ -424,7 +412,6 @@ PanelSurface {
                             }
                         }
 
-                        // detalhes: ações ou formulário
                         ColumnLayout {
                             Layout.fillWidth: true
                             Layout.leftMargin: 12
@@ -485,7 +472,6 @@ PanelSurface {
             }
         }
 
-        // rede oculta
         ColumnLayout {
             Layout.fillWidth: true
             visible: root.net.wifiDevice !== null && root.net.wifiEnabled
@@ -548,10 +534,8 @@ PanelSurface {
         }
     }
 
-    // ---- componentes ------------------------------------------------------------
-
-    // formulário de credenciais (senha comum ou corporativa). Os valores ficam
-    // no painel (panel.f*), para sobreviverem a atualizações da lista.
+    // os valores ficam no painel (panel.f*) para sobreviverem a
+    // atualizações da lista
     component CredentialsForm: ColumnLayout {
         id: form
 

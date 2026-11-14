@@ -2,20 +2,16 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Rede (NetworkManager, via nmcli): status na barra; clique abre o painel com
-// cabo, Wi-Fi (senha comum e corporativa/802.1X) e rede oculta.
-//
 // Usa nmcli para tudo porque o Quickshell.Networking (0.3) não expõe a rede
 // cabeada nem consegue criar conexões 802.1X. Os comandos rodam com
 // LC_ALL=C para a saída não depender do idioma do sistema.
 BarButton {
     id: root
 
-    // ---- estado (preenchido pelo refresh) -----------------------------------
-
     property var devices: []          // [{ device, type, state, connection }]
     property var wifiNetworks: []     // [{ ssid, signal, security, inUse, known, secured, enterprise }]
     property var savedWifi: []        // nomes das conexões Wi-Fi salvas
+    property bool available: false
     property bool wifiEnabled: false
     property string connectivity: "unknown"   // none | portal | limited | full | unknown
     property bool scanning: false
@@ -30,11 +26,12 @@ BarButton {
     readonly property var activeWifi: wifiNetworks.find(n => n.inUse) ?? null
     readonly property bool wiredConnected: wiredDevices.some(d => d.state === "connected")
 
-    // ---- botão na barra -------------------------------------------------------
-
     function signalIcon(signal) {
         return signal >= 75 ? "󰤨" : signal >= 50 ? "󰤥" : signal >= 25 ? "󰤢" : "󰤟";
     }
+
+    visible: available
+    onAvailableChanged: if (!available) popup.visible = false
 
     icon: activeWifi ? signalIcon(activeWifi.signal)
         : wiredConnected ? "󰈀"
@@ -50,8 +47,6 @@ BarButton {
         if (m.button === Qt.LeftButton)
             root.togglePanel();
     }
-
-    // ---- comandos -------------------------------------------------------------
 
     CommandRunner { id: commands }
 
@@ -100,9 +95,15 @@ BarButton {
         return text.trim().split("\n").pop().replace(/^Error:\s*/, "") || "falha desconhecida";
     }
 
-    // ---- leitura ----------------------------------------------------------------
-
     function refresh() {
+        run(["nmcli", "-t", "-f", "RUNNING", "general"], (code, out) => {
+            available = code === 0 && out.trim() === "running";
+            if (available)
+                refreshAll();
+        });
+    }
+
+    function refreshAll() {
         run(["nmcli", "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device", "status"], (code, out) => {
             if (code !== 0)
                 return;
@@ -115,6 +116,8 @@ BarButton {
 
         run(["nmcli", "radio", "wifi"], (code, out) => wifiEnabled = out.trim() === "enabled");
         run(["nmcli", "networking", "connectivity"], (code, out) => connectivity = out.trim() || "unknown");
+        if (!popup.visible)
+            return;
         run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"], (code, out) => {
             savedWifi = lines(out).map(terse).filter(f => f[1] === "802-11-wireless").map(f => f[0]);
         });
@@ -202,8 +205,6 @@ BarButton {
     }
 
     Component.onCompleted: refresh()
-
-    // ---- ações ------------------------------------------------------------------
 
     // errorSsid por último: o painel reage à mudança dele
     function setError(ssid, err, needsCredentials) {
@@ -326,8 +327,6 @@ BarButton {
         popup.visible = false;
         Quickshell.execDetached(["xdg-open", "http://neverssl.com"]);
     }
-
-    // ---- painel -----------------------------------------------------------------
 
     function togglePanel() {
         popup.visible = !popup.visible;

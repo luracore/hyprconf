@@ -5,9 +5,7 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Painel de monitores (aberto pelo módulo de brilho): um cartão por monitor
-// com brilho e, em "Ajustes", resolução, taxa, escala e posição; embaixo, o
-// modo noturno. Quem guarda o estado e aplica as mudanças é o Displays.qml.
+// O estado e a aplicação das mudanças ficam no Displays.qml.
 PanelSurface {
     id: root
 
@@ -44,8 +42,6 @@ PanelSurface {
         font.family: Typo.family
         font.pixelSize: Typo.size.small
     }
-
-    // ---- confirmação ------------------------------------------------------------
 
     Rectangle {
         Layout.fillWidth: true
@@ -91,8 +87,6 @@ PanelSurface {
     }
 
     PanelDivider {}
-
-    // ---- modo noturno -------------------------------------------------------------
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -158,8 +152,6 @@ PanelSurface {
             font.pixelSize: Typo.size.small
         }
     }
-
-    // ---- cartão de um monitor ---------------------------------------------------------
 
     component MonitorCard: ColumnLayout {
         id: card
@@ -270,7 +262,6 @@ PanelSurface {
             }
         }
 
-        // em qual monitor a barra fica (só com mais de um)
         RowLayout {
             Layout.fillWidth: true
             visible: root.multi && root.bar !== null

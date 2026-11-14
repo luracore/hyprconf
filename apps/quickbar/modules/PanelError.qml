@@ -4,7 +4,6 @@ import QtQuick.Layouts
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Mensagem de erro dos painéis da barra.
 Text {
     Layout.fillWidth: true
     wrapMode: Text.WordWrap

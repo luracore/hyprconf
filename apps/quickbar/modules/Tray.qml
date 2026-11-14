@@ -6,7 +6,6 @@ import QtQuick.Layouts
 import "../config/Sizes.js" as Sizes
 import qs.config
 
-// grupo do tray: container "surface" com os ícones
 Rectangle {
     id: root
 

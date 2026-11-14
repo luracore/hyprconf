@@ -1,10 +1,6 @@
 import Quickshell.Io
 import QtQuick
 
-// Brilho da tela principal (a do notebook, se houver; senão, o primeiro
-// monitor com DDC/CI). Sem brilho controlável, fica só o ícone.
-//
-// clique: painel de monitores · scroll: ±5% · atalhos (IPC up/down): ±10%
 BarButton {
     id: root
 

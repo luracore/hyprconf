@@ -7,13 +7,8 @@ import QtQuick.Layouts
 import "config/Typo.js" as Typo
 import qs.config
 
-// Lançador de aplicativos (substitui o hyprlauncher).
+// Substitui o hyprlauncher.
 //   quickshell ipc --path ~/hyprconf/apps/quicklauncher call launcher toggle
-//
-// Digite para buscar (ignora acentos; aceita letras soltas, ex. "ffx").
-// ↑/↓, Ctrl+J/K ou Ctrl+N/P navegam · Enter abre · Esc fecha.
-// Com a busca vazia, os apps com número (botão direito -> 0 a 9) vêm
-// primeiro, em ordem; depois os mais abertos.
 Scope {
     id: root
 
@@ -53,8 +48,6 @@ Scope {
         function close(): void { root.hide(); }
     }
 
-    // ---- uso (para ordenar) -------------------------------------------------
-
     property var usage: ({})
 
     FileView {
@@ -93,8 +86,6 @@ Scope {
         else
             entry.execute();
     }
-
-    // ---- números (0 a 9) ----------------------------------------------------
 
     property var pins: ({})           // "3" -> id do app
     readonly property var pinById: {  // id do app -> 3
@@ -143,8 +134,6 @@ Scope {
 
     // app cujo seletor de número está aberto (botão direito)
     property var pinTarget: null
-
-    // ---- busca --------------------------------------------------------------
 
     function normalize(value) {
         return (value || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -229,8 +218,6 @@ Scope {
         selected = Math.max(0, Math.min(results.length - 1, selected + step));
     }
 
-    // ---- janela -------------------------------------------------------------
-
     PanelWindow {
         id: window
 
@@ -249,7 +236,6 @@ Scope {
                 input.forceActiveFocus();
         }
 
-        // fundo; clicar fora do painel fecha
         Rectangle {
             anchors.fill: parent
             color: Theme.colors.background
@@ -297,7 +283,6 @@ Scope {
                 anchors.margins: 12
                 spacing: 10
 
-                // campo de busca
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 48
@@ -379,7 +364,6 @@ Scope {
                     }
                 }
 
-                // resultados
                 ListView {
                     id: list
 
@@ -469,7 +453,6 @@ Scope {
                                 font.pixelSize: Typo.size.normal
                             }
 
-                            // número atribuído
                             Rectangle {
                                 readonly property int pin: root.pinOf(row.modelData)
 
@@ -536,14 +519,11 @@ Scope {
                 }
             }
 
-            // ---- seletor de número (botão direito num app) ------------------
-
             Rectangle {
                 id: pinMenu
 
                 readonly property int targetIndex: root.pinTarget ? root.results.indexOf(root.pinTarget) : -1
                 readonly property int current: root.pinOf(root.pinTarget)
-                // logo abaixo da linha do app; acima dela se não couber
                 readonly property real rowTop: column.y + list.y + targetIndex * root.rowHeight - list.contentY
                 readonly property real below: rowTop + root.rowHeight - 4
 
@@ -615,7 +595,6 @@ Scope {
                                     font.weight: Typo.weight.semibold
                                 }
 
-                                // pontinho: número já usado por outro app
                                 Rectangle {
                                     visible: numberButton.taken
                                     anchors.top: parent.top

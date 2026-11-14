@@ -4,7 +4,6 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Botão só com ícone (Nerd Font); "spinning" gira o ícone.
 Rectangle {
     id: iconButton
 

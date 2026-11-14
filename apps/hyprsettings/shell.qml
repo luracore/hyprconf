@@ -1,9 +1,6 @@
 //@ pragma IconTheme Hyprconf
-// HyprSettings: atalhos para onde se mexe no hyprconf (pastas, arquivos de
-// configuração e apps). Pastas abrem no explorador e arquivos no editor
-// padrão (~/hyprconf/defaults.conf, via apps/hyprrunner).
-//
-// Setas ou h/j/k/l escolhem, Enter abre, Esc fecha.
+// HyprSettings: atalhos para as pastas, configurações e apps do hyprconf.
+// Setas ou h/j/k/l escolhem, Enter abre, Esc ou clique fora fecha.
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -29,9 +26,9 @@ PanelWindow {
 
     readonly property var items: [
         { icon: "󰸉", title: "Wallpapers", desc: "imagens de fundo",
-          cmd: [run, "files", repo + "/Wallpapers"] },
+          cmd: [run, "files", repo + "/wallpapers"] },
         { icon: "󰏘", title: "Temas", desc: "temas de cores",
-          cmd: [run, "files", repo + "/Themes"] },
+          cmd: [run, "files", repo + "/themes"] },
         { icon: "󰋩", title: "Seletor", desc: "escolher wallpaper e tema",
           cmd: [repo + "/apps/quickstyle/toggle.sh"] },
         { icon: "󰌌", title: "Atalhos", desc: "as teclas do Hyprland",
@@ -64,7 +61,6 @@ PanelWindow {
             selected = next;
     }
 
-    // fundo escurecido; clicar fora fecha
     Rectangle {
         anchors.fill: parent
         color: Theme.colors.background

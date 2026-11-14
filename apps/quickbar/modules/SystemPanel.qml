@@ -5,8 +5,6 @@ import QtQuick.Layouts
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Painel do Sistema (aberto pelo módulo System): bateria (no notebook), CPU,
-// RAM, temperatura e perfil de energia.
 PanelSurface {
     id: root
 
@@ -26,7 +24,6 @@ PanelSurface {
         "performance": PowerProfile.Performance
     })
 
-    // o power-profiles-daemon está rodando? (sem ele, não há perfis)
     property bool profilesAvailable: true
 
     CommandRunner { id: commands }
@@ -68,8 +65,6 @@ PanelSurface {
     implicitWidth: 400
 
     PanelTitle { text: "SISTEMA" }
-
-    // ---- bateria (só no notebook) ------------------------------------------
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -132,8 +127,6 @@ PanelSurface {
         PanelDivider {}
     }
 
-    // ---- CPU, RAM e temperatura ----------------------------------------------
-
     MeterRow {
         Layout.fillWidth: true
         icon: "󰻠"
@@ -158,14 +151,11 @@ PanelSurface {
         icon: "󰔏"
         label: "Temperatura da CPU"
         value: Math.round(root.sys.temp) + " °C"
-        // escala de 30 °C (frio) a 100 °C
         fraction: (root.sys.temp - 30) / 70
         barColor: root.accentColorOf(root.sys.tempAccent())
     }
 
     PanelDivider {}
-
-    // ---- perfil de energia ------------------------------------------------------
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -207,8 +197,6 @@ PanelSurface {
         }
     }
 
-    // ---- componentes ------------------------------------------------------------
-
     component Meter: Rectangle {
         id: meter
 
@@ -228,7 +216,6 @@ PanelSurface {
         }
     }
 
-    // ícone + nome + valor, com a barra embaixo
     component MeterRow: ColumnLayout {
         id: row
 
@@ -276,7 +263,6 @@ PanelSurface {
         }
     }
 
-    // linha "nome ........ valor"
     component Detail: RowLayout {
         id: detail
 

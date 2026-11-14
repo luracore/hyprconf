@@ -7,12 +7,7 @@ import QtQuick.Layouts
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Tela de energia: bloquear, suspender, sair, reiniciar e desligar.
-// Aberta pelo botão da distro na barra ou por IPC:
 //   quickshell ipc --path ~/hyprconf/apps/quickbar call power toggle
-//
-// Teclado: h/l ou ←/→ (ou Tab) escolhem, Enter executa, Esc fecha.
-// Sair, reiniciar e desligar pedem confirmação (Enter de novo).
 Scope {
     id: root
 
@@ -111,7 +106,6 @@ Scope {
 
         color: "transparent"
 
-        // fundo escurecido; clicar fora dos botões fecha
         Rectangle {
             anchors.fill: parent
             color: Theme.colors.background

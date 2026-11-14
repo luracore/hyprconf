@@ -76,7 +76,6 @@ PanelSurface {
     padding: 12
     spacing: 10
 
-    // Relógio grande
     ColumnLayout {
         Layout.fillWidth: true
         Layout.preferredWidth: parent.width
@@ -157,7 +156,6 @@ PanelSurface {
 
     PanelDivider {}
 
-    // Cabeçalho do calendário
     RowLayout {
         Layout.fillWidth: true
         spacing: 4
@@ -265,7 +263,6 @@ PanelSurface {
         }
     }
 
-    // Grade 6x7
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: gridColumn.implicitHeight + 16

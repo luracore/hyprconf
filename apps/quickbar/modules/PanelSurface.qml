@@ -4,9 +4,8 @@ import QtQuick.Layouts
 import "../config/Sizes.js" as Sizes
 import qs.config
 
-// Moldura dos painéis da barra: fundo, borda, Esc para fechar e a coluna onde
-// entra o conteúdo. Com closesOnEscape false, o painel trata o Esc antes
-// (ex.: fechar um formulário aberto) em onEscapePressed.
+// Com closesOnEscape false, o painel trata o Esc antes (ex.: fechar um
+// formulário aberto) em onEscapePressed.
 Rectangle {
     id: surface
 

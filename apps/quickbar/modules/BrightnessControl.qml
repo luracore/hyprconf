@@ -23,8 +23,8 @@ Item {
         // na tela do notebook, 0% apagaria a tela de vez
         const min = backend === "backlight" ? 1 : 0;
         target = Math.max(min, Math.min(100, Math.round(v)));
-        brightness = target;      // atualiza na hora
-        writeDebounce.restart();  // e grava depois de parar de mexer
+        brightness = target;
+        writeDebounce.restart();
     }
 
     function step(delta) {

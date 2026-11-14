@@ -2,8 +2,6 @@ import Quickshell.Io
 import Quickshell.Services.Pipewire
 import QtQuick
 
-// Volume da saída padrão (PipeWire)
-// clique: painel de áudio · clique do meio: mudo · scroll: ±5%
 BarButton {
     id: root
 

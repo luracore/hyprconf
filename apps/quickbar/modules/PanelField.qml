@@ -5,8 +5,7 @@ import "../config/Sizes.js" as Sizes
 import "../config/Typo.js" as Typo
 import qs.config
 
-// Campo de texto com rótulo. Digitar emite edited(valor); o valor exibido
-// segue "value" (inclusive quando ele é limpo de fora).
+// O valor exibido segue "value", inclusive quando ele é limpo de fora.
 ColumnLayout {
     id: field
 
