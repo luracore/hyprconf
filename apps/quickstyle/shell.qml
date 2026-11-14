@@ -250,7 +250,22 @@ PanelWindow {
                 if [[ -n "$1" ]]; then
                     ln -sfn "$1" "$HOME/hyprconf/wallpapers/current"
                     sleep 0.25
-                    awww img "$1" --resize crop --transition-type fade --transition-duration 1
+                    # o awww conta a posição em fração da tela, a partir de baixo
+                    read -r pos fps < <(jq -nr --argjson c "$(hyprctl -j cursorpos)" \
+                        --argjson m "$(hyprctl -j monitors)" '$m[]
+                        | select($c.x >= .x and $c.x < .x + .width / .scale
+                            and $c.y >= .y and $c.y < .y + .height / .scale)
+                        | ((($c.x - .x) / (.width / .scale)) | tostring) + ","
+                            + ((1 - ($c.y - .y) / (.height / .scale)) | tostring)
+                            + " " + (.refreshRate | round | tostring)')
+                    transitions=(
+                        "grow --transition-pos \${pos:-center}"
+                        "wave --transition-angle $((RANDOM % 360))"
+                        "wipe --transition-angle $((RANDOM % 360))"
+                        "outer"
+                    )
+                    awww img "$1" --resize crop --transition-duration 1 --transition-fps "\${fps:-60}" \
+                        --transition-type \${transitions[RANDOM % \${#transitions[@]}]}
                 fi
                 wait
             `, "quickstyle", wallpaper, theme]);
