@@ -1,17 +1,17 @@
-/Wallpapers/*
+/wallpapers/*
 
-!/Wallpapers/gato1.png
-!/Wallpapers/gato2.png
-!/Wallpapers/gato3.png
+!/wallpapers/gato1.png
+!/wallpapers/gato2.png
+!/wallpapers/gato3.png
 
 # monitores salvos pelo painel da barra: cada máquina tem os seus
 /hypr/config/monitor-painel.lua
 
-# tema ativo: escolha local (o install.sh sorteia um se faltar)
-/Themes/current
+# cores geradas pelos conversores
+/hypr/hyprlock-current.conf
+/hypr/config/current.lua
+/apps/repostore/fzf-current.opts
 
-# arquivos gerados pelo makepkg nos metapacotes
-/packages/*/pkg/
-/packages/*/src/
-/packages/*/*.pkg.tar.*
+# tema ativo: escolha local (o install.sh sorteia um se faltar)
+/themes/current
 

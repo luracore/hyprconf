@@ -1,0 +1,8 @@
+nvim      .config/nvim
+foot      .config/foot
+gtk       .local/share/themes/Hyprconf
+icons     .local/share/icons/Hyprconf
+cursor    .local/share/icons/Hyprconf-Cursor
+opencode  .config/opencode
+qt6ct     .config/qt6ct
+gtk-4.0   .config/gtk-4.0
