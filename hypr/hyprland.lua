@@ -8,6 +8,7 @@ if painel then
   require("./config/monitor-painel")
 end
 require("./config/appearance")
+require("./config/current")
 require("./config/animations")
 require("./config/layout")
 require("./config/input")

@@ -1,27 +1,14 @@
-// Conversor dos apps KDE (KColorScheme): as cores dentro do kdeglobals.
-//
-//   build   escreve as seções [Colors:*] do ~/.config/kdeglobals
-//
-// A exceção ao modelo do "current": apps KDE só leem as cores de dentro do
-// kdeglobals, sem como apontar para outro arquivo. Por isso este conversor
-// edita o arquivo do usuário, mudando só as chaves de cor e preservando o
-// resto. Só se o kdeglobals já existir (vem pronto em home/, com o nome do
-// esquema e dos ícones; o install.sh copia se ainda não existir).
+// Os apps KDE só leem as cores de dentro do kdeglobals. Este fica numa pasta do
+// XDG_CONFIG_DIRS (hypr/config/env.lua): um ~/.config/kdeglobals seu vale por
+// cima dele.
 
 "use strict";
 
-const fs = require("fs");
-const os = require("os");
 const path = require("path");
-const { readIni, iniSet, writeIni } = require("../lib");
 
-const CONFIG = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
-const KDEGLOBALS = path.join(CONFIG, "kdeglobals");
+const TARGET = path.resolve(__dirname, "../../../defaults/xdg/kdeglobals");
 
-function build(c, { mix, parseHex }) {
-    if (!fs.existsSync(KDEGLOBALS))
-        return;
-
+function generate(c, { mix, parseHex }) {
     const bg = c.background, fg = c.text, surface = c.surface, muted = c.muted;
     const base = mix(bg, "#000000", 0.12);
     const rgb = hex => parseHex(hex).join(",");
@@ -36,7 +23,7 @@ function build(c, { mix, parseHex }) {
         Header: [surface, surface],
     };
 
-    const kde = readIni(KDEGLOBALS);
+    let out = "[General]\nColorScheme=Hyprconf\n\n[Icons]\nTheme=Hyprconf\n";
     for (const [group, [normal, alternate]] of Object.entries(groups)) {
         const selection = group === "Selection";
         const fgNormal = selection ? c.onPrimary : fg;
@@ -54,10 +41,10 @@ function build(c, { mix, parseHex }) {
             DecorationFocus: c.primary,
             DecorationHover: c.primary,
         };
-        for (const [key, value] of Object.entries(values))
-            iniSet(kde, `Colors:${group}`, key, rgb(value));
+        out += `\n[Colors:${group}]\n`
+            + Object.entries(values).map(([k, v]) => `${k}=${rgb(v)}\n`).join("");
     }
-    writeIni(KDEGLOBALS, kde);
+    return out;
 }
 
-module.exports = { build };
+module.exports = { target: TARGET, generate };

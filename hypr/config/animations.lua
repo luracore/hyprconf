@@ -1,5 +1,3 @@
--- Curves
-
 hl.curve("easeOutQuint", {
   type = "bezier",
   points = { { 0.23, 1 }, { 0.32, 1 } }
@@ -32,8 +30,6 @@ hl.curve("easy", {
   dampening = 24.21279333,
 })
 
--- Global
-
 hl.animation({
   leaf = "global",
   enabled = true,
@@ -41,16 +37,12 @@ hl.animation({
   bezier = "default"
 })
 
--- Border
-
 hl.animation({
   leaf = "border",
   enabled = true,
   speed = 5.39,
   bezier = "easeOutQuint"
 })
-
--- Windows
 
 hl.animation({
   leaf = "windows",
@@ -75,8 +67,6 @@ hl.animation({
   style = "popin 87%"
 })
 
--- Fade
-
 hl.animation({
   leaf = "fadeIn",
   enabled = true,
@@ -97,8 +87,6 @@ hl.animation({
   speed = 3.03,
   bezier = "quick"
 })
-
--- Layers
 
 hl.animation({
   leaf = "layers",
@@ -137,8 +125,6 @@ hl.animation({
   bezier = "almostLinear"
 })
 
--- Workspaces
-
 hl.animation({
   leaf = "workspaces",
   enabled = true,
@@ -162,8 +148,6 @@ hl.animation({
   bezier = "almostLinear",
   style = "fade"
 })
-
--- Zoom
 
 hl.animation({
   leaf = "zoomFactor",

@@ -1,10 +1,7 @@
--- Template do colorscheme do Neovim (usado pelo index.js desta pasta).
+-- Lua normal: o index.js só troca os dois marcadores abaixo. Depois de
+-- editar, rode themes/converters/main.js.
 --
--- É Lua normal: o index.js só troca os dois marcadores abaixo pelas cores do
--- tema e pelo nome do colorscheme. Para mudar qual cor vai em cada grupo,
--- edite este arquivo e rode Themes/converters/main.js.
---
--- Cores disponíveis em `c` (as mesmas do Themes/Colors.js):
+-- Cores disponíveis em `c` (as mesmas do themes/Colors.js):
 --   neutras  background surface overlay outline muted text
 --   paleta   red orange yellow green cyan blue magenta
 --   papéis   primary secondary tertiary error warning success info
@@ -24,7 +21,6 @@ end
 vim.o.background = c.mode
 vim.g.colors_name = --[[NAME]] "current"
 
--- mistura a cor `a` com a `b` (t = 0 é só a, t = 1 é só b)
 local function mix(a, b, t)
   local function rgb(hex)
     return tonumber(hex:sub(2, 3), 16), tonumber(hex:sub(4, 5), 16), tonumber(hex:sub(6, 7), 16)
@@ -42,8 +38,6 @@ end
 local bg = not transparent and c.background or nil
 local float_bg = not transparent and c.surface or nil
 local cursorline = mix(c.background, c.text, 0.06)
-
--- ---- editor -----------------------------------------------------------------
 
 hl("Normal", { fg = c.text, bg = bg })
 hl("NormalNC", { link = "Normal" })
@@ -99,8 +93,6 @@ hl("SpellCap", { sp = c.warning, undercurl = true })
 hl("SpellRare", { sp = c.magenta, undercurl = true })
 hl("SpellLocal", { sp = c.cyan, undercurl = true })
 
--- ---- sintaxe ----------------------------------------------------------------
-
 hl("Comment", { fg = c.muted, italic = true })
 hl("Constant", { fg = c.orange })
 hl("String", { fg = c.green })
@@ -135,8 +127,6 @@ hl("Underlined", { underline = true })
 hl("Error", { fg = c.error })
 hl("Todo", { fg = c.onWarning, bg = c.warning, bold = true })
 
--- ---- diff e git -------------------------------------------------------------
-
 hl("Added", { fg = c.green })
 hl("Changed", { fg = c.yellow })
 hl("Removed", { fg = c.red })
@@ -150,8 +140,6 @@ hl("diffRemoved", { link = "Removed" })
 hl("GitSignsAdd", { link = "Added" })
 hl("GitSignsChange", { link = "Changed" })
 hl("GitSignsDelete", { link = "Removed" })
-
--- ---- treesitter -------------------------------------------------------------
 
 hl("@variable", { fg = c.text })
 hl("@variable.builtin", { fg = c.red })
@@ -204,13 +192,10 @@ hl("@diff.plus", { link = "Added" })
 hl("@diff.minus", { link = "Removed" })
 hl("@diff.delta", { link = "Changed" })
 
--- semântica do LSP: segue o treesitter
 hl("@lsp.type.parameter", { link = "@variable.parameter" })
 hl("@lsp.type.property", { link = "@property" })
 hl("@lsp.type.namespace", { link = "@module" })
 hl("@lsp.type.enumMember", { link = "@constant" })
-
--- ---- diagnósticos e LSP -----------------------------------------------------
 
 for name, color in pairs({
   Error = c.error,
@@ -230,8 +215,6 @@ hl("LspReferenceWrite", { bg = c.overlay })
 hl("LspInlayHint", { fg = c.muted, italic = true })
 hl("LspSignatureActiveParameter", { fg = c.primary, bold = true, underline = true })
 
--- ---- plugins ----------------------------------------------------------------
-
 hl("TelescopeBorder", { link = "FloatBorder" })
 hl("TelescopeTitle", { fg = c.primary, bold = true })
 hl("TelescopeSelection", { link = "CursorLine" })
@@ -244,8 +227,6 @@ hl("BlinkCmpLabelMatch", { fg = c.primary, bold = true })
 
 hl("MiniFilesBorder", { link = "FloatBorder" })
 hl("MiniFilesTitleFocused", { fg = c.primary, bold = true })
-
--- ---- terminal (:terminal) ---------------------------------------------------
 
 for i, color in ipairs(c.ansi) do
   vim.g["terminal_color_" .. (i - 1)] = color

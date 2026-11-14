@@ -13,7 +13,7 @@ import "Typo.js" as Typo
 // O carrossel usado por último vem para a frente; o outro recua.
 //
 //   h/l ou ←/→  wallpaper     j/k ou ↑/↓  tema
-//   Enter  aplica os dois     w  só wallpaper     t  só tema     Esc  sai
+//   Enter  aplica     Esc  sai
 PanelWindow {
     id: root
 
@@ -43,8 +43,6 @@ PanelWindow {
 
         function toggle(): void { Qt.quit(); }
     }
-
-    // ---- estado -------------------------------------------------------------
 
     property var wallpapers: []          // [{ path, thumb, name }]
     property var themes: []              // [{ path, name, colors }]
@@ -125,15 +123,11 @@ PanelWindow {
         return Math.min(maxDistance, count / 2);
     }
 
-    // ---- cores --------------------------------------------------------------
-
     function resolveTheme(data) {
         return Colors.resolve(data, null, msg => console.warn("quickstyle:", msg));
     }
 
     readonly property var preview: selectedTheme ? selectedTheme.colors : resolveTheme(Colors.FALLBACK)
-
-    // ---- carregamento -------------------------------------------------------
 
     function selectCurrentIfReady() {
         if (!wallpapersLoaded || !themesLoaded || !currentLoaded || shown)
@@ -158,7 +152,7 @@ PanelWindow {
 
     Process {
         command: ["bash", "-c",
-            'readlink -f "$HOME/hyprconf/Wallpapers/current"; readlink -f "$HOME/hyprconf/Themes/current"']
+            'readlink -f "$HOME/hyprconf/wallpapers/current"; readlink -f "$HOME/hyprconf/themes/current"']
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -239,8 +233,6 @@ PanelWindow {
         Component.onCompleted: running = true
     }
 
-    // ---- aplicar ------------------------------------------------------------
-
     Process {
         id: applyProcess
 
@@ -252,15 +244,15 @@ PanelWindow {
             theme="$2"
 
             if [[ -n "$theme" ]]; then
-                ln -sfn "$theme" "$HOME/hyprconf/Themes/current" || exit 1
+                ln -sfn "$theme" "$HOME/hyprconf/themes/current" || exit 1
 
                 # foot, neovim, GTK e Qt (a barra recarrega sozinha)
-                node "$HOME/hyprconf/Themes/converters/main.js" ||
-                    echo "quickstyle: Themes/converters/main.js falhou" >&2
+                node "$HOME/hyprconf/themes/converters/main.js" ||
+                    echo "quickstyle: themes/converters/main.js falhou" >&2
             fi
 
             if [[ -n "$wallpaper" ]]; then
-                ln -sfn "$wallpaper" "$HOME/hyprconf/Wallpapers/current" &&
+                ln -sfn "$wallpaper" "$HOME/hyprconf/wallpapers/current" &&
                 awww img "$wallpaper" --resize crop --transition-type fade --transition-duration 1
             fi
         `, "quickstyle", wallpaper, theme]
@@ -273,13 +265,13 @@ PanelWindow {
         }
     }
 
-    function apply(withWallpaper, withTheme) {
+    function apply() {
         if (applyProcess.running)
             return;
 
-        const wallpaper = withWallpaper && selectedWallpaper && selectedWallpaper.path !== currentWallpaper
+        const wallpaper = selectedWallpaper && selectedWallpaper.path !== currentWallpaper
             ? selectedWallpaper.path : "";
-        const theme = withTheme && selectedTheme && selectedTheme.path !== currentTheme
+        const theme = selectedTheme && selectedTheme.path !== currentTheme
             ? selectedTheme.path : "";
 
         if (wallpaper === "" && theme === "") {
@@ -304,8 +296,6 @@ PanelWindow {
             themeTarget += step;
     }
 
-    // ---- interface ----------------------------------------------------------
-
     Item {
         id: stage
 
@@ -320,17 +310,14 @@ PanelWindow {
         focus: true
         Component.onCompleted: forceActiveFocus()
 
-        // Centro comum dos dois carrosséis.
         readonly property real cx: width / 2
         readonly property real cy: height / 2
 
-        // Medidas proporcionais à tela.
         readonly property real cardWidth: Math.min(760, width * 0.40, height * 0.62 * 16 / 9)
         readonly property real cardHeight: cardWidth * 9 / 16
         readonly property real themeWidth: Math.min(440, Math.max(320, cardWidth * 0.58))
         readonly property real themeHeight: 112
 
-        // Cores do tema em destaque, com transição suave ao trocar de tema.
         Item {
             id: ui
             visible: false
@@ -370,13 +357,7 @@ PanelWindow {
                 break;
             case Qt.Key_Return:
             case Qt.Key_Enter:
-                root.apply(true, true);
-                break;
-            case Qt.Key_W:
-                root.apply(true, false);
-                break;
-            case Qt.Key_T:
-                root.apply(false, true);
+                root.apply();
                 break;
             case Qt.Key_Escape:
             case Qt.Key_Q:
@@ -388,8 +369,6 @@ PanelWindow {
 
             event.accepted = true;
         }
-
-        // ---- fundo: prévia do wallpaper com blur + tinta do tema -----------
 
         Rectangle {
             anchors.fill: parent
@@ -448,7 +427,6 @@ PanelWindow {
             opacity: 0.55
         }
 
-        // vinheta, para destacar o centro e os atalhos
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
@@ -459,7 +437,6 @@ PanelWindow {
             }
         }
 
-        // Scroll: move o carrossel que está na frente (Shift alterna).
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.NoButton
@@ -490,8 +467,6 @@ PanelWindow {
             }
         }
 
-        // ---- roleta de temas -----------------------------------------------
-        //
         // A roleta existe em duas cópias idênticas: uma atrás dos wallpapers e
         // outra na frente. A troca de plano é um crossfade entre as duas
         // (atrás = 1 - depth, frente = depth), então a sobreposição muda de
@@ -505,7 +480,6 @@ PanelWindow {
 
                 anchors.fill: parent
 
-                // a roleta cresce quando vem para a frente
                 scale: 0.88 + 0.2 * root.depth
                 transformOrigin: Item.Center
 
@@ -528,7 +502,6 @@ PanelWindow {
                         readonly property var c: theme ? theme.colors : root.preview
                         readonly property bool active: theme && theme.path === root.currentTheme
 
-                        // quanto este card está "em foco" (centro e roleta na frente)
                         readonly property real focusAmount: near * (0.35 + 0.65 * root.depth)
 
                         width: stage.themeWidth
@@ -543,7 +516,6 @@ PanelWindow {
                         visible: opacity > 0.001
                         z: 100 - ad * 10
 
-                        // perspectiva sutil: inclina para longe do centro
                         transform: Rotation {
                             origin.x: themeCard.width / 2
                             origin.y: themeCard.height / 2
@@ -564,7 +536,6 @@ PanelWindow {
                             shadowVerticalOffset: 10 * (1 - themeCard.focusAmount)
                         }
 
-                        // vidro
                         Rectangle {
                             anchors.fill: parent
                             radius: 20
@@ -573,7 +544,6 @@ PanelWindow {
                             border.color: Qt.tint(Qt.alpha(themeCard.c.outline, 0.7),
                                                   Qt.alpha(themeCard.c.primary, themeCard.near))
 
-                            // reflexo superior
                             Rectangle {
                                 anchors.fill: parent
                                 anchors.margins: 1
@@ -670,7 +640,7 @@ PanelWindow {
                             }
                             onDoubleClicked: {
                                 root.themeTarget = themeCard.slot;
-                                root.apply(false, true);
+                                root.apply();
                             }
                         }
                     }
@@ -686,14 +656,11 @@ PanelWindow {
             visible: opacity > 0.001
         }
 
-        // ---- carrossel de wallpapers ---------------------------------------
-
         Item {
             id: carousel
 
             anchors.fill: parent
 
-            // recua quando os temas estão na frente
             scale: 1 - 0.08 * root.depth
             transformOrigin: Item.Center
 
@@ -719,7 +686,6 @@ PanelWindow {
                     readonly property var wallpaper: root.wallpapers[root.wrap(slot, root.wallCount)]
                     readonly property bool active: wallpaper && wallpaper.path === root.currentWallpaper
 
-                    // quanto este card está "em foco" (centro e wallpapers na frente)
                     readonly property real focusAmount: near * (1 - 0.6 * root.depth)
 
                     width: stage.cardWidth
@@ -735,7 +701,6 @@ PanelWindow {
                     visible: opacity > 0.001
                     z: 100 - ad * 10
 
-                    // perspectiva sutil: os laterais viram para o centro
                     transform: Rotation {
                         origin.x: card.width / 2
                         origin.y: card.height / 2
@@ -770,7 +735,6 @@ PanelWindow {
                             cache: true
                         }
 
-                        // legenda sobre a imagem: nome e posição
                         Rectangle {
                             anchors.left: parent.left
                             anchors.right: parent.right
@@ -815,7 +779,6 @@ PanelWindow {
                         }
                     }
 
-                    // borda iluminada na cor primária do tema em prévia
                     Rectangle {
                         anchors.fill: parent
                         radius: 20
@@ -825,7 +788,6 @@ PanelWindow {
                         opacity: root.clamp01(1 - card.ad * 2)
                     }
 
-                    // marca do wallpaper aplicado agora
                     Rectangle {
                         anchors.top: parent.top
                         anchors.left: parent.left
@@ -861,7 +823,7 @@ PanelWindow {
                         }
                         onDoubleClicked: {
                             root.wallTarget = card.slot;
-                            root.apply(true, true);
+                            root.apply();
                         }
                     }
                 }
@@ -876,13 +838,11 @@ PanelWindow {
             visible: opacity > 0.001
         }
 
-        // ---- mensagens de vazio --------------------------------------------
-
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             y: stage.cy - stage.cardHeight / 2 - 80
             visible: root.themesLoaded && root.themeCount === 0
-            text: "Nenhum tema em ~/hyprconf/Themes"
+            text: "Nenhum tema em ~/hyprconf/themes"
             color: ui.muted
             font.family: Typo.family
             font.pixelSize: Typo.size.normal
@@ -891,13 +851,11 @@ PanelWindow {
         Text {
             anchors.centerIn: parent
             visible: root.wallpapersLoaded && root.wallCount === 0
-            text: "Nenhum wallpaper em ~/hyprconf/Wallpapers"
+            text: "Nenhum wallpaper em ~/hyprconf/wallpapers"
             color: ui.muted
             font.family: Typo.family
             font.pixelSize: Typo.size.large
         }
-
-        // ---- atalhos --------------------------------------------------------
 
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -912,8 +870,6 @@ PanelWindow {
                     { keys: "h  l", label: "wallpaper", carousel: "wallpapers" },
                     { keys: "j  k", label: "tema", carousel: "themes" },
                     { keys: "⏎", label: "aplicar", carousel: "" },
-                    { keys: "w", label: "só wallpaper", carousel: "" },
-                    { keys: "t", label: "só tema", carousel: "" },
                     { keys: "esc", label: "sair", carousel: "" }
                 ]
 

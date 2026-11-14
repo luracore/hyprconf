@@ -9,7 +9,6 @@ const radius = {
     normal: 6
 }
 
-// botões/módulos da barra (estilo bloco, à la Wayle)
 const module = {
     height: 28,
     radius: 4,

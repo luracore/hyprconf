@@ -1,14 +1,9 @@
-// Conversor do cursor: o tema "Hyprconf-Cursor".
-//
-//   build   refaz ~/.local/share/icons/Hyprconf-Cursor (só se a pasta já existir)
-//   apply   o Hyprland e os apps GTK abertos trocam de cursor na hora
-//
 // Os SVGs de svg/ usam cores marcadoras: #00FF00 (corpo) vira background,
 // #0000FF (contorno) vira primary e #FF0000 (símbolos) vira text. Um
 // <g id="spin" data-cx data-cy> gira em FRAMES quadros.
 //
-// A pasta leva o hyprcursor (SVG: Hyprland e apps Wayland) e o Xcursor (PNG:
-// XWayland e GTK3). Os dois só procuram temas nas pastas de ícones.
+// O tema leva o hyprcursor (SVG: Hyprland e apps Wayland) e o Xcursor (PNG:
+// XWayland e GTK3); os dois só procuram temas nas pastas de ícones.
 
 "use strict";
 
@@ -68,10 +63,6 @@ const CURSORS = {
     "zoom-out": [[13, 13], []],
 };
 
-function has(cmd) {
-    return spawnSync("sh", ["-c", 'command -v "$1"', "sh", cmd]).status === 0;
-}
-
 function run(cmd, args, opts) {
     const r = spawnSync(cmd, args, Object.assign({ encoding: "utf8" }, opts));
     if (r.status !== 0)
@@ -79,7 +70,6 @@ function run(cmd, args, opts) {
     return r;
 }
 
-// Os quadros de um cursor (um só, se não for animado), já com as cores.
 function frames(svg) {
     const spin = /<g id="spin" data-cx="([\d.]+)" data-cy="([\d.]+)">/.exec(svg);
     if (!spin)
@@ -88,8 +78,6 @@ function frames(svg) {
         `${spin[0].slice(0, -1)} transform="rotate(${(360 / FRAMES) * i} ${spin[1]} ${spin[2]})">`));
 }
 
-// hyprcursor: uma pasta por cursor (meta.hl + SVGs), empacotada pelo
-// hyprcursor-util em hyprcursors/<nome>.hlc.
 function buildHyprcursor(work, cursors) {
     const src = path.join(work, "hyprcursor-src");
     for (const { name, hot, aliases, svgs } of cursors) {
@@ -119,8 +107,6 @@ function buildHyprcursor(work, cursors) {
     return path.join(out, `theme_${NAME}`);
 }
 
-// Xcursor: cada quadro vira PNG em cada tamanho (rsvg-convert, em paralelo)
-// e o xcursorgen junta tudo em cursors/<nome>; os outros nomes são links.
 function buildXcursor(work, cursors) {
     const png = path.join(work, "png");
     const out = path.join(work, "cursors");
@@ -159,46 +145,45 @@ function buildXcursor(work, cursors) {
     return out;
 }
 
-function build(c, { warn }) {
-    if (!fs.existsSync(THEME_DIR))
-        return;
-    if (!has("hyprcursor-util") || !has("rsvg-convert")) {
-        warn("cursor: faltam o hyprcursor-util (hyprcursor) ou o rsvg-convert (librsvg); "
-            + "o cursor não segue o tema");
-        return;
-    }
-
+function build(c) {
     const colors = { "#00ff00": c.background, "#0000ff": c.primary, "#ff0000": c.text };
+
+    // refazer leva uns 300 ms: só quando as cores, os SVGs ou este arquivo mudam
+    const stampFile = path.join(THEME_DIR, ".stamp");
+    const stamp = JSON.stringify([colors, fs.statSync(__filename).mtimeMs,
+        ...fs.readdirSync(SVG_DIR).map(f => fs.statSync(path.join(SVG_DIR, f)).mtimeMs)]);
+    try {
+        if (fs.readFileSync(stampFile, "utf8") === stamp)
+            return;
+    } catch {
+        // sem carimbo: refaz
+    }
     const cursors = Object.entries(CURSORS).map(([name, [hot, aliases]]) => {
         const svg = fs.readFileSync(path.join(SVG_DIR, `${name}.svg`), "utf8")
             .replace(/#(00ff00|0000ff|ff0000)\b/gi, hex => colors[hex.toLowerCase()]);
         return { name, hot, aliases, svgs: frames(svg) };
     });
 
-    // monta tudo numa pasta ao lado e só no fim troca pelo tema antigo: o
-    // cursor nunca fica pela metade, e um tema velho não deixa sobras
-    const work = path.join(path.dirname(THEME_DIR), `.${NAME}.build`);
+    // monta em .build e só no fim troca: o cursor nunca fica pela metade
+    const work = path.join(THEME_DIR, ".build");
     fs.rmSync(work, { recursive: true, force: true });
     fs.mkdirSync(work);
     try {
         const theme = path.join(work, "theme");
         fs.renameSync(buildHyprcursor(work, cursors), theme);
 
-        if (has("xcursorgen"))
-            fs.renameSync(buildXcursor(work, cursors), path.join(theme, "cursors"));
-        else
-            warn("cursor: xcursorgen não está instalado; os apps XWayland e GTK3 ficam "
-                + "com o cursor padrão (sudo pacman -S xorg-xcursorgen)");
+        fs.renameSync(buildXcursor(work, cursors), path.join(theme, "cursors"));
 
         // Inherits: o que faltar aqui vem do Adwaita, e não do "X" do X11
         write(path.join(theme, "index.theme"),
             `[Icon Theme]\nName=${NAME}\nComment=Cursor nas cores do tema (gerado por hyprconf)\n`
             + "Inherits=Adwaita\n");
 
-        for (const entry of fs.readdirSync(THEME_DIR))
+        for (const entry of fs.readdirSync(THEME_DIR).filter(e => e !== ".gitignore" && e !== ".build"))
             fs.rmSync(path.join(THEME_DIR, entry), { recursive: true, force: true });
         for (const entry of fs.readdirSync(theme))
             fs.renameSync(path.join(theme, entry), path.join(THEME_DIR, entry));
+        fs.writeFileSync(stampFile, stamp);
     } finally {
         fs.rmSync(work, { recursive: true, force: true });
     }
@@ -206,7 +191,7 @@ function build(c, { warn }) {
 
 function apply() {
     // o Hyprland só relê o tema quando recebe o setcursor (o mesmo nome basta)
-    if (process.env.HYPRLAND_INSTANCE_SIGNATURE && has("hyprctl")) {
+    if (process.env.HYPRLAND_INSTANCE_SIGNATURE) {
         const size = process.env.HYPRCURSOR_SIZE || process.env.XCURSOR_SIZE || "24";
         spawnSync("hyprctl", ["setcursor", NAME, size], { stdio: "ignore" });
     }

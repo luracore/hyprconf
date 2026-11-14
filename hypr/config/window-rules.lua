@@ -20,8 +20,6 @@ hl.window_rule({
   float = true,
 })
 
--- RepoStore (apps/repostore/repostore): flutuando e centralizado
-
 hl.window_rule({
   name = "package-app",
   match = {
@@ -32,10 +30,7 @@ hl.window_rule({
   center = true,
 })
 
--- Blur atrás da tela de energia, do lançador e do HyprSettings
--- (apps/quickbar/modules/PowerMenu.qml, apps/quicklauncher/Launcher.qml e
--- apps/hyprsettings/shell.qml)
-
+-- namespaces da tela de energia, do lançador e do HyprSettings
 hl.layer_rule({
   name = "blur-bar-overlays",
   match = {

@@ -1,12 +1,5 @@
-// Conversor do GTK: as cores do tema "Hyprconf".
-//
-//   target  ~/.local/share/themes/Hyprconf/colors.css
-//   apply   apps GTK3 abertos releem o tema (se ele ainda for o Hyprconf)
-//
-// O resto vem pronto em home/ (o install.sh copia o que ainda não existir):
-// o tema em si (index.theme e o gtk.css de cada versão, por cima do adw-gtk3)
-// e o que aponta o GTK para ele (settings.ini; o gtk-4.0/gtk.css dos apps
-// libadwaita). O gsettings, que não é arquivo, está no dconf.ini.
+// O colors.css fica na pasta do gtk-4.0, e não na do tema, porque é a única
+// que os apps Flatpak enxergam; o tema (defaults/gtk) usa ele por um link.
 
 "use strict";
 
@@ -15,7 +8,8 @@ const path = require("path");
 const { reloadGtk } = require("../lib");
 
 const NAME = "Hyprconf";
-const TARGET = path.join(os.homedir(), ".local/share/themes", NAME, "colors.css");
+const CONFIG = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
+const TARGET = path.join(CONFIG, "gtk-4.0/colors.css");
 
 function generate(c, { mix }) {
     const bg = c.background, fg = c.text, surface = c.surface;
@@ -63,7 +57,7 @@ function generate(c, { mix }) {
         shade_color: "rgba(0, 0, 0, 0.36)",
         scrollbar_outline_color: "rgba(0, 0, 0, 0.5)",
     };
-    return "/* Gerado por hyprconf/Themes/converters/gtk — não edite. */\n"
+    return "/* Gerado por hyprconf/themes/converters/gtk — não edite. */\n"
         + Object.entries(defines).map(([k, v]) => `@define-color ${k} ${v};\n`).join("");
 }
 

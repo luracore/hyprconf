@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Lista os wallpapers como "caminho<TAB>miniatura", gerando miniaturas 16:9
-# (960x540, jpg) em Wallpapers/thumbnails quando faltam ou estão velhas.
+# Lista os wallpapers como "caminho<TAB>miniatura", gerando as miniaturas que
+# faltam ou estão velhas.
 
-WALLPAPER_DIR="$HOME/hyprconf/Wallpapers"
+WALLPAPER_DIR="$HOME/hyprconf/wallpapers"
 THUMB_DIR="$WALLPAPER_DIR/thumbnails"
 
 mkdir -p "$THUMB_DIR"

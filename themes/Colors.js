@@ -1,10 +1,8 @@
 .pragma library
 
-// Completa um tema no formato de Themes/*.json (neutrals + palette + roles)
-// numa tabela plana de cores, calculando tudo o que o tema não define.
-//
-// Fonte única dessas regras: usado pela barra e pelo seletor (Quickshell,
-// via symlink nas pastas deles) e pelo Themes/converters/main.js (Node).
+// Completa um tema de themes/*.json (neutrals + palette + roles) numa tabela
+// plana de cores. Usado pelo Quickshell (via symlink) e pelo
+// themes/converters/main.js (Node): as regras ficam só aqui.
 //
 // Resultado: background, surface, overlay, outline, muted, text,
 //            red, orange, yellow, green, cyan, blue, magenta,
@@ -14,7 +12,7 @@
 
 const NEUTRALS = ["background", "surface", "overlay", "outline", "muted", "text"]
 
-// Tema usado para as cores obrigatórias que faltarem (ou se o arquivo falhar).
+// para as cores obrigatórias que faltarem (ou se o arquivo falhar)
 const FALLBACK = {
     neutrals: {
         background: "#1F1F28",
@@ -40,8 +38,6 @@ const DEFAULT_ROLES = {
     info: "cyan"
 }
 
-// ---- utilitários de cor -------------------------------------------------
-
 function parseHex(hex) {
     const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim())
     if (!m)
@@ -55,7 +51,6 @@ function toHex(rgb) {
         .toString(16).padStart(2, "0")).join("").toUpperCase()
 }
 
-// t = 0 -> a, t = 1 -> b
 function mix(a, b, t) {
     const x = parseHex(a), y = parseHex(b)
     return toHex(x.map((c, i) => c + (y[i] - c) * t))
@@ -74,12 +69,9 @@ function contrast(a, b) {
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
 }
 
-// entre o background e o text do próprio tema, o que for mais legível
 function onColor(bg, n) {
     return contrast(bg, n.background) >= contrast(bg, n.text) ? n.background : n.text
 }
-
-// ---- resolução ----------------------------------------------------------
 
 function valid(v) {
     return typeof v === "string" && parseHex(v) !== null
@@ -96,8 +88,6 @@ function pick(section, key, fallback, warn) {
     return v
 }
 
-// theme: objeto do JSON; fallback (opcional): tema completo usado para as
-// chaves obrigatórias que faltarem, padrão FALLBACK
 function resolve(theme, fallback, warn) {
     warn = warn || function () {}
     theme = theme || {}
@@ -106,7 +96,6 @@ function resolve(theme, fallback, warn) {
     const tn = theme.neutrals || {}, tp = theme.palette || {}
     const fn = fallback.neutrals, fp = fallback.palette
 
-    // neutros: só background e text são obrigatórios
     const n = {}
     n.background = pick(tn, "background", fn.background, warn)
     n.text = pick(tn, "text", fn.text, warn)
@@ -115,7 +104,6 @@ function resolve(theme, fallback, warn) {
     n.outline = pick(tn, "outline", mix(n.background, n.text, 0.25), warn)
     n.muted = pick(tn, "muted", mix(n.background, n.text, 0.5), warn)
 
-    // paleta: as 6 cores ANSI são obrigatórias, orange é calculado
     const p = {}
     for (const key of ["red", "yellow", "green", "cyan", "blue", "magenta"]) {
         if (tp[key] === undefined)
@@ -126,7 +114,6 @@ function resolve(theme, fallback, warn) {
 
     const out = Object.assign({}, n, p)
 
-    // papéis: nome de uma cor (neutra ou da paleta) ou um hex
     const roles = Object.assign({}, DEFAULT_ROLES, theme.roles || {})
     for (const role in roles) {
         const ref = roles[role]
@@ -140,9 +127,8 @@ function resolve(theme, fallback, warn) {
         }
     }
 
-    // on<Nome> para paleta e papéis (os neutros usam "text" diretamente).
-    // Itera sobre uma cópia das chaves: adicionar onX dentro de um for-in
-    // sobre o próprio objeto faz o loop visitar onX, onOnX, ... para sempre.
+    // Object.keys é uma cópia: num for-in sobre out, cada onX criado também
+    // seria visitado (onOnX, ...) para sempre.
     for (const key of Object.keys(out)) {
         if (NEUTRALS.indexOf(key) >= 0)
             continue
@@ -152,15 +138,12 @@ function resolve(theme, fallback, warn) {
     return out
 }
 
-// ---- cor a partir de uma imagem (capa do álbum) ------------------------
-
 function hsv(rgb) {
     const [r, g, b] = rgb.map(c => c / 255)
     const max = Math.max(r, g, b), min = Math.min(r, g, b)
     return { s: max === 0 ? 0 : (max - min) / max, v: max }
 }
 
-// clareia/escurece fg em direção a "towards" até ter o contraste pedido com bg
 function ensureContrast(fg, bg, ratio, towards) {
     let out = fg
     for (let t = 0.1; contrast(out, bg) < ratio && t <= 1; t += 0.1)
@@ -168,10 +151,7 @@ function ensureContrast(fg, bg, ratio, towards) {
     return out
 }
 
-// candidates: lista de hex (ex.: saída do ColorQuantizer)
-// theme: Theme.colors (usa surface e text)
-// Retorna a cor mais "viva" ajustada para ser legível no surface; numa imagem
-// sem cor viva (capa cinza, preta...), a cor do texto; sem imagem, fallback.
+// candidates: cores da capa do álbum (saída do ColorQuantizer)
 function accentFromImage(candidates, theme, fallback) {
     let best = null, bestScore = 0
     for (const hex of candidates || []) {
@@ -187,8 +167,8 @@ function accentFromImage(candidates, theme, fallback) {
             bestScore = score
         }
     }
-    // capa sem cor viva (preto e branco, cinza): a cor do texto, que contrasta
-    // com a barra em tema escuro ou claro; sem capa nenhuma, a cor do tema
+    // capa sem cor viva (cinza, preto e branco): a cor do texto, que contrasta
+    // com a barra em tema escuro ou claro
     if (!best)
         return (candidates || []).length > 0 ? theme.text : fallback
     return ensureContrast(best, theme.surface, 3, theme.text)

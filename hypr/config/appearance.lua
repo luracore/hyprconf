@@ -36,4 +36,9 @@ hl.config({
       color        = 0xee1a1a1a,
     },
   },
+
+  misc = {
+    disable_hyprland_logo   = true,
+    force_default_wallpaper = 0,
+  },
 })

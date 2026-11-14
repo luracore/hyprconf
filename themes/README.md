@@ -7,12 +7,12 @@ Cada `.json` desta pasta é um tema. `current` é um symlink para o tema ativo.
 Pelo seletor (`SUPER + T`, `j/k` escolhem o tema) ou pela linha de comando:
 
 ```bash
-ln -sfn TokyoNight.json ~/hyprconf/Themes/current
-~/hyprconf/Themes/converters/main.js
+ln -sfn TokyoNight.json ~/hyprconf/themes/current
+~/hyprconf/themes/converters/main.js
 ```
 
-O `converters/main.js` aplica no foot, Neovim, GTK, Qt, na tela de bloqueio
-(hyprlock), nos ícones (as pastas do Papirus ganham a cor primária) e no cursor
+O `converters/main.js` aplica no foot, Neovim, OpenCode, GTK, Qt, na tela de
+bloqueio (hyprlock), no fzf do RepoStore, nos ícones (as pastas do Papirus ganham a cor primária) e no cursor
 (desenhado em SVG no próprio conversor), e avisa a
 barra e os outros apps do Quickshell abertos. Só trocar o link não basta: rode
 o `main.js` depois.
@@ -29,26 +29,34 @@ para quando não houver hyprconf).
 | :--- | :--- | :--- |
 | foot | `~/.config/foot/current.ini` | `include=~/.config/foot/current.ini` no `foot.ini` |
 | Neovim | `~/.config/nvim/colors/current.lua` | `:colorscheme current` |
+| OpenCode | a paleta do terminal (a do foot) | `"theme": { "name": "system" }` no `cli.json` |
+| Hyprland (cor de fundo) | `~/.config/hypr/config/current.lua` | `require("./config/current")` no `hyprland.lua` |
+| hyprlock | `~/.config/hypr/hyprlock-current.conf` | `source = ~/.config/hypr/hyprlock-current.conf` no `hyprlock.conf` |
+| fzf (RepoStore) | `apps/repostore/fzf-current.opts` | lido pelo `lib/common.sh` |
 
-GTK, Qt, apps KDE, ícones e cursor são do sistema, então o próprio conversor traz os
-arquivos que apontam para o current: a pasta `home/` dele (no caminho a partir
-do `$HOME`) e um `dconf.ini` para o gsettings. O `install.sh` copia esses
-arquivos **por cima** do que existir e escreve todas as chaves do gsettings:
-ajustes seus neles são substituídos. Se você já tinha os seus, compare com os
-prontos e decida antes de rodar o install.
+As pastas de config desses programas e dos temas de GTK, ícones e cursor ficam
+em `hyprconf/defaults/`, e o `install.sh` liga cada uma ao seu lugar (a lista
+está em `defaults/links`).
 
-| Toolkit | current | Arquivos prontos |
+| Programa | current | Link |
 | :--- | :--- | :--- |
-| GTK | `~/.local/share/themes/Hyprconf/colors.css` | o tema em si, `gtk-3.0/settings.ini`, `gtk-4.0/gtk.css`, gsettings |
-| Qt | `~/.config/qt6ct/colors/current.conf` | `qt6ct.conf`, `colors/tokyonight.conf` |
-| apps KDE | as cores dentro do `~/.config/kdeglobals` (não dá para apontar) | `kdeglobals` |
-| ícones | `~/.local/share/icons/Hyprconf/` | a pasta (herda do Papirus), gsettings |
-| cursor | `~/.local/share/icons/Hyprconf-Cursor/` | a pasta, gsettings; o `env.lua` do hypr aponta o Hyprland e o XWayland |
+| GTK3 (tema) | `defaults/gtk/colors.css`, link para o do GTK4 | `~/.local/share/themes/Hyprconf` |
+| GTK4/libadwaita | `defaults/gtk-4.0/colors.css` | `~/.config/gtk-4.0` |
+| Qt | `defaults/qt6ct/colors/current.conf` | `~/.config/qt6ct` |
+| ícones | `defaults/icons/` (herda do Papirus) | `~/.local/share/icons/Hyprconf` |
+| cursor | `defaults/cursor/` | `~/.local/share/icons/Hyprconf-Cursor` |
+
+O `kdeglobals` (apps KDE) e o `gtk-3.0/settings.ini` ficam em `defaults/xdg/`,
+que o `hypr/config/env.lua` põe no `XDG_CONFIG_DIRS`: os seus em `~/.config`
+valem por cima deles. O gsettings (tema GTK, ícones e cursor no Wayland) vem do
+`dconf.ini` de cada conversor: o `install.sh` escreve e o `uninstall.sh` volta
+ao padrão.
 
 Apagar a pasta de um conversor tira aquele programa do hyprconf: o tema não é
-mais gerado e o install não copia mais os arquivos dele.
+mais gerado.
 
-O hyprconf só escreve se a pasta já existir: ele não cria config para ninguém.
+A pasta de cada current vem dos defaults: sem ela, o conversor falha e avisa,
+sem criar config para ninguém.
 Os terminais foot abertos trocam de cor na hora; o Neovim recarrega se a config
 dele observar o arquivo.
 

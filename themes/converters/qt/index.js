@@ -1,11 +1,4 @@
-// Conversor do Qt (qt6ct): a paleta de cores do tema ativo.
-//
-//   target  ~/.config/qt6ct/colors/current.conf
-//
-// O qt6ct guarda os esquemas de cor nessa pasta. O qt6ct.conf que aponta para
-// o current.conf vem pronto em home/ (o install.sh copia se ainda não
-// existir); o QT_QPA_PLATFORMTHEME fica no hypr/config/env.lua. Apps Qt
-// abertos só pegam o tema novo ao reabrir.
+// Sem apply: apps Qt abertos só pegam o tema novo ao reabrir.
 
 "use strict";
 
