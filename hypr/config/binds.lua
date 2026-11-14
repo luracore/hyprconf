@@ -11,9 +11,7 @@ hl.bind("SUPER + B", hl.dsp.exec_cmd(run .. " browser"))
 hl.bind("SUPER + SPACE", hl.dsp.exec_cmd(
   "quickshell ipc --path $HOME/hyprconf/apps/quicklauncher call launcher toggle"
 ))
-hl.bind("SUPER + T", hl.dsp.exec_cmd(
-  "quickshell --path $HOME/hyprconf/apps/quickstyle/shell.qml"
-))
+hl.bind("SUPER + T", hl.dsp.exec_cmd("$HOME/hyprconf/apps/quickstyle/toggle.sh"))
 hl.bind("SUPER + A", hl.dsp.exec_cmd(run .. " terminal -e opencode"))
 hl.bind("SUPER + M", hl.dsp.exec_cmd(
   "quickshell ipc --path $HOME/hyprconf/apps/quickbar call media togglePanel"
@@ -28,7 +26,6 @@ hl.bind("SUPER + P", hl.dsp.exec_cmd(
   "quickshell ipc --path $HOME/hyprconf/apps/quickbar call power toggle"
 ))
 hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("hyprlock"))
-hl.bind("SUPER + SHIFT + Q", hl.dsp.exit())
 
 
 -- =========================================
@@ -59,6 +56,9 @@ hl.bind("SUPER + SHIFT + K", hl.dsp.window.move({ direction = "up" }))
 hl.bind("SUPER + SHIFT + J", hl.dsp.window.move({ direction = "down" }))
 
 hl.bind("SUPER + W", hl.dsp.window.close())
+
+-- arrastar a janela com o botão esquerdo
+hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
 
 hl.bind("SUPER + D", hl.dsp.layout("togglesplit"))
 

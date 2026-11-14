@@ -37,6 +37,13 @@ PanelWindow {
         onActivated: Qt.quit()
     }
 
+    // o toggle.sh fecha por aqui quando o seletor já está aberto
+    IpcHandler {
+        target: "style"
+
+        function toggle(): void { Qt.quit(); }
+    }
+
     // ---- estado -------------------------------------------------------------
 
     property var wallpapers: []          // [{ path, thumb, name }]

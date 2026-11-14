@@ -14,11 +14,11 @@ git clone https://github.com/luracore/hyprconf ~/hyprconf
 ~/hyprconf/install.sh
 ```
 
-O repositório precisa ficar em `~/hyprconf`. O `install.sh` não pergunta
-nada: instala as dependências e os programas padrão (pede a senha do `sudo`
-uma vez), liga as configurações em `~/.config` (o que existia vira `.bak`),
-liga GTK e Qt ao tema e aplica um tema. Depois, saia e entre de novo no
-Hyprland.
+O repositório precisa ficar em `~/hyprconf`. O `install.sh` pede a senha do
+`sudo` uma vez; o `pacman` e o `makepkg` ainda pedem confirmação ao instalar
+as dependências. Ele instala as dependências e os programas padrão, liga as
+configurações em `~/.config` (o que existia vira `.bak`), liga GTK e Qt ao
+tema e aplica um tema. Depois, saia e entre de novo no Hyprland.
 
 ## Uso
 

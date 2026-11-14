@@ -33,7 +33,7 @@ PanelWindow {
         { icon: "󰏘", title: "Temas", desc: "temas de cores",
           cmd: [run, "files", repo + "/Themes"] },
         { icon: "󰋩", title: "Seletor", desc: "escolher wallpaper e tema",
-          cmd: ["quickshell", "--path", repo + "/apps/quickstyle/shell.qml"] },
+          cmd: [repo + "/apps/quickstyle/toggle.sh"] },
         { icon: "󰌌", title: "Atalhos", desc: "as teclas do Hyprland",
           cmd: [run, "editor", repo + "/hypr/config/binds.lua"] },
         { icon: "󰀻", title: "Programas padrão", desc: "terminal, editor…",
