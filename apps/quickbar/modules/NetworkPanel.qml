@@ -41,8 +41,17 @@ PanelSurface {
         fShowExtra = false;
     }
 
+    onVisibleChanged: {
+        if (!visible) {
+            resetForm();
+            expanded = "";
+            formFor = "";
+        }
+    }
+
     function toggle(ssid) {
         if (expanded === ssid) {
+            resetForm();
             expanded = "";
             formFor = "";
         } else {
@@ -90,6 +99,7 @@ PanelSurface {
         } else {
             net.connectPsk(ssid, fPassword, hidden);
         }
+        resetForm();
         formFor = "";
     }
 
@@ -110,6 +120,7 @@ PanelSurface {
     closesOnEscape: false
     onEscapePressed: {
         if (root.expanded !== "") {
+            root.resetForm();
             root.expanded = "";
             root.formFor = "";
         } else {
@@ -515,8 +526,6 @@ PanelSurface {
         }
     }
 
-    // os valores ficam no painel (panel.f*) para sobreviverem a
-    // atualizações da lista
     component CredentialsForm: ColumnLayout {
         id: form
 
@@ -626,7 +635,7 @@ PanelSurface {
 
                 PanelField {
                     Layout.fillWidth: true
-                    label: "Certificado da CA (opcional)"
+                    label: "Certificado da CA (recomendado)"
                     placeholder: "caminho, ex.: ~/Downloads/ca.pem"
                     value: form.panel.fCaCert
                     onEdited: v => form.panel.fCaCert = v
@@ -634,10 +643,20 @@ PanelSurface {
 
                 PanelField {
                     Layout.fillWidth: true
-                    label: "Domínio do servidor (opcional)"
+                    label: "Domínio do servidor (recomendado)"
                     placeholder: "ex.: radius.faculdade.edu.br"
                     value: form.panel.fDomain
                     onEdited: v => form.panel.fDomain = v
+                }
+
+                Text {
+                    visible: form.panel.fCaCert.trim() === ""
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    text: "Aviso: conectar sem certificado CA reduz a proteção contra redes falsas (Evil Twin)."
+                    color: Theme.colors.warning
+                    font.family: Typo.family
+                    font.pixelSize: Typo.size.small - 2
                 }
             }
         }

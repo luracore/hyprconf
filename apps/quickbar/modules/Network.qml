@@ -7,57 +7,35 @@ import "network" as NetworkComponents
 BarButton {
     id: root
 
-    // Executor de comandos.
-    CommandRunner {
-        id: commands
-    }
-
-    // Serviço de consultas ao NetworkManager.
     NetworkComponents.NetworkService {
         id: service
-
-        commandRunner: commands
         popupVisible: popup.visible
     }
 
-    // Serviço de operações de conexão.
     NetworkComponents.NetworkConnection {
         id: connection
-
-        commandRunner: commands
         networkService: service
-
-        wifiDevice: service.wifiDevice
-        savedWifi: service.savedWifi
-        wifiNetworks: service.wifiNetworks
-
-        onRefreshRequested: refreshDebounce.restart()
     }
 
-    // Estado disponibilizado para a barra e o painel.
-    property alias devices: service.devices
-    property alias wifiNetworks: service.wifiNetworks
-    property alias savedWifi: service.savedWifi
-    property alias available: service.available
-    property alias wifiEnabled: service.wifiEnabled
-    property alias connectivity: service.connectivity
-    property alias scanning: service.scanning
+    // Estado disponibilizado para a barra e o painel
+    readonly property var wifiNetworks: service.wifiNetworks
+    readonly property bool available: service.available
+    readonly property bool wifiEnabled: service.wifiEnabled
+    readonly property string connectivity: service.connectivity
+    readonly property bool scanning: service.scanning
 
     readonly property var wiredDevices: service.wiredDevices
     readonly property var wifiDevice: service.wifiDevice
     readonly property var activeWifi: service.activeWifi
     readonly property bool wiredConnected: service.wiredConnected
 
-    // Estado das operações de conexão.
+    // Estado das operações de conexão
     property alias busySsid: connection.busySsid
     property alias errorSsid: connection.errorSsid
     property alias errorText: connection.errorText
 
     function signalIcon(signal) {
-        return signal >= 75 ? "󰤨"
-            : signal >= 50 ? "󰤥"
-            : signal >= 25 ? "󰤢"
-            : "󰤟";
+        return signal >= 75 ? "󰤨" : signal >= 50 ? "󰤥" : signal >= 25 ? "󰤢" : "󰤟";
     }
 
     visible: available
@@ -65,16 +43,11 @@ BarButton {
     onAvailableChanged: if (!available)
         popup.visible = false
 
-    icon: activeWifi ? signalIcon(activeWifi.signal)
-        : wiredConnected ? "󰈀"
-        : wifiDevice && wifiEnabled ? "󰤯"
-        : "󰤮"
+    icon: activeWifi ? signalIcon(activeWifi.signal) : wiredConnected ? "󰈀" : wifiDevice && wifiEnabled ? "󰤯" : "󰤮"
 
     label: ""
 
-    accent: connectivity === "portal" || connectivity === "limited" ? "warning"
-        : activeWifi || wiredConnected ? "info"
-        : "error"
+    accent: connectivity === "portal" || connectivity === "limited" ? "warning" : activeWifi || wiredConnected ? "info" : "error"
 
     active: popup.visible
 
@@ -83,60 +56,43 @@ BarButton {
             root.togglePanel();
     }
 
-    // Consultas.
+    // Consultas
     function refresh() {
         service.refresh();
     }
-
-    function refreshWifiList() {
-        service.refreshWifiList();
-    }
-
     function rescan() {
         service.rescan();
     }
 
-    function listWifiProfiles(callback) {
-        service.listWifiProfiles(callback);
-    }
-
-    // Operações de conexão.
+    // Operações de conexão
     function connectKnown(ssid) {
         connection.connectKnown(ssid);
     }
-
     function connectPsk(ssid, password, hidden) {
         connection.connectPsk(ssid, password, hidden);
     }
-
     function connectEnterprise(ssid, options) {
         connection.connectEnterprise(ssid, options);
     }
-
     function disconnectWifi() {
         connection.disconnectWifi();
     }
-
     function forget(ssid) {
         connection.forget(ssid);
     }
-
     function setWifiEnabled(enabled) {
         connection.setWifiEnabled(enabled);
     }
-
     function setWiredConnected(device, connected) {
         connection.setWiredConnected(device, connected);
     }
 
-    // Métodos auxiliares usados pelo painel.
+    // Métodos auxiliares usados pelo painel
     function clearError() {
         connection.clearError();
     }
 
     function openAdvanced() {
-        popup.visible = false;
-        Quickshell.execDetached(["nm-connection-editor"]);
     }
 
     function openPortalLogin() {
@@ -147,18 +103,8 @@ BarButton {
     function togglePanel() {
         popup.visible = !popup.visible;
 
-        if (popup.visible) {
+        if (popup.visible)
             clearError();
-            refresh();
-            rescan();
-        }
-    }
-
-    // Atualização após operações de conexão.
-    Timer {
-        id: refreshDebounce
-        interval: 400
-        onTriggered: root.refresh()
     }
 
     BarPopup {
@@ -184,7 +130,6 @@ BarButton {
         function togglePanel() {
             root.togglePanel();
         }
-
         function rescan() {
             root.rescan();
         }

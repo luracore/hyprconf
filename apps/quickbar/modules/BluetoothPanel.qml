@@ -9,9 +9,9 @@ import qs.config
 PanelSurface {
     id: root
 
-    required property var bt           // o módulo Bluetooth (estado + ações)
+    required property var bt
 
-    property string expanded: ""       // endereço do dispositivo aberto
+    property string expanded: ""
     property string pinInput: ""
 
     implicitWidth: 400

@@ -2,8 +2,6 @@ import Quickshell.Bluetooth
 import Quickshell.Io
 import QtQuick
 
-// Substitui o blueman: agente de pareamento pelo "bluetoothctl --agent"
-// em segundo plano (os pedidos aparecem no painel); perfil/codec pelo pactl.
 BarButton {
     id: root
 
@@ -12,7 +10,6 @@ BarButton {
     readonly property var devices: adapter ? adapter.devices.values : []
     readonly property var pairedDevices: devices.filter(d => d.paired)
             .sort((a, b) => (b.connected - a.connected) || deviceName(a).localeCompare(deviceName(b)))
-    // os sem nome são ruído de BLE
     readonly property var newDevices: devices.filter(d => !d.paired && d.deviceName !== "")
     readonly property var connectedDevices: pairedDevices.filter(d => d.connected)
 
@@ -39,7 +36,6 @@ BarButton {
         return "󰂯";
     }
 
-    // 0-100, ou -1 se o dispositivo não informa
     function batteryPercent(d) {
         if (!d.batteryAvailable)
             return -1;
@@ -49,7 +45,7 @@ BarButton {
     visible: adapter !== null
 
     icon: !powered ? "󰂲" : connectedDevices.length > 0 ? "󰂱" : "󰂯"
-    label: ""      // o nome do dispositivo fica no painel
+    label: ""
     accent: "secondary"
     active: popup.visible
 
@@ -83,7 +79,6 @@ BarButton {
         d.connect();
     }
 
-    // depois de parear: confiar (reconecta sozinho no futuro) e conectar
     Connections {
         target: root.pendingDevice
         ignoreUnknownSignals: true
@@ -109,16 +104,6 @@ BarButton {
         }
     }
 
-    // O bluetoothctl registra um agente no BlueZ e pergunta pelo stdin; aqui a
-    // saída dele é lida e os pedidos viram "prompt", respondido pelo painel.
-    //
-    // prompt: { kind, code }
-    //   confirm   - confirmar se o código bate com o do dispositivo (sim/não)
-    //   accept    - aceitar o pareamento (sim/não)
-    //   authorize - permitir um serviço (sim/não)
-    //   pin       - digitar um PIN
-    //   passkey   - digitar uma senha numérica
-    //   display   - mostrar um código para digitar no dispositivo
     property var prompt: null
     property string agentBuffer: ""
 
@@ -130,7 +115,6 @@ BarButton {
     }
 
     function agentOutput(data) {
-        // tira cores e marcas do readline
         let text = agentBuffer + data.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").replace(/[\x01\x02\r]/g, "");
         let m;
 
@@ -149,7 +133,6 @@ BarButton {
         else if (/Request canceled/.test(text))
             prompt = null;
         else {
-            // nada reconhecido ainda: guarda só o fim (o pedido pode vir em partes)
             agentBuffer = text.slice(-400);
             return;
         }
@@ -187,7 +170,6 @@ BarButton {
 
     CommandRunner { id: commands }
 
-    // endereço -> { card, active, profiles: [{ name, label, headset }] }
     property var audioCards: ({})
 
     function profileLabel(name, description) {
@@ -239,12 +221,14 @@ BarButton {
         onTriggered: root.refreshCards()
     }
 
-    // a procura só começa pelo botão do painel: procurar dispositivos usa o
-    // mesmo rádio do áudio e picota o som de um fone conectado
     function togglePanel() {
         popup.visible = !popup.visible;
-        if (popup.visible)
+        if (popup.visible) {
             errorAddress = "";
+        } else {
+            setDiscovering(false);
+            prompt = null;
+        }
     }
 
     BarPopup {
@@ -268,7 +252,6 @@ BarButton {
         }
     }
 
-    // qs ipc call bluetooth togglePanel
     IpcHandler {
         target: "bluetooth"
         function togglePanel(): void { root.togglePanel(); }

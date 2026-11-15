@@ -1,36 +1,25 @@
 import Quickshell
+import Quickshell.Io
+import Quickshell.Networking
 import QtQuick
 
 Item {
     id: root
-
     visible: false
 
-    property var commandRunner: null
     property var networkService: null
-
-    property var wifiDevice: null
-    property var savedWifi: []
-    property var wifiNetworks: []
 
     property string busySsid: ""
     property string errorSsid: ""
     property string errorText: ""
 
-    signal refreshRequested
+    property var trackedNetwork: null
+    property string pendingJson: ""
 
-    function run(args, callback) {
-        if (commandRunner)
-            commandRunner.run(args, callback);
-    }
-
-    function cleanError(text) {
-        return text.trim().split("\n").pop().replace(/^Error:\s*/, "") || "falha desconhecida";
-    }
-
-    function setError(ssid, err) {
-        errorText = cleanError(err);
+    function setError(ssid, msg) {
+        busySsid = "";
         errorSsid = ssid;
+        errorText = msg || "falha na conexão";
     }
 
     function clearError() {
@@ -38,165 +27,198 @@ Item {
         errorText = "";
     }
 
-    function finish(ssid, code, err, cleanup) {
-        busySsid = "";
+    function findNetwork(ssid) {
+        if (!networkService) return null;
+        return networkService.wifiNetworks.find(n => n.ssid === ssid)?.raw ?? null;
+    }
 
-        if (code !== 0) {
-            setError(ssid, err);
+    Connections {
+        target: root.trackedNetwork
 
-            if (cleanup)
-                run(cleanup);
+        function onConnectionFailed(reason) {
+            const name = root.trackedNetwork?.name ?? root.busySsid;
+            let msg = "falha ao conectar";
+            if (reason === ConnectionFailReason.NoSecrets)
+                msg = "senha incorreta ou ausente";
+            else if (reason === ConnectionFailReason.Timeout)
+                msg = "tempo esgotado";
+            root.setError(name, msg);
+            root.trackedNetwork = null;
         }
 
-        refreshRequested();
+        function onConnectedChanged() {
+            if (root.trackedNetwork?.connected) {
+                root.busySsid = "";
+                root.trackedNetwork = null;
+            }
+        }
     }
 
-    // Perfis salvos.
-    function profilesFor(ssid) {
-        return savedWifi.filter(p => p.ssid === ssid);
+    // Cria perfil 802.1X ou Rede Oculta via libnm lendo JSON do stdin (zero vazamento em /proc)
+    Process {
+        id: nmHelper
+        command: [
+            "python3", "-c",
+            "import sys, json, gi; gi.require_version('NM', '1.0'); from gi.repository import NM, GLib;" +
+            "try:\n" +
+            "  cfg = json.load(sys.stdin)\n" +
+            "  c = NM.Client.new(None)\n" +
+            "  con = NM.SimpleConnection.new()\n" +
+            "  s_con = NM.SettingConnection.new()\n" +
+            "  s_con.set_property(NM.SETTING_CONNECTION_ID, cfg['ssid'])\n" +
+            "  s_con.set_property(NM.SETTING_CONNECTION_TYPE, '802-11-wireless')\n" +
+            "  s_con.set_property(NM.SETTING_CONNECTION_UUID, NM.utils_uuid_generate())\n" +
+            "  con.add_setting(s_con)\n" +
+            "  s_wifi = NM.SettingWireless.new()\n" +
+            "  s_wifi.set_property(NM.SETTING_WIRELESS_SSID, GLib.Bytes.new(cfg['ssid'].encode()))\n" +
+            "  s_wifi.set_property(NM.SETTING_WIRELESS_HIDDEN, bool(cfg.get('hidden', False)))\n" +
+            "  con.add_setting(s_wifi)\n" +
+            "  mode = cfg.get('mode', 'psk')\n" +
+            "  if mode != 'open':\n" +
+            "    s_sec = NM.SettingWirelessSecurity.new()\n" +
+            "    if mode == 'eap':\n" +
+            "      s_sec.set_property(NM.SETTING_WIRELESS_SECURITY_KEY_MGMT, 'wpa-eap')\n" +
+            "      s_8021x = NM.Setting8021x.new()\n" +
+            "      s_8021x.add_eap_method(cfg['eap'])\n" +
+            "      s_8021x.set_property(NM.SETTING_802_1X_PHASE2_AUTH, cfg['phase2'])\n" +
+            "      s_8021x.set_property(NM.SETTING_802_1X_IDENTITY, cfg['identity'])\n" +
+            "      s_8021x.set_property(NM.SETTING_802_1X_PASSWORD, cfg['password'])\n" +
+            "      if cfg.get('anonymous'): s_8021x.set_property(NM.SETTING_802_1X_ANONYMOUS_IDENTITY, cfg['anonymous'])\n" +
+            "      if cfg.get('domain'): s_8021x.set_property(NM.SETTING_802_1X_DOMAIN_SUFFIX_MATCH, cfg['domain'])\n" +
+            "      if cfg.get('caCert'): s_8021x.set_ca_cert(cfg['caCert'], NM.Setting8021xCKScheme.PATH)\n" +
+            "      con.add_setting(s_8021x)\n" +
+            "    else:\n" +
+            "      s_sec.set_property(NM.SETTING_WIRELESS_SECURITY_KEY_MGMT, 'wpa-psk')\n" +
+            "      s_sec.set_property(NM.SETTING_WIRELESS_SECURITY_PSK, cfg['password'])\n" +
+            "    con.add_setting(s_sec)\n" +
+            "  dev = next((d for d in c.get_devices() if d.get_device_type() == NM.DeviceType.WIFI), None)\n" +
+            "  if not dev: raise RuntimeError('Dispositivo Wi-Fi não encontrado')\n" +
+            "  loop = GLib.MainLoop()\n" +
+            "  err = []\n" +
+            "  def cb(client, res, _):\n" +
+            "    try: client.add_and_activate_connection_finish(res)\n" +
+            "    except Exception as e: err.append(str(e))\n" +
+            "    finally: loop.quit()\n" +
+            "  c.add_and_activate_connection_async(con, dev, None, None, cb, None)\n" +
+            "  loop.run()\n" +
+            "  if err: sys.stderr.write(err[0]); sys.exit(1)\n" +
+            "except Exception as exc:\n" +
+            "  sys.stderr.write(str(exc))\n" +
+            "  sys.exit(1)"
+        ]
+
+        onStarted: {
+            nmHelper.write(root.pendingJson);
+            nmHelper.stdinEnabled = false;
+            root.pendingJson = "";
+        }
+
+        stderr: SplitParser {
+            onRead: line => {
+                if (line.trim() !== "")
+                    root.errorText = line;
+            }
+        }
+
+        onExited: (code, status) => {
+            if (code !== 0) {
+                root.setError(root.busySsid, root.errorText || "falha ao criar perfil");
+            } else {
+                root.busySsid = "";
+                root.trackedNetwork = null;
+            }
+        }
     }
 
-    function savedProfile(ssid) {
-        return profilesFor(ssid).sort((a, b) => b.timestamp - a.timestamp)[0] ?? null;
+    function runHelper(ssid, payload) {
+        if (nmHelper.running) return;
+        clearError();
+        busySsid = ssid;
+        pendingJson = JSON.stringify(payload);
+        nmHelper.stdinEnabled = true;
+        nmHelper.running = true;
     }
 
-    // Conexão com perfil conhecido.
     function connectKnown(ssid) {
-        const profile = savedProfile(ssid);
+        const net = findNetwork(ssid);
+        if (!net) {
+            setError(ssid, "rede não encontrada");
+            return;
+        }
+        clearError();
+        busySsid = ssid;
+        trackedNetwork = net;
+        net.connect();
+    }
 
-        if (!profile) {
-            setError(ssid, "nenhum perfil salvo para esta rede");
+    function connectPsk(ssid, password, hidden) {
+        if (hidden) {
+            runHelper(ssid, {
+                ssid: ssid,
+                mode: password !== "" ? "psk" : "open",
+                password: password,
+                hidden: true
+            });
+            return;
+        }
+
+        const net = findNetwork(ssid);
+        if (!net) {
+            setError(ssid, "rede não encontrada");
             return;
         }
 
         clearError();
         busySsid = ssid;
-
-        run(["nmcli", "connection", "up", "uuid", profile.uuid], (code, out, err) => finish(ssid, code, err));
-    }
-
-    // Rede aberta ou com senha (WPA/WEP). hidden: rede oculta.
-    function connectPsk(ssid, password, hidden) {
-        clearError();
-        busySsid = ssid;
-
-        const args = ["nmcli", "device", "wifi", "connect", ssid];
+        trackedNetwork = net;
 
         if (password !== "")
-            args.push("password", password);
-
-        if (hidden)
-            args.push("hidden", "yes");
-
-        if (wifiDevice)
-            args.push("ifname", wifiDevice.device);
-
-        // Mantém o comportamento original do nmcli.
-        run(args, (code, out, err) => finish(ssid, code, err));
+            net.connectWithPsk(password);
+        else
+            net.connect();
     }
 
-    // UUID do perfil recém-criado.
-    function addedConnectionUuid(out) {
-        const match = out.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\) successfully added\.\s*$/i);
+    function connectEnterprise(ssid, options) {
+        const certPath = options.caCert
+            ? options.caCert.replace(/^~(?=\/|$)/, Quickshell.env("HOME"))
+            : "";
 
-        return match ? match[1] : "";
-    }
-
-    // Rede corporativa (WPA-Enterprise / 802.1X).
-    function connectEnterprise(ssid, o) {
-        clearError();
-        busySsid = ssid;
-
-        const props = ["wifi-sec.key-mgmt", "wpa-eap", "802-1x.eap", o.eap, "802-1x.phase2-auth", o.phase2, "802-1x.identity", o.identity, "802-1x.password", o.password];
-
-        if (o.anonymous)
-            props.push("802-1x.anonymous-identity", o.anonymous);
-
-        if (o.caCert)
-            props.push("802-1x.ca-cert", o.caCert.replace(/^~(?=\/|$)/, Quickshell.env("HOME")));
-
-        if (o.domain)
-            props.push("802-1x.domain-suffix-match", o.domain);
-
-        if (o.hidden)
-            props.push("802-11-wireless.hidden", "yes");
-
-        const create = ["nmcli", "connection", "add", "type", "wifi", "con-name", ssid, "ssid", ssid].concat(wifiDevice ? ["ifname", wifiDevice.device] : []).concat(props);
-
-        run(create, (code, out, err) => {
-            if (code !== 0)
-                return finish(ssid, code, err);
-
-            const uuid = addedConnectionUuid(out);
-
-            if (uuid === "")
-                return finish(ssid, 1, "perfil criado, mas não foi possível identificar o UUID");
-
-            run(["nmcli", "connection", "up", "uuid", uuid], (upCode, upOut, upErr) => finish(ssid, upCode, upErr, ["nmcli", "connection", "delete", "uuid", uuid]));
+        runHelper(ssid, {
+            ssid: ssid,
+            mode: "eap",
+            eap: options.eap,
+            phase2: options.phase2,
+            identity: options.identity,
+            password: options.password,
+            anonymous: options.anonymous,
+            caCert: certPath,
+            domain: options.domain,
+            hidden: options.hidden
         });
     }
 
     function disconnectWifi() {
-        if (wifiDevice)
-            run(["nmcli", "device", "disconnect", wifiDevice.device], () => refreshRequested());
-    }
-
-    // Esquecer redes.
-    function markForgotten(ssid) {
-        if (!networkService)
-            return;
-
-        networkService.savedWifi = networkService.savedWifi.filter(p => p.ssid !== ssid);
-
-        networkService.wifiNetworks = networkService.wifiNetworks.map(n => n.ssid === ssid ? Object.assign({}, n, {
-                known: false,
-                inUse: false
-            }) : n);
-    }
-
-    function deleteWifiProfiles(ssid, uuids, index, failure) {
-        if (index >= uuids.length) {
-            if (failure !== "")
-                setError(ssid, failure);
-            else
-                markForgotten(ssid);
-
-            refreshRequested();
-            return;
-        }
-
-        run(["nmcli", "connection", "delete", "uuid", uuids[index]], (code, out, err) => {
-            if (code !== 0 && failure === "")
-                failure = err;
-
-            deleteWifiProfiles(ssid, uuids, index + 1, failure);
-        });
+        const active = networkService?.activeWifi?.raw;
+        if (active) active.disconnect();
     }
 
     function forget(ssid) {
         clearError();
-
-        if (!networkService)
-            return;
-
-        networkService.listWifiProfiles(profiles => {
-            if (profiles === null) {
-                setError(ssid, "não foi possível ler os perfis salvos");
-                refreshRequested();
-                return;
-            }
-
-            const uuids = profiles.filter(p => p.ssid === ssid).map(p => p.uuid);
-
-            deleteWifiProfiles(ssid, uuids, 0, "");
-        });
+        const net = findNetwork(ssid);
+        if (net) net.forget();
     }
 
     function setWifiEnabled(enabled) {
-        run(["nmcli", "radio", "wifi", enabled ? "on" : "off"], () => refreshRequested());
+        Networking.wifiEnabled = enabled;
     }
 
-    function setWiredConnected(device, connected) {
-        run(["nmcli", "device", connected ? "connect" : "disconnect", device], () => refreshRequested());
+    function setWiredConnected(deviceName, connected) {
+        const wired = networkService?.wiredDevices.find(d => d.device === deviceName);
+        if (!wired || !wired.raw?.network) return;
+
+        if (connected)
+            wired.raw.network.connect();
+        else
+            wired.raw.network.disconnect();
     }
 }
