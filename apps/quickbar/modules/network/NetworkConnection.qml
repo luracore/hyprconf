@@ -28,7 +28,8 @@ Item {
     }
 
     function findNetwork(ssid) {
-        if (!networkService) return null;
+        if (!networkService)
+            return null;
         return networkService.wifiNetworks.find(n => n.ssid === ssid)?.raw ?? null;
     }
 
@@ -57,55 +58,7 @@ Item {
     // Cria perfil 802.1X ou Rede Oculta via libnm lendo JSON do stdin (zero vazamento em /proc)
     Process {
         id: nmHelper
-        command: [
-            "python3", "-c",
-            "import sys, json, gi; gi.require_version('NM', '1.0'); from gi.repository import NM, GLib;" +
-            "try:\n" +
-            "  cfg = json.load(sys.stdin)\n" +
-            "  c = NM.Client.new(None)\n" +
-            "  con = NM.SimpleConnection.new()\n" +
-            "  s_con = NM.SettingConnection.new()\n" +
-            "  s_con.set_property(NM.SETTING_CONNECTION_ID, cfg['ssid'])\n" +
-            "  s_con.set_property(NM.SETTING_CONNECTION_TYPE, '802-11-wireless')\n" +
-            "  s_con.set_property(NM.SETTING_CONNECTION_UUID, NM.utils_uuid_generate())\n" +
-            "  con.add_setting(s_con)\n" +
-            "  s_wifi = NM.SettingWireless.new()\n" +
-            "  s_wifi.set_property(NM.SETTING_WIRELESS_SSID, GLib.Bytes.new(cfg['ssid'].encode()))\n" +
-            "  s_wifi.set_property(NM.SETTING_WIRELESS_HIDDEN, bool(cfg.get('hidden', False)))\n" +
-            "  con.add_setting(s_wifi)\n" +
-            "  mode = cfg.get('mode', 'psk')\n" +
-            "  if mode != 'open':\n" +
-            "    s_sec = NM.SettingWirelessSecurity.new()\n" +
-            "    if mode == 'eap':\n" +
-            "      s_sec.set_property(NM.SETTING_WIRELESS_SECURITY_KEY_MGMT, 'wpa-eap')\n" +
-            "      s_8021x = NM.Setting8021x.new()\n" +
-            "      s_8021x.add_eap_method(cfg['eap'])\n" +
-            "      s_8021x.set_property(NM.SETTING_802_1X_PHASE2_AUTH, cfg['phase2'])\n" +
-            "      s_8021x.set_property(NM.SETTING_802_1X_IDENTITY, cfg['identity'])\n" +
-            "      s_8021x.set_property(NM.SETTING_802_1X_PASSWORD, cfg['password'])\n" +
-            "      if cfg.get('anonymous'): s_8021x.set_property(NM.SETTING_802_1X_ANONYMOUS_IDENTITY, cfg['anonymous'])\n" +
-            "      if cfg.get('domain'): s_8021x.set_property(NM.SETTING_802_1X_DOMAIN_SUFFIX_MATCH, cfg['domain'])\n" +
-            "      if cfg.get('caCert'): s_8021x.set_ca_cert(cfg['caCert'], NM.Setting8021xCKScheme.PATH)\n" +
-            "      con.add_setting(s_8021x)\n" +
-            "    else:\n" +
-            "      s_sec.set_property(NM.SETTING_WIRELESS_SECURITY_KEY_MGMT, 'wpa-psk')\n" +
-            "      s_sec.set_property(NM.SETTING_WIRELESS_SECURITY_PSK, cfg['password'])\n" +
-            "    con.add_setting(s_sec)\n" +
-            "  dev = next((d for d in c.get_devices() if d.get_device_type() == NM.DeviceType.WIFI), None)\n" +
-            "  if not dev: raise RuntimeError('Dispositivo Wi-Fi não encontrado')\n" +
-            "  loop = GLib.MainLoop()\n" +
-            "  err = []\n" +
-            "  def cb(client, res, _):\n" +
-            "    try: client.add_and_activate_connection_finish(res)\n" +
-            "    except Exception as e: err.append(str(e))\n" +
-            "    finally: loop.quit()\n" +
-            "  c.add_and_activate_connection_async(con, dev, None, None, cb, None)\n" +
-            "  loop.run()\n" +
-            "  if err: sys.stderr.write(err[0]); sys.exit(1)\n" +
-            "except Exception as exc:\n" +
-            "  sys.stderr.write(str(exc))\n" +
-            "  sys.exit(1)"
-        ]
+        command: ["python3", "-c", "import sys, json, gi; gi.require_version('NM', '1.0'); from gi.repository import NM, GLib;" + "try:\n" + "  cfg = json.load(sys.stdin)\n" + "  ssid = str(cfg.get('ssid', '')).strip()\n" + "  if not ssid: raise ValueError('SSID inválido')\n" + "  c = NM.Client.new(None)\n" + "  con = NM.SimpleConnection.new()\n" + "  s_con = NM.SettingConnection.new()\n" + "  s_con.set_property(NM.SETTING_CONNECTION_ID, ssid)\n" + "  s_con.set_property(NM.SETTING_CONNECTION_TYPE, '802-11-wireless')\n" + "  s_con.set_property(NM.SETTING_CONNECTION_UUID, NM.utils_uuid_generate())\n" + "  con.add_setting(s_con)\n" + "  s_wifi = NM.SettingWireless.new()\n" + "  s_wifi.set_property(NM.SETTING_WIRELESS_SSID, GLib.Bytes.new(ssid.encode()))\n" + "  s_wifi.set_property(NM.SETTING_WIRELESS_HIDDEN, bool(cfg.get('hidden', False)))\n" + "  con.add_setting(s_wifi)\n" + "  mode = str(cfg.get('mode', 'psk'))\n" + "  if mode != 'open':\n" + "    s_sec = NM.SettingWirelessSecurity.new()\n" + "    if mode == 'eap':\n" + "      s_sec.set_property(NM.SETTING_WIRELESS_SECURITY_KEY_MGMT, 'wpa-eap')\n" + "      s_8021x = NM.Setting8021x.new()\n" + "      s_8021x.add_eap_method(str(cfg['eap']))\n" + "      s_8021x.set_property(NM.SETTING_802_1X_PHASE2_AUTH, str(cfg['phase2']))\n" + "      s_8021x.set_property(NM.SETTING_802_1X_IDENTITY, str(cfg['identity']))\n" + "      s_8021x.set_property(NM.SETTING_802_1X_PASSWORD, str(cfg['password']))\n" + "      if cfg.get('anonymous'): s_8021x.set_property(NM.SETTING_802_1X_ANONYMOUS_IDENTITY, str(cfg['anonymous']))\n" + "      if cfg.get('domain'): s_8021x.set_property(NM.SETTING_802_1X_DOMAIN_SUFFIX_MATCH, str(cfg['domain']))\n" + "      if cfg.get('caCert'): s_8021x.set_ca_cert(str(cfg['caCert']), NM.Setting8021xCKScheme.PATH)\n" + "      con.add_setting(s_8021x)\n" + "    else:\n" + "      s_sec.set_property(NM.SETTING_WIRELESS_SECURITY_KEY_MGMT, 'wpa-psk')\n" + "      s_sec.set_property(NM.SETTING_WIRELESS_SECURITY_PSK, str(cfg['password']))\n" + "    con.add_setting(s_sec)\n" + "  dev = next((d for d in c.get_devices() if d.get_device_type() == NM.DeviceType.WIFI), None)\n" + "  if not dev: raise RuntimeError('Dispositivo Wi-Fi não encontrado')\n" + "  loop = GLib.MainLoop()\n" + "  err = []\n" + "  def cb(client, res, _):\n" + "    try: client.add_and_activate_connection_finish(res)\n" + "    except Exception as e: err.append(str(e))\n" + "    finally: loop.quit()\n" + "  c.add_and_activate_connection_async(con, dev, None, None, cb, None)\n" + "  loop.run()\n" + "  if err: sys.stderr.write(err[0]); sys.exit(1)\n" + "except Exception as exc:\n" + "  sys.stderr.write(str(exc))\n" + "  sys.exit(1)"]
 
         onStarted: {
             nmHelper.write(root.pendingJson);
@@ -131,7 +84,8 @@ Item {
     }
 
     function runHelper(ssid, payload) {
-        if (nmHelper.running) return;
+        if (nmHelper.running)
+            return;
         clearError();
         busySsid = ssid;
         pendingJson = JSON.stringify(payload);
@@ -179,9 +133,7 @@ Item {
     }
 
     function connectEnterprise(ssid, options) {
-        const certPath = options.caCert
-            ? options.caCert.replace(/^~(?=\/|$)/, Quickshell.env("HOME"))
-            : "";
+        const certPath = options.caCert ? options.caCert.replace(/^~(?=\/|$)/, Quickshell.env("HOME")) : "";
 
         runHelper(ssid, {
             ssid: ssid,
@@ -199,13 +151,15 @@ Item {
 
     function disconnectWifi() {
         const active = networkService?.activeWifi?.raw;
-        if (active) active.disconnect();
+        if (active)
+            active.disconnect();
     }
 
     function forget(ssid) {
         clearError();
         const net = findNetwork(ssid);
-        if (net) net.forget();
+        if (net)
+            net.forget();
     }
 
     function setWifiEnabled(enabled) {
@@ -214,7 +168,8 @@ Item {
 
     function setWiredConnected(deviceName, connected) {
         const wired = networkService?.wiredDevices.find(d => d.device === deviceName);
-        if (!wired || !wired.raw?.network) return;
+        if (!wired || !wired.raw?.network)
+            return;
 
         if (connected)
             wired.raw.network.connect();

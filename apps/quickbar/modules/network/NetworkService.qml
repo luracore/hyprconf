@@ -1,4 +1,3 @@
-
 import Quickshell
 import Quickshell.Networking
 import QtQuick
@@ -8,7 +7,6 @@ Item {
     visible: false
 
     property bool popupVisible: false
-
     property var cachedWifiNetworks: []
 
     readonly property bool available:
@@ -19,6 +17,43 @@ Item {
 
     readonly property bool scanning:
         rawWifiDevice ? rawWifiDevice.scannerEnabled : false
+
+    // 1. Mapeia o estado de conectividade global do Quickshell
+    readonly property string connectivity: {
+        switch (Networking.connectivity) {
+            case NetworkConnectivity.Portal: return "portal";
+            case NetworkConnectivity.Limited: return "limited";
+            case NetworkConnectivity.Full: return "full";
+            default: return "none";
+        }
+    }
+
+    // 2. Lista os dispositivos cabeadas (Ethernet) no formato esperado pelo NetworkPanel.qml
+    readonly property var wiredDevices: {
+        const list = [];
+        const devs = Networking.devices.values;
+        for (let i = 0; i < devs.length; i++) {
+            const dev = devs[i];
+            if (!(dev instanceof WifiDevice)) {
+                const net = dev.network;
+                const connected = net ? net.connected : false;
+                // No painel: "connected" = conectado, "unavailable" = cabo desconectado
+                const state = connected ? "connected" : (net ? "disconnected" : "unavailable");
+
+                list.push({
+                    raw: dev,
+                    device: dev.name,
+                    connection: net ? (net.name || dev.name) : "",
+                    state: state
+                });
+            }
+        }
+        return list;
+    }
+
+    // 3. Indica se algum dispositivo cabeado está conectado
+    readonly property bool wiredConnected:
+        wiredDevices.some(d => d.state === "connected")
 
     readonly property var rawWifiDevice: {
         for (let i = 0; i < Networking.devices.values.length; i++) {
@@ -167,4 +202,3 @@ Item {
         updateWifiNetworks();
     }
 }
-
