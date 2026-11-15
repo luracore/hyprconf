@@ -6,7 +6,6 @@
     "muted": "#859289",
     "text": "#D3C6AA"
   },
-
   "palette": {
     "red": "#E67E80",
     "orange": "#E69875",
@@ -16,13 +15,12 @@
     "blue": "#7FBBB3",
     "magenta": "#D699B6"
   },
-
   "roles": {
     "primary": "green",
     "secondary": "cyan",
-    "tertiary": "blue",
+    "tertiary": "yellow",
     "error": "red",
-    "warning": "yellow",
+    "warning": "orange",
     "success": "green",
     "info": "blue"
   }

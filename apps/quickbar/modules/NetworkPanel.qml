@@ -93,18 +93,6 @@ PanelSurface {
         formFor = "";
     }
 
-    // falha de autenticação: reabre o formulário daquela rede
-    Connections {
-        target: root.net
-        function onErrorSsidChanged() {
-            if (root.net.errorSsid !== "" && root.net.errorNeedsCredentials && root.net.errorSsid !== root.hiddenKey) {
-                const keepExpanded = root.expanded === root.hiddenKey;
-                if (!keepExpanded)
-                    root.openForm(root.net.errorSsid);
-            }
-        }
-    }
-
     function securityLabel(n) {
         if (n.enterprise)
             return "Corporativa (802.1X)";
@@ -439,13 +427,6 @@ PanelSurface {
                                         else
                                             root.net.connectKnown(wifi.n.ssid);
                                     }
-                                }
-
-                                PanelButton {
-                                    visible: wifi.n.secured
-                                    text: "Trocar senha"
-                                    accent: Theme.colors.muted
-                                    onClicked: root.openForm(wifi.n.ssid)
                                 }
 
                                 PanelButton {

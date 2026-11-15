@@ -2,45 +2,80 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Usa nmcli para tudo porque o Quickshell.Networking (0.3) não expõe a rede
-// cabeada nem consegue criar conexões 802.1X. Os comandos rodam com
-// LC_ALL=C para a saída não depender do idioma do sistema.
+import "network" as NetworkComponents
+
 BarButton {
     id: root
 
-    property var devices: []          // [{ device, type, state, connection }]
-    property var wifiNetworks: []     // [{ ssid, signal, security, inUse, known, secured, enterprise }]
-    property var savedWifi: []        // nomes das conexões Wi-Fi salvas
-    property bool available: false
-    property bool wifiEnabled: false
-    property string connectivity: "unknown"   // none | portal | limited | full | unknown
-    property bool scanning: false
+    // Executor de comandos.
+    CommandRunner {
+        id: commands
+    }
 
-    property string busySsid: ""      // rede em conexão
-    property string errorSsid: ""     // rede da última falha
-    property string errorText: ""
-    property bool errorNeedsCredentials: false
+    // Serviço de consultas ao NetworkManager.
+    NetworkComponents.NetworkService {
+        id: service
 
-    readonly property var wiredDevices: devices.filter(d => d.type === "ethernet")
-    readonly property var wifiDevice: devices.find(d => d.type === "wifi") ?? null
-    readonly property var activeWifi: wifiNetworks.find(n => n.inUse) ?? null
-    readonly property bool wiredConnected: wiredDevices.some(d => d.state === "connected")
+        commandRunner: commands
+        popupVisible: popup.visible
+    }
+
+    // Serviço de operações de conexão.
+    NetworkComponents.NetworkConnection {
+        id: connection
+
+        commandRunner: commands
+        networkService: service
+
+        wifiDevice: service.wifiDevice
+        savedWifi: service.savedWifi
+        wifiNetworks: service.wifiNetworks
+
+        onRefreshRequested: refreshDebounce.restart()
+    }
+
+    // Estado disponibilizado para a barra e o painel.
+    property alias devices: service.devices
+    property alias wifiNetworks: service.wifiNetworks
+    property alias savedWifi: service.savedWifi
+    property alias available: service.available
+    property alias wifiEnabled: service.wifiEnabled
+    property alias connectivity: service.connectivity
+    property alias scanning: service.scanning
+
+    readonly property var wiredDevices: service.wiredDevices
+    readonly property var wifiDevice: service.wifiDevice
+    readonly property var activeWifi: service.activeWifi
+    readonly property bool wiredConnected: service.wiredConnected
+
+    // Estado das operações de conexão.
+    property alias busySsid: connection.busySsid
+    property alias errorSsid: connection.errorSsid
+    property alias errorText: connection.errorText
 
     function signalIcon(signal) {
-        return signal >= 75 ? "󰤨" : signal >= 50 ? "󰤥" : signal >= 25 ? "󰤢" : "󰤟";
+        return signal >= 75 ? "󰤨"
+            : signal >= 50 ? "󰤥"
+            : signal >= 25 ? "󰤢"
+            : "󰤟";
     }
 
     visible: available
-    onAvailableChanged: if (!available) popup.visible = false
+
+    onAvailableChanged: if (!available)
+        popup.visible = false
 
     icon: activeWifi ? signalIcon(activeWifi.signal)
         : wiredConnected ? "󰈀"
         : wifiDevice && wifiEnabled ? "󰤯"
         : "󰤮"
-    label: ""      // o nome da rede fica no painel
+
+    label: ""
+
     accent: connectivity === "portal" || connectivity === "limited" ? "warning"
         : activeWifi || wiredConnected ? "info"
         : "error"
+
     active: popup.visible
 
     onClicked: m => {
@@ -48,274 +83,55 @@ BarButton {
             root.togglePanel();
     }
 
-    CommandRunner { id: commands }
-
-    function run(args, callback) {
-        commands.run(args, callback);
-    }
-
-    // vários comandos em sequência; para no primeiro que falhar
-    function runAll(list, callback) {
-        if (list.length === 0) {
-            callback(0, "", "");
-            return;
-        }
-        run(list[0], (code, out, err) => {
-            if (code !== 0)
-                callback(code, out, err);
-            else
-                runAll(list.slice(1), callback);
-        });
-    }
-
-    // campos da saída "nmcli -t": separados por ":", com "\:" e "\\" escapados
-    function terse(line) {
-        const fields = [];
-        let current = "";
-        for (let i = 0; i < line.length; i++) {
-            const ch = line[i];
-            if (ch === "\\" && i + 1 < line.length) {
-                current += line[++i];
-            } else if (ch === ":") {
-                fields.push(current);
-                current = "";
-            } else {
-                current += ch;
-            }
-        }
-        fields.push(current);
-        return fields;
-    }
-
-    function lines(text) {
-        return text.split("\n").filter(l => l.length > 0);
-    }
-
-    function cleanError(text) {
-        return text.trim().split("\n").pop().replace(/^Error:\s*/, "") || "falha desconhecida";
-    }
-
+    // Consultas.
     function refresh() {
-        run(["nmcli", "-t", "-f", "RUNNING", "general"], (code, out) => {
-            available = code === 0 && out.trim() === "running";
-            if (available)
-                refreshAll();
-        });
-    }
-
-    function refreshAll() {
-        run(["nmcli", "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device", "status"], (code, out) => {
-            if (code !== 0)
-                return;
-            devices = lines(out).map(l => {
-                const f = terse(l);
-                return { device: f[0], type: f[1], state: f[2], connection: f[3] };
-            }).filter(d => d.type === "ethernet" || d.type === "wifi");
-            refreshWifiList();
-        });
-
-        run(["nmcli", "radio", "wifi"], (code, out) => wifiEnabled = out.trim() === "enabled");
-        run(["nmcli", "networking", "connectivity"], (code, out) => connectivity = out.trim() || "unknown");
-        if (!popup.visible)
-            return;
-        run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"], (code, out) => {
-            savedWifi = lines(out).map(terse).filter(f => f[1] === "802-11-wireless").map(f => f[0]);
-        });
+        service.refresh();
     }
 
     function refreshWifiList() {
-        if (!wifiDevice) {
-            wifiNetworks = [];
-            return;
-        }
-        run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "device", "wifi", "list", "--rescan", "no"], (code, out) => {
-            if (code !== 0)
-                return;
-            const bySsid = {};
-            for (const line of lines(out)) {
-                const f = terse(line);
-                const ssid = f[1];
-                if (!ssid)
-                    continue;    // ocultas aparecem sem nome; use "Rede oculta…"
-                const security = f[3] === "--" ? "" : f[3];
-                const net = {
-                    ssid: ssid,
-                    signal: Number(f[2]) || 0,
-                    security: security,
-                    inUse: f[0] === "*",
-                    known: savedWifi.includes(ssid),
-                    enterprise: security.includes("802.1X"),
-                    secured: security !== "" && !/^OWE/.test(security)
-                };
-                const prev = bySsid[ssid];
-                if (!prev || net.inUse || (!prev.inUse && net.signal > prev.signal))
-                    bySsid[ssid] = net;
-            }
-            wifiNetworks = Object.values(bySsid).sort((a, b) =>
-                (b.inUse - a.inUse) || (b.known - a.known) || (b.signal - a.signal));
-        });
+        service.refreshWifiList();
     }
 
     function rescan() {
-        if (!wifiDevice || !wifiEnabled || scanning)
-            return;
-        scanning = true;
-        run(["nmcli", "device", "wifi", "rescan"], () => rescanWait.restart());
+        service.rescan();
     }
 
-    Timer {
-        id: rescanWait
-        interval: 2500
-        onTriggered: {
-            root.scanning = false;
-            root.refreshWifiList();
-        }
+    function listWifiProfiles(callback) {
+        service.listWifiProfiles(callback);
     }
 
-    // atualiza quando o NetworkManager muda algo
-    Process {
-        id: monitor
-        running: true
-        command: ["nmcli", "monitor"]
-        environment: ({ "LC_ALL": "C" })
-        stdout: SplitParser {
-            onRead: refreshDebounce.restart()
-        }
-        onExited: monitorRestart.start()
-    }
-
-    Timer {
-        id: monitorRestart
-        interval: 5000
-        onTriggered: monitor.running = true
-    }
-
-    Timer {
-        id: refreshDebounce
-        interval: 400
-        onTriggered: root.refresh()
-    }
-
-    // sinal das redes muda sem eventos; relê enquanto o painel está aberto
-    Timer {
-        interval: 10000
-        repeat: true
-        running: popup.visible
-        onTriggered: root.refreshWifiList()
-    }
-
-    Component.onCompleted: refresh()
-
-    // errorSsid por último: o painel reage à mudança dele
-    function setError(ssid, err, needsCredentials) {
-        errorNeedsCredentials = needsCredentials;
-        errorText = cleanError(err);
-        errorSsid = ssid;
-    }
-
-    function clearError() {
-        errorSsid = "";
-        errorText = "";
-        errorNeedsCredentials = false;
-    }
-
-    function looksLikeAuthError(err) {
-        return /secrets|password|802-1x|supplicant|auth|key/i.test(err);
-    }
-
-    function finish(ssid, code, err, cleanup) {
-        busySsid = "";
-        if (code !== 0) {
-            setError(ssid, err, looksLikeAuthError(err));
-            if (cleanup)
-                run(cleanup);
-        }
-        refreshDebounce.restart();
-    }
-
+    // Operações de conexão.
     function connectKnown(ssid) {
-        clearError();
-        busySsid = ssid;
-        run(["nmcli", "connection", "up", "id", ssid], (code, out, err) => finish(ssid, code, err));
+        connection.connectKnown(ssid);
     }
 
-    // Rede aberta ou com senha (WPA/WEP). hidden: rede oculta.
     function connectPsk(ssid, password, hidden) {
-        clearError();
-        busySsid = ssid;
-
-        // rede salva com senha trocada: atualiza a senha e reconecta
-        if (savedWifi.includes(ssid) && password !== "") {
-            runAll([
-                ["nmcli", "connection", "modify", "id", ssid, "wifi-sec.psk", password],
-                ["nmcli", "connection", "up", "id", ssid]
-            ], (code, out, err) => finish(ssid, code, err));
-            return;
-        }
-
-        const args = ["nmcli", "device", "wifi", "connect", ssid];
-        if (password !== "")
-            args.push("password", password);
-        if (hidden)
-            args.push("hidden", "yes");
-        if (wifiDevice)
-            args.push("ifname", wifiDevice.device);
-        // se falhar, apaga a conexão recém-criada para não salvar a senha errada
-        const isNew = !savedWifi.includes(ssid);
-        run(args, (code, out, err) => finish(ssid, code, err,
-            isNew ? ["nmcli", "connection", "delete", "id", ssid] : null));
+        connection.connectPsk(ssid, password, hidden);
     }
 
-    // Rede corporativa (WPA-Enterprise / 802.1X), ex. faculdade ou eduroam.
-    // o: { identity, password, eap: "peap"|"ttls", phase2: "mschapv2"|"pap"|"gtc",
-    //      anonymous, caCert, domain, hidden }
-    function connectEnterprise(ssid, o) {
-        clearError();
-        busySsid = ssid;
-
-        const props = [
-            "wifi-sec.key-mgmt", "wpa-eap",
-            "802-1x.eap", o.eap,
-            "802-1x.phase2-auth", o.phase2,
-            "802-1x.identity", o.identity,
-            "802-1x.password", o.password
-        ];
-        if (o.anonymous)
-            props.push("802-1x.anonymous-identity", o.anonymous);
-        if (o.caCert)
-            props.push("802-1x.ca-cert", o.caCert.replace(/^~(?=\/|$)/, Quickshell.env("HOME")));
-        if (o.domain)
-            props.push("802-1x.domain-suffix-match", o.domain);
-        if (o.hidden)
-            props.push("802-11-wireless.hidden", "yes");
-
-        const exists = savedWifi.includes(ssid);
-        const create = exists
-            ? ["nmcli", "connection", "modify", "id", ssid].concat(props)
-            : ["nmcli", "connection", "add", "type", "wifi", "con-name", ssid, "ssid", ssid]
-                .concat(wifiDevice ? ["ifname", wifiDevice.device] : [])
-                .concat(props);
-
-        runAll([create, ["nmcli", "connection", "up", "id", ssid]], (code, out, err) =>
-            finish(ssid, code, err, exists ? null : ["nmcli", "connection", "delete", "id", ssid]));
+    function connectEnterprise(ssid, options) {
+        connection.connectEnterprise(ssid, options);
     }
 
     function disconnectWifi() {
-        if (wifiDevice)
-            run(["nmcli", "device", "disconnect", wifiDevice.device], () => refreshDebounce.restart());
+        connection.disconnectWifi();
     }
 
     function forget(ssid) {
-        clearError();
-        run(["nmcli", "connection", "delete", "id", ssid], () => refreshDebounce.restart());
+        connection.forget(ssid);
     }
 
     function setWifiEnabled(enabled) {
-        run(["nmcli", "radio", "wifi", enabled ? "on" : "off"], () => refreshDebounce.restart());
+        connection.setWifiEnabled(enabled);
     }
 
     function setWiredConnected(device, connected) {
-        run(["nmcli", "device", connected ? "connect" : "disconnect", device], () => refreshDebounce.restart());
+        connection.setWiredConnected(device, connected);
+    }
+
+    // Métodos auxiliares usados pelo painel.
+    function clearError() {
+        connection.clearError();
     }
 
     function openAdvanced() {
@@ -330,11 +146,19 @@ BarButton {
 
     function togglePanel() {
         popup.visible = !popup.visible;
+
         if (popup.visible) {
             clearError();
             refresh();
             rescan();
         }
+    }
+
+    // Atualização após operações de conexão.
+    Timer {
+        id: refreshDebounce
+        interval: 400
+        onTriggered: root.refresh()
     }
 
     BarPopup {
@@ -354,10 +178,15 @@ BarButton {
         }
     }
 
-    // qs ipc call network togglePanel|rescan
     IpcHandler {
         target: "network"
-        function togglePanel(): void { root.togglePanel(); }
-        function rescan(): void { root.rescan(); }
+
+        function togglePanel() {
+            root.togglePanel();
+        }
+
+        function rescan() {
+            root.rescan();
+        }
     }
 }

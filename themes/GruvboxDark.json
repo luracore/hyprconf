@@ -6,7 +6,6 @@
     "muted": "#928374",
     "text": "#EBDBB2"
   },
-
   "palette": {
     "red": "#FB4934",
     "orange": "#FE8019",
@@ -16,7 +15,6 @@
     "blue": "#83A598",
     "magenta": "#D3869B"
   },
-
   "roles": {
     "primary": "orange",
     "secondary": "green",

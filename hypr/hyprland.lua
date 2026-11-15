@@ -8,7 +8,13 @@ if painel then
   require("./config/monitor-painel")
 end
 require("./config/appearance")
-require("./config/current")
+-- tema atual (gerado); sem ele, fica a cor de fundo padrão
+local config_home = os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")
+local current = io.open(config_home .. "/hypr/config/current.lua")
+if current then
+  current:close()
+  require("./config/current")
+end
 require("./config/animations")
 require("./config/layout")
 require("./config/input")

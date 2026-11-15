@@ -38,9 +38,13 @@ Você pode substituí-los pelos de sua preferência:
 ```bash
 sudo pacman -S --needed \
     foot thunar thunar-archive-plugin tumbler \
-    file-roller neovim npm unzip ripgrep \
+    file-roller neovim npm unzip ripgrep fastfetch \
     tree-sitter-cli gcc clang firefox opencode
 ```
+
+Com os defaults do hyprconf, o instalador também acrescenta ao final do
+`~/.bashrc` (se ele existir) um bloco que mostra o fastfetch ao abrir o
+terminal. O desinstalador remove esse bloco.
 
 Para o Thunar abrir as pastas:
 

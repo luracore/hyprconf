@@ -1,27 +1,27 @@
 {
   "neutrals": {
-    "background": "#111C18",
-    "surface": "#23372B",
-    "outline": "#53685B",
-    "text": "#D6D5BC"
+    "background": "#101817",
+    "surface": "#1B2623",
+    "outline": "#34443E",
+    "muted": "#71877B",
+    "text": "#D5E8D4"
   },
-
   "palette": {
-    "red": "#FF5345",
-    "yellow": "#E5C736",
-    "green": "#549E6A",
-    "cyan": "#2DD5B7",
-    "blue": "#509475",
-    "magenta": "#D2689C"
+    "red": "#E06C75",
+    "orange": "#D99A6C",
+    "yellow": "#D7C98A",
+    "green": "#9BCB9B",
+    "cyan": "#7FC9B5",
+    "blue": "#82B6B0",
+    "magenta": "#B79AC7"
   },
-
   "roles": {
-    "primary": "blue",
+    "primary": "green",
     "secondary": "cyan",
-    "tertiary": "magenta",
+    "tertiary": "blue",
     "error": "red",
     "warning": "yellow",
     "success": "green",
-    "info": "#8CD3CB"
+    "info": "cyan"
   }
 }

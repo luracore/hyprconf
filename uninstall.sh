@@ -29,6 +29,27 @@ while IFS= read -r -d '' link; do
   fi
 done < <(find "$CONFIG_DIR" "$DATA_DIR" -maxdepth 2 -type l -print0)
 
+BASHRC="$HOME/.bashrc"
+FF_BEGIN="# >>> hyprconf: fastfetch >>>"
+FF_END="# <<< hyprconf: fastfetch <<<"
+
+if [[ -f "$BASHRC" ]] && grep -qF -- "$FF_BEGIN" "$BASHRC"; then
+  if grep -qF -- "$FF_END" "$BASHRC"; then
+    echo "==> Removendo o fastfetch do ~/.bashrc"
+
+    tmp="$(mktemp)"
+    awk -v begin="$FF_BEGIN" -v end="$FF_END" '
+      $0 == begin { skip = 1; next }
+      $0 == end   { skip = 0; next }
+      !skip
+    ' "$BASHRC" > "$tmp"
+    mv -- "$tmp" "$BASHRC"
+    echo "    removido: $BASHRC"
+  else
+    echo "    aviso: bloco do fastfetch incompleto em $BASHRC; remova à mão" >&2
+  fi
+fi
+
 echo "==> Voltando o gsettings ao padrão"
 
 for ini in "$REPO_DIR"/themes/converters/*/dconf.ini; do
