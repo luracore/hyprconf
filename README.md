@@ -38,7 +38,7 @@ Você pode substituí-los pelos de sua preferência:
 ```bash
 sudo pacman -S --needed \
     foot thunar thunar-archive-plugin tumbler \
-    file-roller neovim npm unzip ripgrep fastfetch \
+    file-roller neovim npm zip unzip ripgrep fastfetch \
     tree-sitter-cli gcc clang firefox opencode
 ```
 
