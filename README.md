@@ -8,7 +8,7 @@ com um tema de cores que vale para o sistema todo.
 
 ```bash
 sudo pacman -S --needed \
-    hyprland hyprlock hypridle hyprshot \
+    hyprland hyprlock hypridle hyprshot hyprpicker \
     hyprpolkitagent xdg-desktop-portal-hyprland \
     xdg-utils wl-clipboard libnotify \
     quickshell awww imagemagick cava curl jq nodejs \
