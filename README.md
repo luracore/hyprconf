@@ -1,54 +1,6 @@
 # Hyprconf
 
-Meu ambiente **Arch Linux + Hyprland**: barra, lançador, seletor de
-wallpaper e tema, gerenciador de pacotes e configurações feitos em Quickshell,
-com um tema de cores que vale para o sistema todo.
-
-## Dependencias:
-
-```bash
-sudo pacman -S --needed \
-    hyprland hyprlock hypridle hyprshot hyprpicker \
-    hyprpolkitagent xdg-desktop-portal-hyprland \
-    xdg-utils wl-clipboard libnotify \
-    quickshell awww imagemagick cava curl jq nodejs \
-    gvfs qt6ct adw-gtk-theme papirus-icon-theme \
-    librsvg xorg-xcursorgen \
-    ttf-firacode-nerd noto-fonts noto-fonts-emoji noto-fonts-cjk \
-    pipewire-pulse libpulse wireplumber playerctl \
-    networkmanager bluez bluez-utils \
-    upower power-profiles-daemon ddcutil hyprsunset brightnessctl \
-    fzf pacman-contrib git
-```
-
-### Serviços
-
-Rede, Bluetooth, bateria e perfis de energia usados pela barra:
-
-```bash
-sudo systemctl enable --now \
-    NetworkManager bluetooth upower power-profiles-daemon
-```
-
-### Programas padrão
-
-Estes são os aplicativos utilizados ou recomendados pelo ambiente.
-Você pode substituí-los pelos de sua preferência:
-
-```bash
-sudo pacman -S --needed \
-    foot thunar thunar-archive-plugin tumbler \
-    file-roller neovim npm zip unzip ripgrep fastfetch \
-    tree-sitter-cli gcc clang firefox opencode
-```
-
-Com os defaults do hyprconf, o instalador também acrescenta ao final do
-`~/.bashrc` (se ele existir) um bloco que mostra o fastfetch ao abrir o
-terminal. O desinstalador remove esse bloco.
-
-Para o Thunar abrir as pastas:
-
-xdg-mime default thunar.desktop inode/directory
+Meu ambiente **Arch Linux + Hyprland**: barra, lançador, seletor de wallpaper e tema, gerenciador de pacotes e configurações feitos em Quickshell, com um tema de cores que vale para o sistema todo.
 
 ## Instalação
 
@@ -59,18 +11,34 @@ git clone https://github.com/luracore/hyprconf ~/hyprconf
 ~/hyprconf/install.sh
 ```
 
-## Desinstalação
+O instalador instala as dependências necessárias e configura o ambiente.
+
+### Opções do instalador
+
+| Parâmetro | Função |
+|---|---|
+| `--bkp` | Faz backup das configurações existentes (padrão). |
+| `--no-bkp` | Remove as configurações existentes em vez de fazer backup. |
+| `--defaults` | Instala os programas padrão (padrão). |
+| `--no-defaults` | Não instala os programas padrão. |
+
+## Serviços
+
+Rede, Bluetooth, bateria e perfis de energia utilizados pela barra:
 
 ```bash
-~/hyprconf/uninstall.sh
+sudo systemctl enable --now \
+    NetworkManager bluetooth upower power-profiles-daemon
 ```
 
-Remove os links, devolve o backup mais recente de cada um ao lugar, volta o
-gsettings ao padrão e desfaz os ajustes do Flatpak e do áudio do Bluetooth.
+Para o Thunar abrir as pastas:
+
+```bash
+xdg-mime default thunar.desktop inode/directory
+```
 
 ## Uso
 
 - `SUPER + SPACE` abre o lançador de aplicativos.
-- O **HyprSettings** (no lançador) leva a tudo que dá para mudar:
-  wallpapers, temas, atalhos, programas padrão, pacotes, monitores, aparência
-  e o que abre com o Hyprland.
+- O **HyprSettings**, disponível no lançador, dá acesso às configurações do ambiente: wallpapers, temas, atalhos, programas padrão, pacotes, monitores, aparência e inicialização de aplicativos.
+

@@ -8,8 +8,39 @@ DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}"
 
 PREPARED_PATHS=()
 
-# Defaults que não são links, para aparecerem na pergunta do instalador.
-EXTRA_DEFAULTS=(fastfetch)
+# Padrões ao rodar ./install.sh sem argumentos.
+BACKUP=1
+DEFAULTS=1
+
+# Dependências do ambiente.
+DEPS_PKGS=(
+    # Hyprland e utilitários Wayland
+    hyprland hyprlock hypridle hyprshot hyprpicker
+    hyprpolkitagent xdg-desktop-portal-hyprland
+    xdg-utils wl-clipboard libnotify
+
+    # Shell, wallpaper, mídia, aparência e fontes
+    quickshell awww imagemagick cava curl jq nodejs
+    gvfs qt6ct adw-gtk-theme papirus-icon-theme
+    librsvg xorg-xcursorgen
+    ttf-firacode-nerd noto-fonts noto-fonts-emoji noto-fonts-cjk
+
+    # Áudio, rede, bluetooth e energia
+    pipewire-pulse libpulse wireplumber playerctl
+    networkmanager bluez bluez-utils
+    upower power-profiles-daemon ddcutil hyprsunset brightnessctl
+
+    # Utilitários do sistema
+    fzf pacman-contrib git
+)
+
+# Programas padrão (integrados a atalhos e conversores de tema).
+DEFAULT_PKGS=(
+    foot thunar thunar-archive-plugin tumbler ffmpegthumbnailer gvfs-mtp
+    file-roller neovim npm zip unzip ripgrep fastfetch
+    tree-sitter-cli gcc clang
+    firefox opencode nsxiv
+)
 
 # ---------------------------------------------------------------------------
 # Funções auxiliares
@@ -23,30 +54,52 @@ warn() {
   echo "    aviso: $*" >&2
 }
 
-# Pergunta sim/não; Enter (ou EOF) conta como sim.
-ask() {
-  local answer
-  read -rp "$1 [S/n] " answer
-  [[ ! "$answer" =~ ^[nN] ]]
-}
-
-# Lista os nomes dos defaults (links e extras) para o texto da pergunta.
-default_names() {
-  local names extra
-
-  names="$(awk 'NF && !/^[[:space:]]*#/ { printf "%s%s", sep, $1; sep = ", " }' \
-    "$REPO_DIR/defaults/links")"
-
-  for extra in "${EXTRA_DEFAULTS[@]}"; do
-    names="${names:+$names, }$extra"
+parse_args() {
+  while (( $# > 0 )); do
+    case "$1" in
+      --bkp)
+        BACKUP=1
+        ;;
+      --no-bkp)
+        BACKUP=0
+        ;;
+      --defaults)
+        DEFAULTS=1
+        ;;
+      --no-defaults)
+        DEFAULTS=0
+        ;;
+      *)
+        echo "Argumento desconhecido: $1" >&2
+        echo "Uso: $0 [--bkp | --no-bkp] [--defaults | --no-defaults]" >&2
+        exit 1
+        ;;
+    esac
+    shift
   done
-
-  printf '%s' "$names"
 }
 
 # ---------------------------------------------------------------------------
 # Funções de instalação
 # ---------------------------------------------------------------------------
+
+install_packages() {
+  local to_install=("${DEPS_PKGS[@]}")
+
+  if ! command_exists pacman; then
+    warn "pacman não encontrado; instalação de pacotes ignorada"
+    return 0
+  fi
+
+  if (( DEFAULTS )); then
+    to_install+=("${DEFAULT_PKGS[@]}")
+  fi
+
+  (( ${#to_install[@]} > 0 )) || return 0
+
+  echo "==> Instalando pacotes via pacman"
+  sudo pacman -S --needed "${to_install[@]}"
+}
 
 # Prepara um destino antes de sobrescrevê-lo: respeita BACKUP, ignora links
 # que já apontam para dentro do repositório e não repete o mesmo caminho.
@@ -150,11 +203,6 @@ apply_dconf() {
 
   (( ${#files[@]} > 0 )) || return 0
 
-  if ! command_exists dconf; then
-    warn "dconf não instalado; integrações GTK e KDE ignoradas"
-    return 0
-  fi
-
   for ini in "${files[@]}"; do
     section=""
 
@@ -181,9 +229,7 @@ apply_dconf() {
 
 # Dá aos apps Flatpak acesso somente-leitura às cores do GTK4.
 setup_flatpak() {
-  if ! command_exists flatpak; then
-    return 0
-  fi
+  command_exists flatpak || return 0
 
   if flatpak override --user --filesystem=xdg-config/gtk-4.0:ro; then
     echo "    apps Flatpak: acesso às cores do GTK4"
@@ -272,11 +318,6 @@ apply_theme() {
 
   [[ -e "$REPO_DIR/themes/current" ]] || return 0
 
-  if ! command_exists node; then
-    warn "Node.js não instalado; conversores de tema ignorados"
-    return 0
-  fi
-
   if ! targets="$(node -e '
     const fs = require("fs");
     const path = require("path");
@@ -315,11 +356,6 @@ apply_theme() {
 
 # Desativa a troca automática para o perfil de headset no PipeWire.
 setup_bluetooth_audio() {
-  if ! command_exists wpctl; then
-    warn "wpctl não instalado; configuração de áudio ignorada"
-    return 0
-  fi
-
   if wpctl settings --save bluetooth.autoswitch-to-headset-profile false; then
     echo "    troca automática para headset desativada"
   else
@@ -329,11 +365,6 @@ setup_bluetooth_audio() {
 
 # Recarrega o Hyprland para pegar os links recém-criados.
 reload_hyprland() {
-  if ! command_exists hyprctl; then
-    warn "hyprctl não instalado; recarregue o Hyprland manualmente"
-    return 0
-  fi
-
   if hyprctl reload; then
     echo "    Hyprland recarregado"
   else
@@ -355,6 +386,8 @@ print_next_steps() {
 # ---------------------------------------------------------------------------
 
 main() {
+  parse_args "$@"
+
   # Verificações iniciais
   if [[ $EUID -eq 0 ]]; then
     echo "Rode este script como seu usuário normal (não como root)." >&2
@@ -367,14 +400,7 @@ main() {
     exit 1
   fi
 
-  if ! command_exists node; then
-    echo "erro: Node.js não encontrado (dependência do tema; veja o README)." >&2
-    exit 1
-  fi
-
-  # Preferências: BACKUP e DEFAULTS valem para o resto da instalação.
-  ask "Fazer backup do que for substituído?" && BACKUP=1 || BACKUP=0
-  ask "Usar os defaults do Hyprconf ($(default_names))?" && DEFAULTS=1 || DEFAULTS=0
+  install_packages
 
   # Configuração do Hyprland
   echo "==> Linkando a configuração do Hyprland"
